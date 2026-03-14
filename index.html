@@ -959,6 +959,355 @@
   }
 
 
+
+  /* ─── POPUP DESCUENTO ─── */
+  #popupDescuento {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.85);
+    z-index: 9000;
+    width: min(420px, calc(100vw - 32px));
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  #popupDescuento.visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    pointer-events: all;
+  }
+
+  #popupDescuento .popup-inner {
+    background: linear-gradient(160deg, #14100A 0%, #1E1608 100%);
+    border: 1px solid rgba(201,151,58,0.55);
+    padding: 36px 32px 28px;
+    text-align: center;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.9), 0 0 0 1px rgba(201,151,58,0.1);
+    position: relative;
+  }
+
+  #popupDescuento .popup-inner::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 10%; right: 10%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(232,201,109,0.8), transparent);
+  }
+
+  #popupDescuento .popup-icon {
+    font-size: 36px;
+    margin-bottom: 14px;
+    display: block;
+  }
+
+  #popupDescuento .popup-title {
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    letter-spacing: 4px;
+    color: var(--gold-light);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  #popupDescuento .popup-msg {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 19px;
+    font-weight: 300;
+    color: #C8B898;
+    line-height: 1.6;
+    margin-bottom: 8px;
+  }
+
+  #popupDescuento .popup-msg strong {
+    color: var(--gold-light);
+    font-weight: 600;
+    font-size: 22px;
+  }
+
+  #popupDescuento .popup-sub {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 10px;
+    font-weight: 300;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    margin-top: 6px;
+  }
+
+  #popupDescuento .popup-close {
+    position: absolute;
+    top: 10px; right: 14px;
+    background: none; border: none;
+    color: rgba(154,140,118,0.4);
+    font-size: 22px; cursor: pointer;
+    line-height: 1; transition: color 0.2s;
+  }
+
+  #popupDescuento .popup-close:hover { color: var(--gold-light); }
+
+  #popupDescuento .popup-bar-wrap {
+    margin: 18px 0 0;
+    height: 3px;
+    background: rgba(255,255,255,0.07);
+    overflow: hidden;
+  }
+
+  #popupDescuento .popup-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold-deep), var(--gold-light));
+    animation: drain 5s linear forwards;
+    transform-origin: left;
+  }
+
+  @keyframes drain {
+    from { width: 100%; }
+    to   { width: 0%;   }
+  }
+
+  #popupBackdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(3px);
+    z-index: 8999;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.35s ease;
+  }
+
+  #popupBackdrop.visible { opacity: 1; pointer-events: all; }
+
+
+  /* ─── WELCOME POPUP ─── */
+  @keyframes wPopBg {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes wPopBox {
+    0%   { opacity: 0; transform: translateY(40px) scale(0.92); }
+    70%  { opacity: 1; transform: translateY(-6px) scale(1.01); }
+    100% { opacity: 1; transform: translateY(0)   scale(1);    }
+  }
+  @keyframes wPopOut {
+    from { opacity: 1; transform: scale(1);    }
+    to   { opacity: 0; transform: scale(0.94); }
+  }
+  @keyframes shimmer {
+    0%   { background-position: -200% center; }
+    100% { background-position:  200% center; }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0px);  }
+    50%       { transform: translateY(-6px); }
+  }
+  @keyframes sparkle {
+    0%,100% { opacity: 0.4; transform: scale(0.8) rotate(0deg);  }
+    50%     { opacity: 1;   transform: scale(1.2) rotate(180deg); }
+  }
+  @keyframes pctCount {
+    from { letter-spacing: 8px; opacity: 0; }
+    to   { letter-spacing: 2px; opacity: 1; }
+  }
+
+  #welcomeOverlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(8px);
+    z-index: 9500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: wPopBg 0.5s ease forwards;
+  }
+
+  #welcomeOverlay.closing {
+    animation: wPopOut 0.4s ease forwards;
+  }
+
+  #welcomeBox {
+    background: linear-gradient(160deg, #0f0b06 0%, #1c1408 50%, #0f0b06 100%);
+    border: 1px solid rgba(201,151,58,0.45);
+    width: min(460px, 100%);
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+    animation: wPopBox 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.15s both;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.9), 0 0 60px rgba(201,151,58,0.08);
+  }
+
+  /* animated gold top border */
+  #welcomeBox::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg,
+      transparent 0%, var(--gold-deep) 20%, var(--gold-light) 50%, var(--gold-deep) 80%, transparent 100%);
+    background-size: 200% auto;
+    animation: shimmer 2.5s linear infinite;
+  }
+
+  /* sparkle corners */
+  #welcomeBox::after {
+    content: '✦';
+    position: absolute;
+    top: 14px; right: 18px;
+    color: var(--gold-mid);
+    font-size: 12px;
+    animation: sparkle 2s ease infinite;
+  }
+
+  .wp-sparkle-l {
+    position: absolute;
+    top: 14px; left: 18px;
+    color: var(--gold-mid);
+    font-size: 12px;
+    animation: sparkle 2s ease 1s infinite;
+  }
+
+  .wp-crown {
+    font-size: 42px;
+    margin: 32px 0 10px;
+    display: block;
+    animation: float 3s ease infinite;
+    filter: drop-shadow(0 4px 12px rgba(201,151,58,0.5));
+  }
+
+  .wp-eyebrow {
+    font-family: 'Cinzel', serif;
+    font-size: 8.5px;
+    letter-spacing: 5px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .wp-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px;
+    font-weight: 300;
+    color: var(--text-cream);
+    line-height: 1.1;
+    margin-bottom: 20px;
+    padding: 0 24px;
+  }
+
+  .wp-discount-ring {
+    width: 130px; height: 130px;
+    border-radius: 50%;
+    border: 2px solid rgba(201,151,58,0.3);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    margin: 0 auto 20px;
+    position: relative;
+    background: radial-gradient(circle, rgba(201,151,58,0.08) 0%, transparent 70%);
+    animation: float 4s ease 0.5s infinite;
+    box-shadow: 0 0 30px rgba(201,151,58,0.12), inset 0 0 30px rgba(201,151,58,0.05);
+  }
+
+  .wp-discount-ring::before {
+    content: '';
+    position: absolute; inset: -6px;
+    border-radius: 50%;
+    border: 1px solid rgba(201,151,58,0.15);
+  }
+
+  .wp-pct {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 52px;
+    font-weight: 600;
+    line-height: 1;
+    background: linear-gradient(135deg, var(--gold-deep), var(--gold-light), var(--gold-mid));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: pctCount 0.8s ease 0.7s both;
+  }
+
+  .wp-pct-label {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--gold-mid);
+    text-transform: uppercase;
+  }
+
+  .wp-desc {
+    font-size: 12px;
+    font-weight: 300;
+    color: var(--text-muted);
+    line-height: 1.7;
+    padding: 0 32px;
+    margin-bottom: 24px;
+  }
+
+  .wp-desc strong {
+    color: var(--gold-pale);
+    font-weight: 500;
+  }
+
+  .wp-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 32px 24px;
+    color: var(--gold-mid);
+    font-size: 11px;
+  }
+
+  .wp-divider::before,
+  .wp-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(201,151,58,0.3));
+  }
+  .wp-divider::after {
+    background: linear-gradient(90deg, rgba(201,151,58,0.3), transparent);
+  }
+
+  .wp-btn {
+    display: block;
+    margin: 0 32px 32px;
+    padding: 14px;
+    background: linear-gradient(135deg, var(--gold-deep), var(--gold-light));
+    border: none;
+    color: var(--bg-dark);
+    font-family: 'Cinzel', serif;
+    font-size: 9.5px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .wp-btn::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    background-size: 200% auto;
+    animation: shimmer 1.8s linear infinite;
+  }
+
+  .wp-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(201,151,58,0.4); }
+
+  .wp-skip {
+    display: block;
+    font-family: 'Cinzel', serif;
+    font-size: 7.5px;
+    letter-spacing: 2px;
+    color: rgba(154,140,118,0.4);
+    text-align: center;
+    margin-bottom: 20px;
+    cursor: pointer;
+    transition: color 0.2s;
+    border: none; background: none;
+    text-transform: uppercase;
+  }
+  .wp-skip:hover { color: var(--text-muted); }
+
 </style>
 </head>
 <body>
@@ -1441,6 +1790,7 @@ function updateCartUI() {
 
   document.getElementById('whatsappBtn').disabled = count === 0;
   renderCartItems();
+  checkPopup();
   // Update modal button if open
   if (currentModalId) updateModalBtn(currentModalId);
 }
@@ -1647,10 +1997,120 @@ document.getElementById('modalOverlay').addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeCart(); } });
 
+
+// ─── POPUP DESCUENTO MAYORISTA ────────────────────────────────────────
+const WHOLESALE_MIN   = 10000;
+const WHOLESALE_PCT   = 35;
+let   popupTimer      = null;
+let   popupLastState  = null;
+
+function mostrarPopup(estado) {
+  const popup   = document.getElementById('popupDescuento');
+  const backdrop= document.getElementById('popupBackdrop');
+  const icon    = document.getElementById('popupIcon');
+  const title   = document.getElementById('popupTitle');
+  const msg     = document.getElementById('popupMsg');
+  const sub     = document.getElementById('popupSub');
+  const bar     = document.getElementById('popupBar');
+
+  // Reset barra
+  bar.style.animation = 'none';
+  void bar.offsetWidth;
+  bar.style.animation = '';
+
+  if (estado === 'unlocked') {
+    icon.textContent   = '🎉';
+    title.textContent  = '¡Precio mayorista desbloqueado!';
+    msg.innerHTML      = 'Se aplicó el <strong>' + WHOLESALE_PCT + '% de descuento</strong><br>automáticamente a tu pedido.';
+    sub.textContent    = 'El precio ya aparece descontado en tu carrito.';
+  } else {
+    const falta = (WHOLESALE_MIN - cartTotalRaw()).toLocaleString('es-CO');
+    icon.textContent   = '✦';
+    title.textContent  = 'Descuento por volumen';
+    msg.innerHTML      = 'Agrega <strong>$' + falta + '</strong> más<br>y obtén el <strong>' + WHOLESALE_PCT + '% mayorista</strong>.';
+    sub.textContent    = 'Precio mayorista Pleaseme Accessories · Oro Laminado 14k';
+  }
+
+  backdrop.classList.add('visible');
+  popup.classList.add('visible');
+  clearTimeout(popupTimer);
+  popupTimer = setTimeout(cerrarPopup, 5000);
+}
+
+function cerrarPopup() {
+  document.getElementById('popupDescuento').classList.remove('visible');
+  document.getElementById('popupBackdrop').classList.remove('visible');
+  clearTimeout(popupTimer);
+}
+
+function cartTotalRaw() {
+  return cart.reduce((s, item) => {
+    const p = products.find(x => x.id === item.id);
+    return s + parseInt(p.price.replace(/[^0-9]/g, '')) * item.qty;
+  }, 0);
+}
+
+function checkPopup() {
+  const total = cartTotalRaw();
+  if (total <= 0) { popupLastState = null; return; }
+  const estado = total >= WHOLESALE_MIN ? 'unlocked' : 'approaching';
+  if (estado !== popupLastState) {
+    mostrarPopup(estado);
+    popupLastState = estado;
+  }
+}
+
 // ─── INIT ────────────────────────────────────────────────────────────
 renderFilters();
 renderGrid();
 renderCartItems();
+
+// ─── WELCOME POPUP ────────────────────────────────────────────────────
+function cerrarWelcome() {
+  const overlay = document.getElementById('welcomeOverlay');
+  overlay.style.animation = 'wPopOut 0.4s ease forwards';
+  setTimeout(() => overlay.remove(), 420);
+}
+// Auto-close after 12s
+setTimeout(cerrarWelcome, 12000);
+
 </script>
+
+<!-- POPUP DESCUENTO MAYORISTA -->
+<div id="popupBackdrop" onclick="cerrarPopup()"></div>
+<div id="popupDescuento">
+  <div class="popup-inner">
+    <button class="popup-close" onclick="cerrarPopup()">×</button>
+    <span class="popup-icon" id="popupIcon">✦</span>
+    <div class="popup-title" id="popupTitle">Descuento por volumen</div>
+    <div class="popup-msg" id="popupMsg"></div>
+    <div class="popup-sub" id="popupSub"></div>
+    <div class="popup-bar-wrap"><div class="popup-bar-fill" id="popupBar"></div></div>
+  </div>
+</div>
+
+
+<!-- WELCOME POPUP -->
+<div id="welcomeOverlay">
+  <div id="welcomeBox">
+    <span class="wp-sparkle-l">✦</span>
+    <span class="wp-crown">👑</span>
+    <p class="wp-eyebrow">Pleaseme Accessories</p>
+    <h2 class="wp-title">Bienvenida a nuestro<br><em>catálogo exclusivo</em></h2>
+    <div class="wp-discount-ring">
+      <span class="wp-pct">35%</span>
+      <span class="wp-pct-label">Descuento</span>
+    </div>
+    <p class="wp-desc">
+      En pedidos que superen los <strong>$10,000</strong><br>
+      se aplica automáticamente el <strong>descuento mayorista del 35%</strong><br>
+      directo en tu carrito de selección.
+    </p>
+    <div class="wp-divider">✦</div>
+    <button class="wp-btn" onclick="cerrarWelcome()">Explorar catálogo</button>
+    <button class="wp-skip" onclick="cerrarWelcome()">Omitir</button>
+  </div>
+</div>
+
 </body>
 </html>
