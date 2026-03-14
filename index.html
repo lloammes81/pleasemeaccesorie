@@ -1309,11 +1309,103 @@
   }
   .wp-skip:hover { color: var(--text-muted); }
 
+
+  /* ─── ANNOUNCEMENT BANNER ─── */
+  @keyframes bannerScroll {
+    0%   { transform: translateX(100%); }
+    100% { transform: translateX(-100%); }
+  }
+  @keyframes bannerFadeIn {
+    from { opacity: 0; transform: translateY(-100%); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  #announcementBanner {
+    background: linear-gradient(90deg, var(--gold-deep) 0%, #A07820 40%, var(--gold-deep) 100%);
+    overflow: hidden;
+    position: relative;
+    animation: bannerFadeIn 0.5s ease forwards;
+  }
+
+  #announcementBanner.hidden { display: none; }
+
+  .banner-track {
+    display: flex;
+    align-items: center;
+    padding: 9px 0;
+    white-space: nowrap;
+  }
+
+  .banner-msg {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: #0A0804;
+    text-transform: uppercase;
+    animation: bannerScroll 22s linear infinite;
+    padding-right: 80px;
+    flex-shrink: 0;
+  }
+
+  .banner-msg-static {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: #0A0804;
+    text-transform: uppercase;
+    width: 100%;
+    text-align: center;
+    padding: 9px 40px 9px;
+    animation: bannerScroll 22s linear infinite;
+    padding-right: 80px;
+  }
+
+  .banner-close {
+    position: absolute;
+    right: 12px; top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0,0,0,0.15);
+    border: none;
+    color: #0A0804;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    line-height: 1;
+    transition: background 0.2s;
+    z-index: 2;
+  }
+
+  .banner-close:hover { background: rgba(0,0,0,0.28); }
+
+  .banner-sep {
+    display: inline-block;
+    margin: 0 24px;
+    opacity: 0.5;
+  }
+
 </style>
 </head>
 <body>
 
 <div class="top-bar"></div>
+<div id="announcementBanner">
+  <div class="banner-track">
+    <span class="banner-msg" id="bannerText">
+      🚚 Envío gratis hoy
+      <span class="banner-sep">✦</span>
+      Oro laminado 14k · Calidad garantizada
+      <span class="banner-sep">✦</span>
+      Pedidos superiores a $10,000 obtienen 35% de descuento mayorista
+      <span class="banner-sep">✦</span>
+      🚚 Envío gratis hoy
+      <span class="banner-sep">✦</span>
+      Oro laminado 14k · Calidad garantizada
+    </span>
+  </div>
+  <button class="banner-close" onclick="cerrarBanner()" title="Cerrar">×</button>
+</div>
 
 <!-- HEADER -->
 <header>
@@ -2063,7 +2155,55 @@ function checkPopup() {
   }
 }
 
+
+// ─── ANNOUNCEMENT BANNER ─────────────────────────────────────────────
+(function() {
+  const saved = localStorage.getItem('pm_banner');
+  if (saved) {
+    try {
+      const d = JSON.parse(saved);
+      if (!d.active) {
+        document.getElementById('announcementBanner').classList.add('hidden');
+        return;
+      }
+      if (d.text) {
+        const msg  = document.getElementById('bannerText');
+        const sep  = '<span class="banner-sep">✦</span>';
+        msg.innerHTML = d.text + sep + 'Oro laminado 14k · Calidad garantizada' + sep + 'Pedidos superiores a $10,000 obtienen el 35% de descuento mayorista' + sep + d.text + sep + 'Oro laminado 14k · Calidad garantizada';
+      }
+    } catch(e) {}
+  }
+})();
+
+function cerrarBanner() {
+  document.getElementById('announcementBanner').style.animation = 'none';
+  document.getElementById('announcementBanner').style.transition = 'max-height 0.4s ease, opacity 0.3s ease';
+  document.getElementById('announcementBanner').style.maxHeight = '0';
+  document.getElementById('announcementBanner').style.opacity   = '0';
+  document.getElementById('announcementBanner').style.overflow  = 'hidden';
+  setTimeout(() => document.getElementById('announcementBanner').classList.add('hidden'), 420);
+}
+
 // ─── INIT ────────────────────────────────────────────────────────────
+
+// ─── VISIT COUNTER ────────────────────────────────────────────────────
+(function() {
+  try {
+    const key  = 'pm_visits';
+    const data = JSON.parse(localStorage.getItem(key) || '{"total":0,"sessions":[]}');
+    data.total = (data.total || 0) + 1;
+    // Keep last 30 sessions with timestamp
+    const now = new Date();
+    data.sessions = (data.sessions || []).slice(-29);
+    data.sessions.push({
+      ts: now.toISOString(),
+      date: now.toLocaleDateString('es-CO', {day:'2-digit',month:'short',year:'numeric'}),
+      time: now.toLocaleTimeString('es-CO', {hour:'2-digit',minute:'2-digit'})
+    });
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch(e) {}
+})();
+
 renderFilters();
 renderGrid();
 renderCartItems();
