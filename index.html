@@ -1,0 +1,1813 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catálogo — Pleaseme Accessories</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Cinzel:wght@400;600&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold-deep: #8B6914;
+    --gold-mid: #C9973A;
+    --gold-light: #E8C96D;
+    --gold-pale: #F5E6B8;
+    --gold-shine: #FFF0B3;
+    --bg-dark: #0A0804;
+    --bg-card: #110E08;
+    --bg-card2: #181208;
+    --text-cream: #F0E6D0;
+    --text-muted: #9A8C76;
+    --border-gold: rgba(201,151,58,0.25);
+    --shadow-gold: rgba(201,151,58,0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg-dark);
+    color: var(--text-cream);
+    font-family: 'Montserrat', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.4;
+  }
+
+  /* ─── HEADER ─── */
+  header {
+    position: relative;
+    text-align: center;
+    padding: 80px 20px 60px;
+    overflow: hidden;
+  }
+
+  header::before {
+    content: '';
+    position: absolute;
+    top: -60px; left: 50%;
+    transform: translateX(-50%);
+    width: 600px; height: 400px;
+    background: radial-gradient(ellipse, rgba(201,151,58,0.18) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .header-eyebrow {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 6px;
+    color: var(--gold-mid);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    opacity: 0;
+    animation: fadeUp 1s ease 0.2s forwards;
+  }
+
+  .header-logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(52px, 10vw, 96px);
+    font-weight: 300;
+    letter-spacing: -1px;
+    line-height: 0.9;
+    background: linear-gradient(135deg, var(--gold-deep) 0%, var(--gold-light) 40%, var(--gold-shine) 60%, var(--gold-mid) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    opacity: 0;
+    animation: fadeUp 1s ease 0.4s forwards;
+  }
+
+  .header-sub {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 8px;
+    color: var(--text-muted);
+    margin-top: 14px;
+    opacity: 0;
+    animation: fadeUp 1s ease 0.6s forwards;
+  }
+
+  .header-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin: 40px auto 0;
+    width: 280px;
+    opacity: 0;
+    animation: fadeUp 1s ease 0.8s forwards;
+  }
+
+  .header-divider::before,
+  .header-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-mid), transparent);
+  }
+
+  .header-divider span {
+    color: var(--gold-mid);
+    font-size: 14px;
+  }
+
+  /* ─── FILTERS ─── */
+  .filters-wrap {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 20px 20px 40px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease 1s forwards;
+  }
+
+  .filter-btn {
+    font-family: 'Cinzel', serif;
+    font-size: 9.5px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 10px 22px;
+    border: 1px solid var(--border-gold);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .filter-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(201,151,58,0.08), rgba(232,201,109,0.08));
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .filter-btn:hover::before,
+  .filter-btn.active::before { opacity: 1; }
+
+  .filter-btn.active {
+    border-color: var(--gold-mid);
+    color: var(--gold-light);
+  }
+
+  .filter-btn:hover {
+    border-color: rgba(201,151,58,0.5);
+    color: var(--gold-pale);
+  }
+
+  /* ─── GRID ─── */
+  .catalog-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2px;
+    padding: 0 2px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* ─── PRODUCT CARD ─── */
+  .product-card {
+    position: relative;
+    cursor: pointer;
+    background: var(--bg-card);
+    overflow: hidden;
+    aspect-ratio: 3/4;
+    transition: transform 0.4s ease;
+  }
+
+  .product-card:hover {
+    z-index: 2;
+    transform: scale(1.02);
+  }
+
+  /* Jewelry illustration area */
+  .card-visual {
+    position: relative;
+    width: 100%;
+    height: 65%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .card-bg {
+    position: absolute;
+    inset: 0;
+    transition: opacity 0.5s;
+  }
+
+  .product-card:hover .card-bg { opacity: 1.2; }
+
+  .jewelry-icon {
+    position: relative;
+    z-index: 2;
+    transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    filter: drop-shadow(0 8px 24px rgba(201,151,58,0.4));
+  }
+
+  .product-card:hover .jewelry-icon {
+    transform: scale(1.08) translateY(-4px);
+    filter: drop-shadow(0 16px 40px rgba(232,201,109,0.5));
+  }
+
+  /* Gold shimmer on hover */
+  .card-shimmer {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 40%, rgba(255,240,179,0.06) 50%, transparent 60%);
+    background-size: 200% 100%;
+    background-position: -100% 0;
+    transition: background-position 0.6s ease;
+    z-index: 3;
+  }
+
+  .product-card:hover .card-shimmer {
+    background-position: 200% 0;
+  }
+
+  .card-info {
+    padding: 20px 22px 24px;
+    border-top: 1px solid var(--border-gold);
+    position: relative;
+  }
+
+  .card-badge {
+    position: absolute;
+    top: -12px; right: 20px;
+    font-family: 'Cinzel', serif;
+    font-size: 8px;
+    letter-spacing: 2px;
+    background: var(--gold-mid);
+    color: var(--bg-dark);
+    padding: 4px 10px;
+    text-transform: uppercase;
+  }
+
+  .card-category {
+    font-family: 'Cinzel', serif;
+    font-size: 8.5px;
+    letter-spacing: 3px;
+    color: var(--gold-mid);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .card-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--text-cream);
+    line-height: 1.15;
+    margin-bottom: 8px;
+  }
+
+  .card-desc {
+    font-size: 11px;
+    font-weight: 300;
+    color: var(--text-muted);
+    line-height: 1.7;
+    letter-spacing: 0.3px;
+    margin-bottom: 14px;
+  }
+
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .card-price {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--gold-light);
+    letter-spacing: -0.5px;
+  }
+
+  .card-price span {
+    font-size: 14px;
+    font-weight: 300;
+    margin-right: 2px;
+  }
+
+  .card-cta {
+    font-family: 'Cinzel', serif;
+    font-size: 8px;
+    letter-spacing: 2.5px;
+    color: var(--bg-dark);
+    background: linear-gradient(135deg, var(--gold-mid), var(--gold-light));
+    border: none;
+    padding: 9px 16px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+  }
+
+  .card-cta:hover {
+    background: linear-gradient(135deg, var(--gold-light), var(--gold-shine));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(201,151,58,0.3);
+  }
+
+  /* ─── MODAL ─── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(12px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+
+  .modal-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .modal {
+    background: var(--bg-card2);
+    border: 1px solid var(--border-gold);
+    max-width: 680px;
+    width: 100%;
+    position: relative;
+    transform: translateY(20px) scale(0.97);
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    overflow: hidden;
+  }
+
+  .modal-overlay.open .modal {
+    transform: translateY(0) scale(1);
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 16px; right: 20px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 22px;
+    cursor: pointer;
+    z-index: 10;
+    transition: color 0.2s;
+    line-height: 1;
+  }
+
+  .modal-close:hover { color: var(--gold-light); }
+
+  .modal-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  @media (max-width: 560px) {
+    .modal-inner { grid-template-columns: 1fr; }
+  }
+
+  .modal-visual {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 280px;
+    overflow: hidden;
+  }
+
+  .modal-content {
+    padding: 36px 32px 36px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .modal-category {
+    font-family: 'Cinzel', serif;
+    font-size: 8.5px;
+    letter-spacing: 3px;
+    color: var(--gold-mid);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .modal-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 34px;
+    font-weight: 300;
+    line-height: 1;
+    margin-bottom: 4px;
+    color: var(--text-cream);
+  }
+
+  .modal-subtitle {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 16px;
+    color: var(--gold-mid);
+    margin-bottom: 18px;
+  }
+
+  .modal-divider {
+    height: 1px;
+    background: linear-gradient(90deg, var(--gold-mid), transparent);
+    margin-bottom: 18px;
+  }
+
+  .modal-desc {
+    font-size: 12px;
+    font-weight: 300;
+    color: var(--text-muted);
+    line-height: 1.8;
+    margin-bottom: 22px;
+    letter-spacing: 0.3px;
+  }
+
+  .modal-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+
+  .modal-detail-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+  }
+
+  .modal-detail-row .label {
+    font-family: 'Cinzel', serif;
+    font-size: 8.5px;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  .modal-detail-row .value {
+    color: var(--text-cream);
+    font-weight: 300;
+  }
+
+  .modal-price-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .modal-price {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 40px;
+    font-weight: 600;
+    color: var(--gold-light);
+    line-height: 1;
+  }
+
+  .modal-price .currency {
+    font-size: 18px;
+    font-weight: 300;
+    vertical-align: super;
+    margin-right: 2px;
+  }
+
+  .modal-btn {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--bg-dark);
+    background: linear-gradient(135deg, var(--gold-mid), var(--gold-light));
+    border: none;
+    padding: 12px 20px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+  }
+
+  .modal-btn:hover {
+    background: linear-gradient(135deg, var(--gold-light), var(--gold-shine));
+    box-shadow: 0 6px 24px rgba(201,151,58,0.35);
+  }
+
+  /* ─── FOOTER ─── */
+  footer {
+    text-align: center;
+    padding: 60px 20px;
+    margin-top: 80px;
+  }
+
+  .footer-logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px;
+    font-weight: 300;
+    background: linear-gradient(135deg, var(--gold-deep), var(--gold-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+  }
+
+  .footer-text {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--text-muted);
+  }
+
+  /* ─── ANIMATIONS ─── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-enter {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeUp 0.5s ease forwards;
+  }
+
+  /* Hidden state */
+  .product-card.hidden {
+    display: none;
+  }
+
+  /* ─── EMPTY STATE ─── */
+  .empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    grid-column: 1/-1;
+    display: none;
+  }
+
+  .empty-state.visible { display: block; }
+
+  .empty-state p {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-style: italic;
+    color: var(--text-muted);
+  }
+
+  /* ─── SCROLL BAR ─── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-dark); }
+  ::-webkit-scrollbar-thumb { background: var(--gold-deep); border-radius: 3px; }
+
+  /* ─── TOP ACCENT LINE ─── */
+  .top-bar {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold-deep), var(--gold-light), var(--gold-mid), transparent);
+  }
+
+  /* ─── CART FAB ─── */
+  .cart-fab {
+    position: fixed;
+    bottom: 32px;
+    right: 28px;
+    z-index: 500;
+    width: 62px;
+    height: 62px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold-deep), var(--gold-light));
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 32px rgba(201,151,58,0.45);
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s;
+  }
+
+  .cart-fab:hover {
+    transform: scale(1.1);
+    box-shadow: 0 12px 40px rgba(201,151,58,0.6);
+  }
+
+  .cart-fab svg { width: 26px; height: 26px; }
+
+  .cart-badge {
+    position: absolute;
+    top: -4px; right: -4px;
+    background: #fff;
+    color: var(--bg-dark);
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    font-weight: 600;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid var(--gold-light);
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  .cart-badge.bump { transform: scale(1.4); }
+  .cart-badge.hidden { display: none; }
+
+  /* ─── CART PANEL ─── */
+  .cart-panel {
+    position: fixed;
+    top: 0; right: 0;
+    height: 100vh;
+    width: 380px;
+    max-width: 100vw;
+    background: var(--bg-card2);
+    border-left: 1px solid var(--border-gold);
+    z-index: 600;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.4s cubic-bezier(0.77,0,0.18,1);
+    box-shadow: -16px 0 60px rgba(0,0,0,0.6);
+  }
+
+  .cart-panel.open { transform: translateX(0); }
+
+  .cart-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(6px);
+    z-index: 599;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s;
+  }
+
+  .cart-backdrop.open { opacity: 1; pointer-events: all; }
+
+  .cart-header {
+    padding: 28px 24px 20px;
+    border-bottom: 1px solid var(--border-gold);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .cart-title {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--gold-light);
+    text-transform: uppercase;
+  }
+
+  .cart-close-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 24px;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s;
+  }
+
+  .cart-close-btn:hover { color: var(--gold-light); }
+
+  .cart-items {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 0;
+  }
+
+  .cart-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 14px;
+    color: var(--text-muted);
+    padding: 40px 20px;
+  }
+
+  .cart-empty svg { opacity: 0.3; width: 52px; height: 52px; }
+
+  .cart-empty p {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    font-style: italic;
+    text-align: center;
+  }
+
+  .cart-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 22px;
+    border-bottom: 1px solid rgba(201,151,58,0.1);
+    transition: background 0.2s;
+  }
+
+  .cart-item:hover { background: rgba(201,151,58,0.04); }
+
+  .cart-item-icon {
+    width: 52px; height: 52px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(201,151,58,0.08);
+    border: 1px solid var(--border-gold);
+  }
+
+  .cart-item-icon svg { width: 38px; height: 38px; }
+
+  .cart-item-info { flex: 1; min-width: 0; }
+
+  .cart-item-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 17px;
+    color: var(--text-cream);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .cart-item-cat {
+    font-family: 'Cinzel', serif;
+    font-size: 8px;
+    letter-spacing: 2px;
+    color: var(--gold-mid);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .cart-item-price {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 15px;
+    color: var(--gold-light);
+  }
+
+  .cart-item-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .qty-btn {
+    width: 26px; height: 26px;
+    border: 1px solid var(--border-gold);
+    background: transparent;
+    color: var(--text-cream);
+    cursor: pointer;
+    font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+    line-height: 1;
+  }
+
+  .qty-btn:hover {
+    border-color: var(--gold-mid);
+    color: var(--gold-light);
+    background: rgba(201,151,58,0.08);
+  }
+
+  .qty-num {
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    min-width: 20px;
+    text-align: center;
+    color: var(--text-cream);
+  }
+
+  .cart-remove {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px;
+    transition: color 0.2s;
+    line-height: 1;
+  }
+
+  .cart-remove:hover { color: #e07070; }
+
+  /* ─── CART FOOTER ─── */
+  .cart-footer {
+    padding: 20px 22px 28px;
+    border-top: 1px solid var(--border-gold);
+    flex-shrink: 0;
+  }
+
+  .cart-note-label {
+    font-family: 'Cinzel', serif;
+    font-size: 8.5px;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .cart-note {
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border-gold);
+    color: var(--text-cream);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 12px;
+    font-weight: 300;
+    padding: 10px 12px;
+    resize: none;
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 16px;
+    min-height: 72px;
+  }
+
+  .cart-note:focus { border-color: var(--gold-mid); }
+  .cart-note::placeholder { color: var(--text-muted); }
+
+  .cart-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 18px;
+  }
+
+  .cart-total-label {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  .cart-total-amount {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--gold-light);
+  }
+
+  .cart-total-amount .cur {
+    font-size: 16px;
+    font-weight: 300;
+    margin-right: 2px;
+  }
+
+  .whatsapp-btn {
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(135deg, #1a8a3d, #25d366);
+    border: none;
+    color: #fff;
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(37,211,102,0.25);
+  }
+
+  .whatsapp-btn:hover {
+    background: linear-gradient(135deg, #25d366, #1a8a3d);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(37,211,102,0.4);
+  }
+
+  .whatsapp-btn:disabled {
+    background: rgba(255,255,255,0.08);
+    color: var(--text-muted);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .whatsapp-btn svg { width: 18px; height: 18px; }
+
+  /* ─── ADDED TO CART FEEDBACK ─── */
+  .toast-cart {
+    position: fixed;
+    bottom: 110px;
+    right: 28px;
+    background: var(--bg-card2);
+    border: 1px solid var(--gold-mid);
+    color: var(--gold-light);
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 2px;
+    padding: 10px 18px;
+    z-index: 700;
+    transform: translateY(20px);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+  }
+
+  .toast-cart.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Card selected state */
+  .product-card.in-cart::after {
+    content: '✦';
+    position: absolute;
+    top: 12px; left: 14px;
+    color: var(--gold-light);
+    font-size: 13px;
+    z-index: 4;
+    animation: fadeUp 0.3s ease;
+  }
+
+  /* ─── WHOLESALE BANNER ─── */
+  /* ─── WHOLESALE NOTIFICATION ─── */
+  @keyframes ws-in {
+    from { opacity: 0; transform: translateY(-28px) scale(0.93); }
+    to   { opacity: 1; transform: translateY(0)     scale(1);    }
+  }
+  @keyframes ws-out {
+    from { opacity: 1; transform: translateY(0)      scale(1);    }
+    to   { opacity: 0; transform: translateY(-20px)  scale(0.95); }
+  }
+  @keyframes pulse-gold {
+    0%, 100% { text-shadow: 0 0 6px rgba(232,201,109,0.2); }
+    50%       { text-shadow: 0 0 18px rgba(232,201,109,0.7); }
+  }
+
+  .wholesale-banner {
+    position: fixed;
+    top: 24px;
+    left: 0; right: 0;
+    margin: 0 auto;
+    width: min(500px, calc(100vw - 32px));
+    z-index: 850;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .wholesale-banner.show {
+    animation: ws-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    pointer-events: all;
+  }
+
+  .wholesale-banner.hide {
+    animation: ws-out 0.35s ease forwards;
+    pointer-events: none;
+  }
+
+  .wholesale-inner {
+    background: linear-gradient(135deg, #0f0b06 0%, #1e1509 60%, #100d05 100%);
+    border: 1px solid rgba(201,151,58,0.5);
+    border-radius: 2px;
+    padding: 16px 18px 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow:
+      0 24px 64px rgba(0,0,0,0.8),
+      0 0 0 1px rgba(201,151,58,0.1),
+      inset 0 1px 0 rgba(232,201,109,0.12);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .wholesale-inner::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(232,201,109,0.7), transparent);
+  }
+
+  .wholesale-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+    animation: pulse-gold 2.5s ease infinite;
+  }
+
+  .wholesale-text { flex: 1; min-width: 0; }
+
+  .wholesale-title {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--gold-light);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .wholesale-desc {
+    font-size: 12px;
+    font-weight: 300;
+    color: #B0A08A;
+    line-height: 1.55;
+  }
+
+  .wholesale-desc strong { color: var(--gold-pale); font-weight: 500; }
+
+  .wholesale-progress-wrap { flex-shrink: 0; width: 110px; }
+
+  .wholesale-progress-label {
+    font-family: 'Cinzel', serif;
+    font-size: 8px;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .wholesale-progress-bar {
+    height: 3px;
+    background: rgba(255,255,255,0.07);
+    overflow: hidden;
+  }
+
+  .wholesale-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold-deep), var(--gold-light));
+    transition: width 0.6s ease;
+    min-width: 3px;
+  }
+
+  .wholesale-close {
+    background: none; border: none;
+    color: rgba(154,140,118,0.5); font-size: 20px;
+    cursor: pointer; line-height: 1;
+    flex-shrink: 0; padding: 2px 0 2px 6px;
+    transition: color 0.2s;
+    align-self: flex-start;
+  }
+  .wholesale-close:hover { color: var(--gold-light); }
+
+  .wholesale-banner.wholesale-unlocked .wholesale-inner {
+    background: linear-gradient(135deg, #081208 0%, #0f1e10 60%, #081008 100%);
+    border-color: rgba(37,211,102,0.45);
+  }
+  .wholesale-banner.wholesale-unlocked .wholesale-inner::before {
+    background: linear-gradient(90deg, transparent, rgba(37,211,102,0.6), transparent);
+  }
+  .wholesale-banner.wholesale-unlocked .wholesale-title { color: #7ee8a2; }
+  .wholesale-banner.wholesale-unlocked .wholesale-desc strong { color: #a8f0c0; }
+  .wholesale-banner.wholesale-unlocked .wholesale-progress-fill {
+    background: linear-gradient(90deg, #1a7a3a, #25d366);
+  }
+
+  @media (max-width: 480px) {
+    .wholesale-progress-wrap { display: none; }
+    .wholesale-inner { padding: 14px 14px; }
+    .wholesale-banner { top: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="top-bar"></div>
+
+<!-- HEADER -->
+<header>
+  <p class="header-eyebrow">Colección Exclusiva</p>
+  <h1 class="header-logo">Pleaseme</h1>
+  <p class="header-sub">Accessories · Oro Laminado</p>
+  <div class="header-divider"><span>✦</span></div>
+</header>
+
+<!-- FILTERS -->
+<div class="filters-wrap" id="filtersWrap"></div>
+
+<!-- GRID -->
+<main>
+  <div class="catalog-grid" id="catalogGrid"></div>
+  <div class="empty-state" id="emptyState">
+    <p>No hay prendas en esta categoría aún</p>
+  </div>
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Pleaseme Accessories</div>
+  <p class="footer-text">Cada pieza, una historia · Oro laminado de alta calidad</p>
+</footer>
+
+<!-- CART FAB -->
+<button class="cart-fab" id="cartFab" onclick="openCart()" title="Ver selección">
+  <svg fill="none" stroke="#0A0804" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+    <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/>
+    <path d="M16 10a4 4 0 01-8 0"/>
+  </svg>
+  <span class="cart-badge hidden" id="cartBadge">0</span>
+</button>
+
+<!-- CART BACKDROP -->
+<div class="cart-backdrop" id="cartBackdrop" onclick="closeCart()"></div>
+
+<!-- CART PANEL -->
+<div class="cart-panel" id="cartPanel">
+  <div class="cart-header">
+    <span class="cart-title">Mi Selección</span>
+    <button class="cart-close-btn" onclick="closeCart()">×</button>
+  </div>
+  <div class="cart-items" id="cartItems"></div>
+  <div class="cart-footer">
+    <p class="cart-note-label">Nota para tu pedido</p>
+    <textarea class="cart-note" id="cartNote" placeholder="Ej: talla del anillo, color preferido, si es regalo..."></textarea>
+    <div class="cart-total-row">
+      <span class="cart-total-label">Total estimado</span>
+      <span class="cart-total-amount"><span class="cur">$</span><span id="cartTotal">0</span></span>
+    </div>
+    <button class="whatsapp-btn" id="whatsappBtn" onclick="sendWhatsApp()" disabled>
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      Enviar por WhatsApp
+    </button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-cart" id="toastCart">✦ Agregado a tu selección</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modal">
+    <button class="modal-close" id="modalClose">×</button>
+    <div class="modal-inner">
+      <div class="modal-visual" id="modalVisual"></div>
+      <div class="modal-content">
+        <p class="modal-category" id="modalCategory"></p>
+        <h2 class="modal-name" id="modalName"></h2>
+        <p class="modal-subtitle" id="modalSubtitle"></p>
+        <div class="modal-divider"></div>
+        <p class="modal-desc" id="modalDesc"></p>
+        <div class="modal-details" id="modalDetails"></div>
+        <div class="modal-price-row">
+          <div class="modal-price" id="modalPrice"></div>
+          <button class="modal-btn" id="modalAddBtn" onclick="addFromModal()">✦ Agregar a selección</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── SVG JEWELRY ICONS ───────────────────────────────────────────────
+const svgs = {
+  anillo: (c1, c2) => `<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="rg${c1}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="${c1}"/>
+        <stop offset="50%" stop-color="${c2}"/>
+        <stop offset="100%" stop-color="${c1}"/>
+      </linearGradient>
+    </defs>
+    <ellipse cx="60" cy="70" rx="38" ry="16" stroke="url(#rg${c1})" stroke-width="7" fill="none"/>
+    <ellipse cx="60" cy="54" rx="38" ry="16" stroke="url(#rg${c1})" stroke-width="7" fill="none"/>
+    <line x1="22" y1="54" x2="22" y2="70" stroke="url(#rg${c1})" stroke-width="7"/>
+    <line x1="98" y1="54" x2="98" y2="70" stroke="url(#rg${c1})" stroke-width="7"/>
+    <polygon points="60,20 67,36 84,36 71,46 76,63 60,53 44,63 49,46 36,36 53,36" fill="${c2}" opacity="0.9"/>
+  </svg>`,
+
+  arete: (c1, c2) => `<svg width="120" height="140" viewBox="0 0 120 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="eg${c1}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${c1}"/>
+        <stop offset="100%" stop-color="${c2}"/>
+      </linearGradient>
+    </defs>
+    <circle cx="38" cy="22" r="7" stroke="url(#eg${c1})" stroke-width="3" fill="none"/>
+    <path d="M38 29 Q38 50 38 55" stroke="url(#eg${c1})" stroke-width="2.5" fill="none"/>
+    <ellipse cx="38" cy="80" rx="14" ry="22" stroke="url(#eg${c1})" stroke-width="3" fill="rgba(201,151,58,0.1)"/>
+    <line x1="38" y1="102" x2="38" y2="115" stroke="url(#eg${c1})" stroke-width="2.5"/>
+    <circle cx="38" cy="120" r="5" fill="${c2}"/>
+    <circle cx="82" cy="22" r="7" stroke="url(#eg${c1})" stroke-width="3" fill="none"/>
+    <path d="M82 29 Q82 50 82 55" stroke="url(#eg${c1})" stroke-width="2.5" fill="none"/>
+    <ellipse cx="82" cy="80" rx="14" ry="22" stroke="url(#eg${c1})" stroke-width="3" fill="rgba(201,151,58,0.1)"/>
+    <line x1="82" y1="102" x2="82" y2="115" stroke="url(#eg${c1})" stroke-width="2.5"/>
+    <circle cx="82" cy="120" r="5" fill="${c2}"/>
+  </svg>`,
+
+  collar: (c1, c2) => `<svg width="140" height="120" viewBox="0 0 140 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="cg${c1}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="${c1}"/>
+        <stop offset="100%" stop-color="${c2}"/>
+      </linearGradient>
+    </defs>
+    <path d="M20 30 Q70 80 120 30" stroke="url(#cg${c1})" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <circle cx="30" cy="36" r="4" fill="${c2}" opacity="0.8"/>
+    <circle cx="45" cy="50" r="4" fill="${c2}" opacity="0.8"/>
+    <circle cx="62" cy="58" r="4" fill="${c2}"/>
+    <circle cx="70" cy="62" r="6" fill="${c1}"/>
+    <circle cx="78" cy="58" r="4" fill="${c2}"/>
+    <circle cx="95" cy="50" r="4" fill="${c2}" opacity="0.8"/>
+    <circle cx="110" cy="36" r="4" fill="${c2}" opacity="0.8"/>
+    <path d="M64 68 L70 90 L76 68" stroke="url(#cg${c1})" stroke-width="2" fill="none"/>
+    <polygon points="70,95 75,105 70,110 65,105" fill="${c2}"/>
+  </svg>`,
+
+  pulsera: (c1, c2) => `<svg width="130" height="100" viewBox="0 0 130 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="pg${c1}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="${c1}"/>
+        <stop offset="100%" stop-color="${c2}"/>
+      </linearGradient>
+    </defs>
+    <path d="M25 50 Q65 15 105 50 Q65 85 25 50Z" stroke="url(#pg${c1})" stroke-width="5" fill="none"/>
+    <circle cx="65" cy="17" r="7" fill="${c2}"/>
+    <circle cx="25" cy="50" r="5" fill="${c1}" opacity="0.7"/>
+    <circle cx="105" cy="50" r="5" fill="${c1}" opacity="0.7"/>
+    <circle cx="65" cy="83" r="7" fill="${c2}"/>
+    <circle cx="42" cy="25" r="4" fill="${c2}" opacity="0.6"/>
+    <circle cx="88" cy="25" r="4" fill="${c2}" opacity="0.6"/>
+    <circle cx="42" cy="75" r="4" fill="${c2}" opacity="0.6"/>
+    <circle cx="88" cy="75" r="4" fill="${c2}" opacity="0.6"/>
+  </svg>`,
+
+  tobillera: (c1, c2) => `<svg width="130" height="90" viewBox="0 0 130 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="tg${c1}" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="${c1}"/>
+        <stop offset="50%" stop-color="${c2}"/>
+        <stop offset="100%" stop-color="${c1}"/>
+      </linearGradient>
+    </defs>
+    <path d="M15 45 Q65 15 115 45" stroke="url(#tg${c1})" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <circle cx="25" cy="37" r="4" fill="${c2}" opacity="0.7"/>
+    <circle cx="45" cy="27" r="4" fill="${c2}" opacity="0.8"/>
+    <circle cx="65" cy="22" r="6" fill="${c1}"/>
+    <circle cx="85" cy="27" r="4" fill="${c2}" opacity="0.8"/>
+    <circle cx="105" cy="37" r="4" fill="${c2}" opacity="0.7"/>
+    <line x1="65" y1="28" x2="65" y2="50" stroke="url(#tg${c1})" stroke-width="2"/>
+    <path d="M55 50 Q65 65 75 50" stroke="url(#tg${c1})" stroke-width="2" fill="none"/>
+    <circle cx="65" cy="67" r="5" fill="${c2}"/>
+  </svg>`,
+
+  dije: (c1, c2) => `<svg width="100" height="130" viewBox="0 0 100 130" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="djg${c1}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="${c1}"/>
+        <stop offset="100%" stop-color="${c2}"/>
+      </linearGradient>
+    </defs>
+    <path d="M40 20 Q50 10 60 20" stroke="url(#djg${c1})" stroke-width="3" fill="none"/>
+    <line x1="50" y1="20" x2="50" y2="38" stroke="url(#djg${c1})" stroke-width="2.5"/>
+    <path d="M50 40 L62 55 L70 75 L50 90 L30 75 L38 55 Z" stroke="url(#djg${c1})" stroke-width="2.5" fill="rgba(201,151,58,0.12)"/>
+    <line x1="50" y1="40" x2="50" y2="90" stroke="url(#djg${c1})" stroke-width="1.5" stroke-dasharray="3 3" opacity="0.5"/>
+    <line x1="38" y1="55" x2="62" y2="55" stroke="url(#djg${c1})" stroke-width="1.5" stroke-dasharray="3 3" opacity="0.5"/>
+    <circle cx="50" cy="65" r="8" fill="${c2}" opacity="0.9"/>
+    <circle cx="50" cy="65" r="4" fill="${c1}"/>
+  </svg>`
+};
+
+// ─── BACKGROUNDS ────────────────────────────────────────────────────
+const cardBgs = [
+  `radial-gradient(ellipse at 30% 40%, rgba(139,105,20,0.25) 0%, transparent 60%), radial-gradient(ellipse at 70% 70%, rgba(201,151,58,0.12) 0%, transparent 60%)`,
+  `radial-gradient(ellipse at 60% 30%, rgba(232,201,109,0.18) 0%, transparent 55%), radial-gradient(ellipse at 20% 80%, rgba(139,105,20,0.15) 0%, transparent 50%)`,
+  `radial-gradient(ellipse at 50% 50%, rgba(201,151,58,0.2) 0%, transparent 65%)`,
+  `linear-gradient(135deg, rgba(139,105,20,0.1) 0%, transparent 50%, rgba(232,201,109,0.1) 100%)`,
+  `radial-gradient(ellipse at 80% 20%, rgba(245,230,184,0.12) 0%, transparent 60%), radial-gradient(ellipse at 30% 90%, rgba(139,105,20,0.15) 0%, transparent 50%)`,
+  `radial-gradient(ellipse at 40% 60%, rgba(201,151,58,0.18) 0%, transparent 60%)`,
+];
+
+// ─── PRODUCTS DATA ───────────────────────────────────────────────────
+const defaultProducts = [
+  {
+    id: 1,
+    name: "Eternity Ring",
+    subtitle: "Anillo infinito",
+    category: "anillos",
+    categoryLabel: "Anillos",
+    desc: "Banda completa de circonitas en baño de oro de 14k. Diseño sin inicio ni fin, símbolo de amor eterno.",
+    price: "89,000",
+    badge: "Más vendido",
+    material: "Oro laminado 14k",
+    medida: "Tallas 6 – 10",
+    peso: "3.2g",
+    icon: "anillo",
+    colors: ["#C9973A", "#F5E6B8"],
+    bg: 0
+  },
+  {
+    id: 2,
+    name: "Luna Aretes",
+    subtitle: "Argollas con dije lunar",
+    category: "aretes",
+    categoryLabel: "Aretes",
+    desc: "Argollas delicadas con pequeño dije de luna creciente. Acabado brillante en oro 14k.",
+    price: "65,000",
+    badge: null,
+    material: "Oro laminado 14k",
+    medida: "3 cm de largo",
+    peso: "1.8g c/u",
+    icon: "arete",
+    colors: ["#8B6914", "#E8C96D"],
+    bg: 1
+  },
+  {
+    id: 3,
+    name: "Collar Venus",
+    subtitle: "Cadena con dije corazón",
+    category: "collares",
+    categoryLabel: "Collares",
+    desc: "Cadena rolo fina de 45cm con dije corazón pavé. Cierre de langosta.",
+    price: "78,000",
+    badge: "Nuevo",
+    material: "Oro laminado 14k",
+    medida: "45 cm",
+    peso: "4.1g",
+    icon: "collar",
+    colors: ["#C9973A", "#FFF0B3"],
+    bg: 2
+  },
+  {
+    id: 4,
+    name: "Pulsera Celeste",
+    subtitle: "Brazalete oval con piedras",
+    category: "pulseras",
+    categoryLabel: "Pulseras",
+    desc: "Brazalete rígido oval con incrustaciones de piedras de colores en montura dorada.",
+    price: "72,000",
+    badge: null,
+    material: "Oro laminado 14k",
+    medida: "6 cm diámetro",
+    peso: "8.5g",
+    icon: "pulsera",
+    colors: ["#8B6914", "#C9973A"],
+    bg: 3
+  },
+  {
+    id: 5,
+    name: "Tobillera Waves",
+    subtitle: "Cadena de olas con dijes",
+    category: "tobilleras",
+    categoryLabel: "Tobilleras",
+    desc: "Tobillera con diseño de olas y pequeños dijes de estrella marina. Extensor de 3cm incluido.",
+    price: "55,000",
+    badge: null,
+    material: "Oro laminado 14k",
+    medida: "24 + 3 cm",
+    peso: "2.6g",
+    icon: "tobillera",
+    colors: ["#C9973A", "#F5E6B8"],
+    bg: 4
+  },
+  {
+    id: 6,
+    name: "Dije Estrella",
+    subtitle: "Colgante pavé de lujo",
+    category: "collares",
+    categoryLabel: "Collares",
+    desc: "Dije estrella de seis puntas con circonitas blancas. Compatible con cualquier cadena.",
+    price: "48,000",
+    badge: null,
+    material: "Oro laminado 14k",
+    medida: "1.5 cm",
+    peso: "1.2g",
+    icon: "dije",
+    colors: ["#E8C96D", "#FFF0B3"],
+    bg: 5
+  },
+  {
+    id: 7,
+    name: "Trilogy Ring",
+    subtitle: "Anillo tres piedras",
+    category: "anillos",
+    categoryLabel: "Anillos",
+    desc: "Anillo con tres circonitas redondas en montura de garra. Representa el pasado, presente y futuro.",
+    price: "95,000",
+    badge: "Premium",
+    material: "Oro laminado 14k",
+    medida: "Tallas 6 – 10",
+    peso: "4.0g",
+    icon: "anillo",
+    colors: ["#E8C96D", "#C9973A"],
+    bg: 1
+  },
+  {
+    id: 8,
+    name: "Huggies Florentinos",
+    subtitle: "Aretes de argola pequeña",
+    category: "aretes",
+    categoryLabel: "Aretes",
+    desc: "Mini huggies texturizados con acabado florentino. Quedan perfectos como segundo piercing.",
+    price: "58,000",
+    badge: null,
+    material: "Oro laminado 14k",
+    medida: "1 cm diámetro",
+    peso: "1.5g c/u",
+    icon: "arete",
+    colors: ["#C9973A", "#8B6914"],
+    bg: 0
+  },
+  {
+    id: 9,
+    name: "Pulsera Serpentina",
+    subtitle: "Cadena snake ajustable",
+    category: "pulseras",
+    categoryLabel: "Pulseras",
+    desc: "Elegante cadena tipo serpiente plana con cierre ajustable. Textura lisa de alto brillo.",
+    price: "68,000",
+    badge: "Nuevo",
+    material: "Oro laminado 14k",
+    medida: "16 – 20 cm",
+    peso: "5.2g",
+    icon: "pulsera",
+    colors: ["#F5E6B8", "#C9973A"],
+    bg: 2
+  },
+];
+
+// ─── CATEGORIES ──────────────────────────────────────────────────────
+const categories = [
+  { key: "todos", label: "Todos" },
+  { key: "anillos", label: "Anillos" },
+  { key: "aretes", label: "Aretes" },
+  { key: "collares", label: "Collares" },
+  { key: "pulseras", label: "Pulseras" },
+  { key: "tobilleras", label: "Tobilleras" },
+  { key: "coleccion", label: "Colección" },
+  { key: "temporada", label: "Temporada" },
+];
+
+// ─── LOAD PRODUCTS FROM ADMIN ────────────────────────────────────────
+function loadProductsFromAdmin() {
+  try {
+    const saved = localStorage.getItem('pm_products');
+    if (saved) {
+      const arr = JSON.parse(saved);
+      if (arr && arr.length > 0) return arr;
+    }
+  } catch(e) {}
+  return defaultProducts;
+}
+
+let products = loadProductsFromAdmin();
+
+// ─── WHATSAPP NUMBER ─────────────────────────────────────────────────
+// Viene del admin; si no está configurado se usa el valor por defecto
+function getWhatsAppNumber() {
+  return localStorage.getItem('pm_whatsapp') || '573001234567';
+}
+
+let activeCategory = "todos";
+let currentModalId = null;
+
+// ─── CART STATE ──────────────────────────────────────────────────────
+let cart = []; // [{id, qty}]
+
+function cartCount() { return cart.reduce((s, i) => s + i.qty, 0); }
+
+function cartTotal() {
+  return cart.reduce((s, item) => {
+    const p = products.find(x => x.id === item.id);
+    const num = parseInt(p.price.replace(/[^0-9]/g, ''));
+    return s + num * item.qty;
+  }, 0);
+}
+
+function addToCart(id) {
+  const existing = cart.find(i => i.id === id);
+  if (existing) existing.qty++;
+  else cart.push({ id, qty: 1 });
+  updateCartUI();
+  showToast();
+  renderGrid();
+}
+
+function removeFromCart(id) {
+  cart = cart.filter(i => i.id !== id);
+  updateCartUI();
+  renderGrid();
+}
+
+function changeQty(id, delta) {
+  const item = cart.find(i => i.id === id);
+  if (!item) return;
+  item.qty += delta;
+  if (item.qty <= 0) removeFromCart(id);
+  else updateCartUI();
+}
+
+function updateCartUI() {
+  const count = cartCount();
+  const badge = document.getElementById('cartBadge');
+  badge.textContent = count;
+  if (count > 0) {
+    badge.classList.remove('hidden');
+    badge.classList.add('bump');
+    setTimeout(() => badge.classList.remove('bump'), 350);
+  } else {
+    badge.classList.add('hidden');
+  }
+  document.getElementById('cartTotal').textContent = cartTotal().toLocaleString('es-CO');
+  document.getElementById('whatsappBtn').disabled = count === 0;
+  renderCartItems();
+  // Update modal button if open
+  if (currentModalId) updateModalBtn(currentModalId);
+  // Update wholesale banner
+  updateWholesaleBanner();
+}
+
+const WHOLESALE_MIN = 10000;
+let wsAutoHideTimer = null;
+let wsShowTimer = null;
+let wsLastState = null;
+
+function dismissBanner() {
+  clearTimeout(wsAutoHideTimer);
+  clearTimeout(wsShowTimer);
+  const banner = document.getElementById('wholesaleBanner');
+  banner.classList.remove('show');
+  banner.classList.add('hide');
+  wsShowTimer = setTimeout(() => {
+    banner.classList.remove('hide');
+    banner.style.opacity = '0';
+  }, 380);
+}
+
+function showBanner() {
+  clearTimeout(wsAutoHideTimer);
+  clearTimeout(wsShowTimer);
+  const banner = document.getElementById('wholesaleBanner');
+  banner.style.opacity = '';
+  banner.classList.remove('hide');
+  // force reflow
+  void banner.offsetWidth;
+  banner.classList.add('show');
+  // auto-dismiss after 5 seconds
+  wsAutoHideTimer = setTimeout(dismissBanner, 5000);
+}
+
+function updateWholesaleBanner() {
+  const total = cartTotal();
+  const fill  = document.getElementById('wholesaleProgressFill');
+  const label = document.getElementById('wholesaleProgressLabel');
+  const title = document.getElementById('wholesaleTitle');
+  const desc  = document.getElementById('wholesaleDesc');
+  const banner = document.getElementById('wholesaleBanner');
+
+  if (total <= 0) {
+    dismissBanner();
+    wsLastState = null;
+    return;
+  }
+
+  const state = total >= WHOLESALE_MIN ? 'unlocked' : 'progress';
+
+  fill.style.width = Math.min((total / WHOLESALE_MIN) * 100, 100) + '%';
+  label.textContent = '$' + total.toLocaleString('es-CO');
+
+  if (state === 'unlocked') {
+    banner.classList.add('wholesale-unlocked');
+    title.textContent = '¡Precio mayorista desbloqueado!';
+    desc.innerHTML = '🎉 Tu pedido supera los <strong>$10,000</strong> — menciona el <strong>descuento mayorista</strong> al confirmar.';
+  } else {
+    banner.classList.remove('wholesale-unlocked');
+    const falta = (WHOLESALE_MIN - total).toLocaleString('es-CO');
+    title.textContent = 'Descuento por volumen';
+    desc.innerHTML = 'Agrega <strong>$' + falta + '</strong> más y accede al <strong>precio mayorista</strong> de Pleaseme.';
+  }
+
+  // Re-trigger animation if state changed or banner is hidden
+  const isShowing = banner.classList.contains('show');
+  if (!isShowing || wsLastState !== state) {
+    showBanner();
+  } else {
+    // Refresh auto-hide timer
+    clearTimeout(wsAutoHideTimer);
+    wsAutoHideTimer = setTimeout(dismissBanner, 5000);
+  }
+  wsLastState = state;
+}
+
+function renderCartItems() {
+  const container = document.getElementById('cartItems');
+  if (cart.length === 0) {
+    container.innerHTML = `
+      <div class="cart-empty">
+        <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+          <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <path d="M16 10a4 4 0 01-8 0"/>
+        </svg>
+        <p>Tu selección está vacía.<br>Elige prendas del catálogo.</p>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = cart.map(item => {
+    const p = products.find(x => x.id === item.id);
+    return `
+      <div class="cart-item">
+        <div class="cart-item-icon">
+          ${svgs[p.icon](p.colors[0], p.colors[1])}
+        </div>
+        <div class="cart-item-info">
+          <p class="cart-item-cat">${p.categoryLabel}</p>
+          <p class="cart-item-name">${p.name}</p>
+          <p class="cart-item-price">$${p.price}</p>
+        </div>
+        <div class="cart-item-controls">
+          <button class="qty-btn" onclick="changeQty(${p.id}, -1)">−</button>
+          <span class="qty-num">${item.qty}</span>
+          <button class="qty-btn" onclick="changeQty(${p.id}, 1)">+</button>
+        </div>
+        <button class="cart-remove" onclick="removeFromCart(${p.id})" title="Quitar">×</button>
+      </div>`;
+  }).join('');
+}
+
+// ─── TOAST ───────────────────────────────────────────────────────────
+let toastTimer;
+function showToast() {
+  const t = document.getElementById('toastCart');
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ─── CART PANEL ──────────────────────────────────────────────────────
+function openCart() {
+  document.getElementById('cartPanel').classList.add('open');
+  document.getElementById('cartBackdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeCart() {
+  document.getElementById('cartPanel').classList.remove('open');
+  document.getElementById('cartBackdrop').classList.remove('open');
+  if (!document.getElementById('modalOverlay').classList.contains('open')) {
+    document.body.style.overflow = '';
+  }
+}
+
+// ─── WHATSAPP ────────────────────────────────────────────────────────
+function sendWhatsApp() {
+  if (cart.length === 0) return;
+  const note = document.getElementById('cartNote').value.trim();
+
+  let msg = '✨ *Hola Pleaseme!* Quiero hacer un pedido:\n\n';
+  cart.forEach(item => {
+    const p = products.find(x => x.id === item.id);
+    msg += `• *${p.name}* (${p.categoryLabel}) × ${item.qty} — $${p.price} c/u\n`;
+  });
+  msg += `\n💰 *Total estimado:* $${cartTotal().toLocaleString('es-CO')}`;
+  if (note) msg += `\n\n📝 *Nota:* ${note}`;
+  msg += '\n\n_Catálogo Oro Laminado 14k — Pleaseme Accessories_';
+
+  const url = `https://wa.me/${getWhatsAppNumber()}?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+}
+
+// ─── RENDER FILTERS ──────────────────────────────────────────────────
+function renderFilters() {
+  const wrap = document.getElementById('filtersWrap');
+  wrap.innerHTML = categories.map(c => `
+    <button class="filter-btn ${c.key === activeCategory ? 'active' : ''}"
+            onclick="setFilter('${c.key}')">
+      ${c.label}
+    </button>
+  `).join('');
+}
+
+function setFilter(key) {
+  activeCategory = key;
+  renderFilters();
+  renderGrid();
+}
+
+// ─── RENDER GRID ─────────────────────────────────────────────────────
+function renderGrid() {
+  const grid = document.getElementById('catalogGrid');
+  const empty = document.getElementById('emptyState');
+  const filtered = activeCategory === 'todos'
+    ? products
+    : products.filter(p => p.category === activeCategory);
+
+  if (filtered.length === 0) {
+    grid.innerHTML = '';
+    empty.classList.add('visible');
+    return;
+  }
+
+  empty.classList.remove('visible');
+  grid.innerHTML = filtered.map((p, i) => {
+    const inCart = cart.some(c => c.id === p.id);
+    return `
+    <div class="product-card card-enter ${inCart ? 'in-cart' : ''}" style="animation-delay:${i * 0.08}s" onclick="openModal(${p.id})">
+      <div class="card-visual">
+        <div class="card-bg" style="background:${cardBgs[p.bg]}"></div>
+        <div class="jewelry-icon">
+          ${svgs[p.icon](p.colors[0], p.colors[1])}
+        </div>
+        <div class="card-shimmer"></div>
+      </div>
+      <div class="card-info">
+        ${p.badge ? `<div class="card-badge">${p.badge}</div>` : ''}
+        <p class="card-category">${p.categoryLabel}</p>
+        <h3 class="card-name">${p.name}</h3>
+        <p class="card-desc">${p.desc}</p>
+        <div class="card-footer">
+          <div class="card-price"><span>$</span>${p.price}</div>
+          <button class="card-cta" onclick="event.stopPropagation(); openModal(${p.id})">Ver detalle</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── MODAL ───────────────────────────────────────────────────────────
+function updateModalBtn(id) {
+  const btn = document.getElementById('modalAddBtn');
+  if (!btn) return;
+  const inCart = cart.some(c => c.id === id);
+  btn.textContent = inCart ? '✓ En tu selección' : '✦ Agregar a selección';
+  btn.style.background = inCart
+    ? 'linear-gradient(135deg, #2d5a3d, #3a7a52)'
+    : 'linear-gradient(135deg, var(--gold-mid), var(--gold-light))';
+}
+
+function openModal(id) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  currentModalId = id;
+
+  document.getElementById('modalCategory').textContent = p.categoryLabel;
+  document.getElementById('modalName').textContent = p.name;
+  document.getElementById('modalSubtitle').textContent = p.subtitle;
+  document.getElementById('modalDesc').textContent = p.desc;
+  document.getElementById('modalPrice').innerHTML = `<span class="currency">$</span>${p.price}`;
+  document.getElementById('modalVisual').innerHTML = `
+    <div style="position:absolute;inset:0;background:${cardBgs[p.bg]}"></div>
+    <div style="position:relative;z-index:1;filter:drop-shadow(0 12px 32px rgba(201,151,58,0.45))">
+      ${svgs[p.icon](p.colors[0], p.colors[1])}
+    </div>
+  `;
+  document.getElementById('modalDetails').innerHTML = `
+    <div class="modal-detail-row"><span class="label">Material</span><span class="value">${p.material}</span></div>
+    <div class="modal-detail-row"><span class="label">Medida</span><span class="value">${p.medida}</span></div>
+    <div class="modal-detail-row"><span class="label">Peso</span><span class="value">${p.peso}</span></div>
+  `;
+
+  updateModalBtn(id);
+  document.getElementById('modalOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function addFromModal() {
+  if (currentModalId) addToCart(currentModalId);
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  currentModalId = null;
+  if (!document.getElementById('cartPanel').classList.contains('open')) {
+    document.body.style.overflow = '';
+  }
+}
+
+document.getElementById('modalClose').addEventListener('click', closeModal);
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeCart(); } });
+
+// ─── INIT ────────────────────────────────────────────────────────────
+renderFilters();
+renderGrid();
+renderCartItems();
+</script>
+
+<!-- WHOLESALE BANNER -->
+<div class="wholesale-banner" id="wholesaleBanner">
+  <div class="wholesale-inner">
+    <span class="wholesale-icon">✦</span>
+    <div class="wholesale-text">
+      <div class="wholesale-title" id="wholesaleTitle">Descuento por volumen</div>
+      <div class="wholesale-desc" id="wholesaleDesc">
+        Agrega prendas por <strong>$10,000</strong> o más y accede al <strong>precio mayorista</strong> de Pleaseme.
+      </div>
+    </div>
+    <div class="wholesale-progress-wrap">
+      <div class="wholesale-progress-label">
+        <span>Tu selección</span>
+        <span id="wholesaleProgressLabel">$0</span>
+      </div>
+      <div class="wholesale-progress-bar">
+        <div class="wholesale-progress-fill" id="wholesaleProgressFill" style="width:0%"></div>
+      </div>
+    </div>
+    <button class="wholesale-close" id="wholesaleClose" onclick="dismissBanner()">×</button>
+  </div>
+</div>
+
+</body>
+</html>
