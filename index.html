@@ -1118,6 +1118,7 @@
     justify-content: center;
     padding: 20px;
     animation: wPopBg 0.5s ease forwards;
+    opacity: 1;
   }
 
   #welcomeOverlay.closing {
@@ -2038,8 +2039,10 @@ function mostrarPopup(estado) {
 }
 
 function cerrarPopup() {
-  document.getElementById('popupDescuento').classList.remove('visible');
-  document.getElementById('popupBackdrop').classList.remove('visible');
+  const pd = document.getElementById('popupDescuento');
+  const pb = document.getElementById('popupBackdrop');
+  if (pd) pd.classList.remove('visible');
+  if (pb) pb.classList.remove('visible');
   clearTimeout(popupTimer);
 }
 
@@ -2066,13 +2069,17 @@ renderGrid();
 renderCartItems();
 
 // ─── WELCOME POPUP ────────────────────────────────────────────────────
+let _welcomeClosed = false;
 function cerrarWelcome() {
+  if (_welcomeClosed) return;
+  _welcomeClosed = true;
   const overlay = document.getElementById('welcomeOverlay');
+  if (!overlay) return;
   overlay.style.animation = 'wPopOut 0.4s ease forwards';
-  setTimeout(() => overlay.remove(), 420);
+  setTimeout(() => { if (overlay.parentNode) overlay.remove(); }, 420);
 }
-// Auto-close after 12s
-setTimeout(cerrarWelcome, 12000);
+// Auto-close after 10s
+setTimeout(cerrarWelcome, 10000);
 
 </script>
 
