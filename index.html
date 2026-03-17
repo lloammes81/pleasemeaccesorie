@@ -1431,7 +1431,8 @@
 <footer>
   <div class="footer-logo">Pleaseme Accessories</div>
   <p class="footer-text">Cada pieza, una historia · Oro laminado de alta calidad</p>
-  <a href="admin-catalogo.html" target="_blank" style="display:inline-block;margin-top:24px;font-family:'Cinzel',serif;font-size:8px;letter-spacing:2.5px;color:rgba(154,140,118,0.35);text-decoration:none;text-transform:uppercase;border:1px solid rgba(154,140,118,0.15);padding:8px 18px;transition:all 0.3s;" onmouseover="this.style.color='rgba(201,151,58,0.7)';this.style.borderColor='rgba(201,151,58,0.35)'" onmouseout="this.style.color='rgba(154,140,118,0.35)';this.style.borderColor='rgba(154,140,118,0.15)'">⚙ Panel administrativo</a>
+  <div id="footerContactInfo" style="margin-top:18px;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;color:var(--text-muted);display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;"></div>
+  <a href="admin.html" target="_blank" style="display:inline-block;margin-top:24px;font-family:'Cinzel',serif;font-size:8px;letter-spacing:2.5px;color:rgba(154,140,118,0.35);text-decoration:none;text-transform:uppercase;border:1px solid rgba(154,140,118,0.15);padding:8px 18px;transition:all 0.3s;" onmouseover="this.style.color='rgba(201,151,58,0.7)';this.style.borderColor='rgba(201,151,58,0.35)'" onmouseout="this.style.color='rgba(154,140,118,0.35)';this.style.borderColor='rgba(154,140,118,0.15)'">⚙ Panel administrativo</a>
 </footer>
 
 <!-- CART FAB -->
@@ -1611,6 +1612,24 @@ const svgs = {
     <circle cx="50" cy="65" r="4" fill="${c1}"/>
   </svg>`
 };
+
+// ─── PRODUCT VISUAL HELPERS ──────────────────────────────────────────
+const CAT_ICON_MAP = {
+  anillos: 'anillo', aretes: 'arete', collares: 'collar',
+  pulseras: 'pulsera', tobilleras: 'tobillera', dijes: 'dije'
+};
+
+function productIconHTML(p) {
+  if (p.photo) return `<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:4px;" alt="${p.name}">`;
+  const icon = p.icon && svgs[p.icon] ? p.icon : (CAT_ICON_MAP[p.category] || 'anillo');
+  const c1 = (p.colors && p.colors[0]) || '#C9973A';
+  const c2 = (p.colors && p.colors[1]) || '#F5E6B8';
+  return svgs[icon](c1, c2);
+}
+
+function productBg(p) {
+  return cardBgs[p.bg !== undefined && p.bg !== null ? p.bg : 0];
+}
 
 // ─── BACKGROUNDS ────────────────────────────────────────────────────
 const cardBgs = [
@@ -1843,6 +1862,16 @@ function changeQty(id, delta) {
   else updateCartUI();
 }
 
+function getDiscountSettings() {
+  try {
+    const d = JSON.parse(localStorage.getItem('pm_discount') || '{}');
+    return {
+      min: d.threshold !== undefined ? Number(d.threshold) : 10000,
+      pct: d.pct     !== undefined ? Number(d.pct)       : 35
+    };
+  } catch(e) { return { min: 10000, pct: 35 }; }
+}
+
 function updateCartUI() {
   const count = cartCount();
   const badge = document.getElementById('cartBadge');
@@ -1855,10 +1884,9 @@ function updateCartUI() {
     badge.classList.add('hidden');
   }
   const rawTotal = cartTotal();
-  const DISCOUNT_THRESHOLD = 10000;
-  const DISCOUNT_RATE = 0.35;
-  const discountApplied = rawTotal >= DISCOUNT_THRESHOLD;
-  const finalTotal = discountApplied ? Math.round(rawTotal * (1 - DISCOUNT_RATE)) : rawTotal;
+  const ds = getDiscountSettings();
+  const discountApplied = rawTotal >= ds.min;
+  const finalTotal = discountApplied ? Math.round(rawTotal * (1 - ds.pct / 100)) : rawTotal;
 
   const totalEl     = document.getElementById('cartTotal');
   const amountEl    = document.getElementById('cartTotalAmount');
@@ -1909,7 +1937,7 @@ function renderCartItems() {
     return `
       <div class="cart-item">
         <div class="cart-item-icon">
-          ${svgs[p.icon](p.colors[0], p.colors[1])}
+          ${productIconHTML(p)}
         </div>
         <div class="cart-item-info">
           <p class="cart-item-cat">${p.categoryLabel}</p>
@@ -1955,17 +1983,23 @@ function sendWhatsApp() {
   if (cart.length === 0) return;
   const note = document.getElementById('cartNote').value.trim();
 
-  let msg = '✨ *Hola Pleaseme!* Quiero hacer un pedido:\n\n';
+  let waContact = {};
+  try { waContact = JSON.parse(localStorage.getItem('pm_contact') || '{}'); } catch(e) {}
+  let msg = (waContact.wa_msg && waContact.wa_msg.trim())
+    ? waContact.wa_msg.trim() + '\n\n'
+    : '✨ *Hola Pleaseme!* Quiero hacer un pedido:\n\n';
+
   cart.forEach(item => {
     const p = products.find(x => x.id === item.id);
     msg += `• *${p.name}* (${p.categoryLabel}) × ${item.qty} — $${p.price} c/u\n`;
   });
   const _raw = cartTotal();
-  const _disc = _raw >= 10000;
-  const _final = _disc ? Math.round(_raw * 0.65) : _raw;
+  const ds = getDiscountSettings();
+  const _disc = _raw >= ds.min;
+  const _final = _disc ? Math.round(_raw * (1 - ds.pct / 100)) : _raw;
   if (_disc) {
     msg += `\n💰 *Subtotal:* $${_raw.toLocaleString('es-CO')}`;
-    msg += `\n🎉 *Descuento mayorista 35%:* -$${(_raw - _final).toLocaleString('es-CO')}`;
+    msg += `\n🎉 *Descuento mayorista ${ds.pct}%:* -$${(_raw - _final).toLocaleString('es-CO')}`;
     msg += `\n✅ *Total con descuento:* $${_final.toLocaleString('es-CO')}`;
   } else {
     msg += `\n💰 *Total estimado:* $${_final.toLocaleString('es-CO')}`;
@@ -2014,9 +2048,9 @@ function renderGrid() {
     return `
     <div class="product-card card-enter ${inCart ? 'in-cart' : ''}" style="animation-delay:${i * 0.08}s" onclick="openModal(${p.id})">
       <div class="card-visual">
-        <div class="card-bg" style="background:${cardBgs[p.bg]}"></div>
+        <div class="card-bg" style="background:${productBg(p)}"></div>
         <div class="jewelry-icon">
-          ${svgs[p.icon](p.colors[0], p.colors[1])}
+          ${productIconHTML(p)}
         </div>
         <div class="card-shimmer"></div>
       </div>
@@ -2056,9 +2090,9 @@ function openModal(id) {
   document.getElementById('modalDesc').textContent = p.desc;
   document.getElementById('modalPrice').innerHTML = `<span class="currency">$</span>${p.price}`;
   document.getElementById('modalVisual').innerHTML = `
-    <div style="position:absolute;inset:0;background:${cardBgs[p.bg]}"></div>
+    <div style="position:absolute;inset:0;background:${productBg(p)}"></div>
     <div style="position:relative;z-index:1;filter:drop-shadow(0 12px 32px rgba(201,151,58,0.45))">
-      ${svgs[p.icon](p.colors[0], p.colors[1])}
+      ${productIconHTML(p)}
     </div>
   `;
   document.getElementById('modalDetails').innerHTML = `
@@ -2092,8 +2126,6 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal
 
 
 // ─── POPUP DESCUENTO MAYORISTA ────────────────────────────────────────
-const WHOLESALE_MIN   = 10000;
-const WHOLESALE_PCT   = 35;
 let   popupTimer      = null;
 let   popupLastState  = null;
 
@@ -2105,6 +2137,7 @@ function mostrarPopup(estado) {
   const msg     = document.getElementById('popupMsg');
   const sub     = document.getElementById('popupSub');
   const bar     = document.getElementById('popupBar');
+  const ds      = getDiscountSettings();
 
   // Reset barra
   bar.style.animation = 'none';
@@ -2114,13 +2147,13 @@ function mostrarPopup(estado) {
   if (estado === 'unlocked') {
     icon.textContent   = '🎉';
     title.textContent  = '¡Precio mayorista desbloqueado!';
-    msg.innerHTML      = 'Se aplicó el <strong>' + WHOLESALE_PCT + '% de descuento</strong><br>automáticamente a tu pedido.';
+    msg.innerHTML      = 'Se aplicó el <strong>' + ds.pct + '% de descuento</strong><br>automáticamente a tu pedido.';
     sub.textContent    = 'El precio ya aparece descontado en tu carrito.';
   } else {
-    const falta = (WHOLESALE_MIN - cartTotalRaw()).toLocaleString('es-CO');
+    const falta = (ds.min - cartTotalRaw()).toLocaleString('es-CO');
     icon.textContent   = '✦';
     title.textContent  = 'Descuento por volumen';
-    msg.innerHTML      = 'Agrega <strong>$' + falta + '</strong> más<br>y obtén el <strong>' + WHOLESALE_PCT + '% mayorista</strong>.';
+    msg.innerHTML      = 'Agrega <strong>$' + falta + '</strong> más<br>y obtén el <strong>' + ds.pct + '% mayorista</strong>.';
     sub.textContent    = 'Precio mayorista Pleaseme Accessories · Oro Laminado 14k';
   }
 
@@ -2148,7 +2181,7 @@ function cartTotalRaw() {
 function checkPopup() {
   const total = cartTotalRaw();
   if (total <= 0) { popupLastState = null; return; }
-  const estado = total >= WHOLESALE_MIN ? 'unlocked' : 'approaching';
+  const estado = total >= getDiscountSettings().min ? 'unlocked' : 'approaching';
   if (estado !== popupLastState) {
     mostrarPopup(estado);
     popupLastState = estado;
@@ -2207,6 +2240,37 @@ function cerrarBanner() {
 renderFilters();
 renderGrid();
 renderCartItems();
+
+// ─── CONTACT INFO IN FOOTER ───────────────────────────────────────────
+function loadContactInfo() {
+  try {
+    const c  = JSON.parse(localStorage.getItem('pm_contact') || '{}');
+    const el = document.getElementById('footerContactInfo');
+    if (!el) return;
+    const parts = [];
+    if (c.instagram) {
+      const link   = c.ig_link || '#';
+      const handle = c.instagram.startsWith('@') ? c.instagram : '@' + c.instagram;
+      parts.push(`<a href="${link}" target="_blank" style="color:rgba(201,151,58,0.55);text-decoration:none;">${handle}</a>`);
+    }
+    if (c.city)  parts.push(`<span>${c.city}</span>`);
+    if (c.hours) parts.push(`<span>${c.hours}</span>`);
+    el.innerHTML = parts.join('<span style="margin:0 6px;opacity:0.35;">·</span>');
+  } catch(e) {}
+}
+loadContactInfo();
+
+// ─── WELCOME POPUP — dynamic discount text ────────────────────────────
+(function() {
+  const ds    = getDiscountSettings();
+  const pctEl = document.querySelector('.wp-pct');
+  const dscEl = document.querySelector('.wp-desc');
+  if (pctEl) pctEl.textContent = ds.pct + '%';
+  if (dscEl) dscEl.innerHTML =
+    `En pedidos que superen los <strong>$${ds.min.toLocaleString('es-CO')}</strong><br>` +
+    `se aplica automáticamente el <strong>descuento mayorista del ${ds.pct}%</strong><br>` +
+    `directo en tu carrito de selección.`;
+})();
 
 // ─── WELCOME POPUP ────────────────────────────────────────────────────
 let _welcomeClosed = false;
