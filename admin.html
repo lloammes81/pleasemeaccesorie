@@ -974,6 +974,37 @@ textarea { resize: vertical; min-height: 80px; }
           </div>
         </div>
       </div>
+
+      <!-- DESCUENTO MAYORISTA -->
+      <div style="max-width:620px;margin-top:20px;">
+        <div class="contact-card">
+          <div class="contact-card-title">
+            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+            Descuento mayorista
+          </div>
+          <p style="font-size:11px;color:var(--text-muted);font-weight:300;margin-bottom:20px;">
+            Se aplica automáticamente en el catálogo cuando el total del carrito supera el mínimo.
+          </p>
+          <div class="contact-form">
+            <div class="field-row">
+              <div class="field">
+                <label>Mínimo para activar descuento ($)</label>
+                <input type="number" id="d_threshold" placeholder="10000" min="0" step="1000">
+              </div>
+              <div class="field">
+                <label>Porcentaje de descuento (%)</label>
+                <input type="number" id="d_pct" placeholder="35" min="1" max="99">
+              </div>
+            </div>
+            <div class="save-row">
+              <button class="btn btn-primary" onclick="saveDiscount()">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                Guardar descuento
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- PAGE: CONTACTO -->
@@ -1329,7 +1360,7 @@ function goTo(page) {
   document.getElementById('topbarTitle').textContent = titles[page] || '';
 
   const topAction = document.getElementById('topbarAction');
-  if (page === 'banner') loadBanner();
+  if (page === 'banner') { loadBanner(); loadDiscount(); }
   if (page === 'visitas') loadVisitas();
   if (page === 'productos') {
     topAction.style.display = '';
@@ -1681,12 +1712,33 @@ function updateToggleUI(checked) {
   thumb.style.transform  = checked ? 'translateX(20px)' : 'translateX(0)';
 }
 
+// ─── DESCUENTO ────────────────────────────────────────────────────────
+const DISCOUNT_KEY = 'pm_discount';
+
+function loadDiscount() {
+  try {
+    const d    = JSON.parse(localStorage.getItem(DISCOUNT_KEY) || '{}');
+    const tEl  = document.getElementById('d_threshold');
+    const pEl  = document.getElementById('d_pct');
+    if (tEl) tEl.value = d.threshold !== undefined ? d.threshold : 10000;
+    if (pEl) pEl.value = d.pct       !== undefined ? d.pct       : 35;
+  } catch(e) {}
+}
+
+function saveDiscount() {
+  const threshold = parseInt(document.getElementById('d_threshold').value) || 10000;
+  const pct       = parseInt(document.getElementById('d_pct').value)       || 35;
+  localStorage.setItem(DISCOUNT_KEY, JSON.stringify({ threshold, pct }));
+  showToast('✦ Descuento actualizado en el catálogo');
+}
+
 // ─── INIT ────────────────────────────────────────────────────────────
 function init() {
   loadProducts();
   loadContact();
   fillContactForm();
   loadBanner();
+  loadDiscount();
   loadVisitas();
   renderTable();
 }
