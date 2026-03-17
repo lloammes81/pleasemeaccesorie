@@ -799,6 +799,10 @@ textarea { resize: vertical; min-height: 80px; }
         <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.01 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
         Contacto
       </button>
+      <button class="nav-item" onclick="goTo('info')" id="nav-info">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        Información
+      </button>
       <div class="nav-section-label" style="margin-top:8px">Catálogo</div>
       <button class="nav-item" onclick="openCatalog()">
         <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
@@ -1003,6 +1007,109 @@ textarea { resize: vertical; min-height: 80px; }
               </button>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: INFO ─── -->
+    <div class="page" id="page-info">
+      <div class="gold-line"></div>
+      <div class="section-header" style="margin-bottom:28px">
+        <span class="section-title">Información del catálogo</span>
+      </div>
+
+      <!-- Textos del catálogo -->
+      <div style="max-width:620px;margin-bottom:24px;">
+        <div class="contact-card">
+          <div class="contact-card-title">
+            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Textos del catálogo
+          </div>
+          <div class="contact-form">
+            <div class="field-row">
+              <div class="field">
+                <label>Nombre de la marca (título principal)</label>
+                <input type="text" id="ci_title" placeholder="Pleaseme">
+              </div>
+              <div class="field">
+                <label>Subtítulo del header</label>
+                <input type="text" id="ci_subtitle" placeholder="Accessories · Oro Laminado">
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Nombre en el footer</label>
+                <input type="text" id="ci_footerLogo" placeholder="Pleaseme Accessories">
+              </div>
+              <div class="field">
+                <label>Frase del footer</label>
+                <input type="text" id="ci_footerText" placeholder="Cada pieza, una historia · Oro laminado de alta calidad">
+              </div>
+            </div>
+            <div class="save-row">
+              <button class="btn btn-primary" onclick="saveCatalogInfo()">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                Guardar textos
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Secciones de información -->
+      <div class="section-header">
+        <span class="section-title">Secciones de información</span>
+        <button class="btn btn-primary" onclick="openInfoForm()" id="btnAddInfo">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nueva sección
+        </button>
+      </div>
+      <p style="font-size:11px;color:var(--text-muted);font-weight:300;margin-bottom:20px;">
+        Estas secciones aparecen desplegables en el catálogo, debajo de los productos.
+      </p>
+
+      <!-- Add/Edit form (hidden by default) -->
+      <div id="infoFormWrap" style="display:none;max-width:620px;margin-bottom:20px;">
+        <div class="contact-card">
+          <div class="contact-card-title" id="infoFormTitle">
+            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nueva sección
+          </div>
+          <div class="contact-form">
+            <input type="hidden" id="infoEditId">
+            <div class="field">
+              <label>Título</label>
+              <input type="text" id="infoTitle" placeholder="Ej: Política de envíos">
+            </div>
+            <div class="field">
+              <label>Contenido</label>
+              <textarea id="infoContent" rows="5" placeholder="Escribe el texto de la sección..."></textarea>
+            </div>
+            <div class="save-row" style="gap:10px;">
+              <button class="btn btn-primary" onclick="saveInfoSection()">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                Guardar sección
+              </button>
+              <button class="btn btn-outline" onclick="closeInfoForm()">Cancelar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-wrap" style="max-width:700px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Título</th>
+              <th>Vista previa</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="infoTableBody"></tbody>
+        </table>
+        <div class="empty-table" id="emptyInfo" style="display:none">
+          <svg width="36" height="36" fill="none" stroke="var(--border-strong)" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <p>No hay secciones aún. ¡Agrega la primera!</p>
         </div>
       </div>
     </div>
@@ -1356,12 +1463,13 @@ function goTo(page) {
   document.getElementById('page-' + page).classList.add('active');
   document.getElementById('nav-' + page).classList.add('active');
 
-  const titles = { productos: 'Productos', contacto: 'Información de contacto', banner: 'Banner de anuncio', visitas: 'Visitas al catálogo' };
+  const titles = { productos: 'Productos', contacto: 'Información de contacto', banner: 'Banner de anuncio', visitas: 'Visitas al catálogo', info: 'Información del catálogo' };
   document.getElementById('topbarTitle').textContent = titles[page] || '';
 
   const topAction = document.getElementById('topbarAction');
   if (page === 'banner') { loadBanner(); loadDiscount(); }
   if (page === 'visitas') loadVisitas();
+  if (page === 'info') { loadCatalogInfo(); renderInfoTable(); }
   if (page === 'productos') {
     topAction.style.display = '';
   } else {
@@ -1712,6 +1820,122 @@ function updateToggleUI(checked) {
   thumb.style.transform  = checked ? 'translateX(20px)' : 'translateX(0)';
 }
 
+// ─── CATALOG INFO (title, subtitle, etc.) ────────────────────────────
+const CATALOG_INFO_KEY = 'pm_catalog_info';
+
+function loadCatalogInfo() {
+  try {
+    const c = JSON.parse(localStorage.getItem(CATALOG_INFO_KEY) || '{}');
+    const set = (id, val, def) => { const el = document.getElementById(id); if (el) el.value = val !== undefined ? val : def; };
+    set('ci_title',      c.title,      'Pleaseme');
+    set('ci_subtitle',   c.subtitle,   'Accessories · Oro Laminado');
+    set('ci_footerLogo', c.footerLogo, 'Pleaseme Accessories');
+    set('ci_footerText', c.footerText, 'Cada pieza, una historia · Oro laminado de alta calidad');
+  } catch(e) {}
+}
+
+function saveCatalogInfo() {
+  const get = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+  const data = {
+    title:      get('ci_title')      || 'Pleaseme',
+    subtitle:   get('ci_subtitle')   || 'Accessories · Oro Laminado',
+    footerLogo: get('ci_footerLogo') || 'Pleaseme Accessories',
+    footerText: get('ci_footerText') || 'Cada pieza, una historia · Oro laminado de alta calidad'
+  };
+  localStorage.setItem(CATALOG_INFO_KEY, JSON.stringify(data));
+  showToast('✦ Textos del catálogo actualizados');
+}
+
+// ─── INFO SECTIONS ────────────────────────────────────────────────────
+const INFO_SECTIONS_KEY = 'pm_info_sections';
+
+function getInfoSections() {
+  try { return JSON.parse(localStorage.getItem(INFO_SECTIONS_KEY) || '[]'); } catch(e) { return []; }
+}
+
+function saveInfoSections(arr) {
+  localStorage.setItem(INFO_SECTIONS_KEY, JSON.stringify(arr));
+}
+
+function renderInfoTable() {
+  const sections = getInfoSections();
+  const tbody    = document.getElementById('infoTableBody');
+  const empty    = document.getElementById('emptyInfo');
+  if (!tbody) return;
+  if (!sections.length) {
+    tbody.innerHTML = '';
+    if (empty) empty.style.display = '';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  tbody.innerHTML = sections.map(s => `
+    <tr>
+      <td style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;">${s.title}</td>
+      <td style="color:var(--text-muted);font-size:11px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s.content.substring(0,80)}${s.content.length>80?'…':''}</td>
+      <td>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-outline" style="font-size:9px;padding:6px 10px;" onclick="editInfoSection('${s.id}')">Editar</button>
+          <button class="btn btn-outline" style="font-size:9px;padding:6px 10px;color:var(--red,#e05252);border-color:var(--red,#e05252);" onclick="confirmDeleteInfo('${s.id}')">Eliminar</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function openInfoForm(isEdit) {
+  const wrap  = document.getElementById('infoFormWrap');
+  const title = document.getElementById('infoFormTitle');
+  if (!isEdit) {
+    document.getElementById('infoEditId').value  = '';
+    document.getElementById('infoTitle').value   = '';
+    document.getElementById('infoContent').value = '';
+    title.innerHTML = title.innerHTML.replace(/Nueva sección|Editar sección/, 'Nueva sección');
+  }
+  wrap.style.display = '';
+  document.getElementById('infoTitle').focus();
+}
+
+function closeInfoForm() {
+  document.getElementById('infoFormWrap').style.display = 'none';
+}
+
+function editInfoSection(id) {
+  const s = getInfoSections().find(x => x.id === id);
+  if (!s) return;
+  document.getElementById('infoEditId').value  = id;
+  document.getElementById('infoTitle').value   = s.title;
+  document.getElementById('infoContent').value = s.content;
+  const title = document.getElementById('infoFormTitle');
+  title.innerHTML = title.innerHTML.replace(/Nueva sección|Editar sección/, 'Editar sección');
+  openInfoForm(true);
+}
+
+function saveInfoSection() {
+  const id      = document.getElementById('infoEditId').value;
+  const title   = document.getElementById('infoTitle').value.trim();
+  const content = document.getElementById('infoContent').value.trim();
+  if (!title || !content) { showToast('✦ Completa el título y el contenido'); return; }
+  let sections = getInfoSections();
+  if (id) {
+    const idx = sections.findIndex(x => x.id === id);
+    if (idx >= 0) sections[idx] = { id, title, content };
+  } else {
+    sections.push({ id: Date.now().toString(36), title, content });
+  }
+  saveInfoSections(sections);
+  closeInfoForm();
+  renderInfoTable();
+  showToast('✦ Sección guardada en el catálogo');
+}
+
+function confirmDeleteInfo(id) {
+  const s = getInfoSections().find(x => x.id === id);
+  if (!s) return;
+  if (!confirm('¿Eliminar la sección "' + s.title + '"?')) return;
+  saveInfoSections(getInfoSections().filter(x => x.id !== id));
+  renderInfoTable();
+  showToast('✦ Sección eliminada');
+}
+
 // ─── DESCUENTO ────────────────────────────────────────────────────────
 const DISCOUNT_KEY = 'pm_discount';
 
@@ -1739,6 +1963,8 @@ function init() {
   fillContactForm();
   loadBanner();
   loadDiscount();
+  loadCatalogInfo();
+  renderInfoTable();
   loadVisitas();
   renderTable();
 }
