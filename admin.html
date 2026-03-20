@@ -2345,16 +2345,14 @@ async function enviarMensajeIA(textoDirecto) {
 
   agregarMensajeChat(mensaje, 'user');
   if (btn) btn.disabled = true;
-  if (proc) { proc.style.display = 'block'; proc.textContent = '✦ ChatGPT analizando...'; }
+  if (proc) { proc.style.display = 'block'; proc.textContent = '✦ ChatGPT analizando tu imagen...'; }
 
   try {
-    const imgSrc   = iaImageBase || rawPhotoData;
+    const imgSrc   = rawPhotoData;
     const base64   = imgSrc.split(',')[1];
     const mimeType = imgSrc.split(';')[0].split(':')[1] || 'image/jpeg';
 
-    if (proc) proc.textContent = '✦ ChatGPT procesando imagen...';
-
-    // ChatGPT Vision analiza la imagen y responde en lenguaje natural
+    // ── ChatGPT analiza la imagen y decide qué hacer por su cuenta ──
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -2363,29 +2361,54 @@ async function enviarMensajeIA(textoDirecto) {
       },
       body: JSON.stringify({
         model: 'gpt-4o',
-        max_tokens: 600,
+        max_tokens: 500,
         messages: [
           {
             role: 'system',
-            content: `Eres un editor de fotos de joyeria. El usuario pide cambios a una imagen.
-RESPONDE SOLO con JSON puro, sin markdown, sin texto extra.
-Formato obligatorio con TODOS estos campos:
-{"descripcion":"texto corto","fondo":"negro","exposicion":0.0,"contraste":1.0,"saturacion":1.0,"calidez":0.0,"temperatura_color":0.0,"brillo_centro":0.0,"brillo_lateral":0.0,"sombras":0.0,"vigneta":0.6,"marca_agua":true}
+            content: `Eres un fotógrafo profesional especializado en joyería de lujo.
+Analiza la imagen del producto y aplica los cambios que el usuario pide.
+Tú decides los valores técnicos exactos basándote en lo que VES en la imagen.
 
-Para el campo fondo usa EXACTAMENTE uno de: negro, carbon, noche, botella, burdeos, none
-Si pide fondo oscuro/negro/dark = negro
-Si pide fondo carbon/gris = carbon
-Si pide azul/noche/marino = noche
-Si pide verde/botella = botella
-Si pide rojo/burdeos/vino = burdeos
-Si NO pide cambio de fondo = none`
+DEVUELVE SOLO este JSON (sin markdown, sin explicación):
+{
+  "descripcion": "lo que hiciste en español",
+  "fondo": "negro",
+  "exposicion": 0.0,
+  "contraste": 1.0,
+  "saturacion": 1.0,
+  "calidez": 0.0,
+  "temperatura_color": 0.0,
+  "brillo_centro": 0.0,
+  "brillo_lateral": 0.0,
+  "sombras": 0.0,
+  "vigneta": 0.5,
+  "marca_agua": true
+}
+
+GUÍA para el campo "fondo" (usa exactamente estos valores):
+- fondo oscuro / negro / dark / profesional → "negro"
+- carbón / gris oscuro → "carbon"
+- azul noche / marino / navy → "noche"  
+- verde botella / forest → "botella"
+- burdeos / rojo vino → "burdeos"
+- mantener fondo actual / sin cambio → "none"
+
+GUÍA de ajustes típicos en joyería:
+- Si la imagen tiene flash o sobreexposición → exposicion=-0.4, contraste=1.4, brillo_centro=-0.3
+- Si la joya se ve opaca → contraste=1.4, saturacion=1.3, brillo_centro=0.4
+- Si pide look de lujo → fondo=negro, vigneta=0.8, contraste=1.3, calidez=0.2, brillo_centro=0.35
+- Si pide tono dorado/cálido → calidez=0.5, temperatura_color=0.3, saturacion=1.3
+- Si pide más brillo → exposicion=0.35, brillo_centro=0.45
+- Si pide blanco y negro → saturacion=0, calidez=0
+
+Analiza la imagen TÚ MISMO y elige los valores que mejor transformen la foto en una imagen profesional de catálogo de lujo según lo que pide el usuario.`
           },
           {
             role: 'user',
             content: [
               {
                 type: 'image_url',
-                image_url: { url: `data:${mimeType};base64,${base64}`, detail: 'high' }
+                image_url: { url: 'data:' + mimeType + ';base64,' + base64, detail: 'high' }
               },
               {
                 type: 'text',
@@ -2398,40 +2421,48 @@ Si NO pide cambio de fondo = none`
     });
 
     const data = await resp.json();
-    if (!resp.ok) throw new Error(data.error?.message || 'Error OpenAI ' + resp.status);
+    if (!resp.ok) throw new Error(data.error?.message || 'Error ' + resp.status);
 
     const texto = data.choices?.[0]?.message?.content || '{}';
+    console.log('ChatGPT respuesta:', texto);
+
     let cfg;
     try {
-      const jsonMatch = texto.match(/\{[\s\S]*\}/);
+      const jsonMatch = texto.match(/\{[\s\S]*?\}/);
       cfg = JSON.parse(jsonMatch ? jsonMatch[0] : texto);
     } catch {
-      throw new Error('Respuesta inválida de ChatGPT: ' + texto.slice(0, 80));
+      // Si no devuelve JSON válido, interpretar localmente
+      cfg = interpretarMensajeLocal(mensaje);
+      agregarMensajeChat('(interpretando localmente)', 'error');
     }
 
+    // Asegurar que fondo tenga valor válido
+    const fondosValidos = ['negro','carbon','noche','botella','burdeos','none'];
+    if (!fondosValidos.includes(cfg.fondo)) cfg.fondo = 'none';
+
     agregarMensajeChat('✦ ' + (cfg.descripcion || 'Cambios aplicados'), 'ia');
-    if (proc) proc.textContent = '✦ Aplicando cambios en la imagen...';
+    if (proc) proc.textContent = '✦ Aplicando cambios...';
 
     aplicarAjustesIA(rawPhotoData, cfg, (resultado) => {
-      const aplicarWM = cfg.marca_agua !== false;
+      const wm = cfg.marca_agua !== false;
       const finish = (final) => {
         photoData   = final;
         iaImageBase = final;
         document.getElementById('photoPreviewImg').src = final;
         if (proc) proc.style.display = 'none';
-        if (btn)  btn.disabled = false;
+        if (btn)  { btn.disabled = false; btn.textContent = 'Enviar'; }
         iaChatHistory.push({ rol: 'user', texto: mensaje });
         iaChatHistory.push({ rol: 'ia',   texto: cfg.descripcion });
         showToast('✦ Imagen actualizada');
       };
-      if (aplicarWM) applyWatermark(resultado, finish);
+      if (wm) applyWatermark(resultado, finish);
       else finish(resultado);
     });
 
   } catch(e) {
-    console.error('Error IA:', e);
-    // Mostrar el error real en el chat
-    agregarMensajeChat('⚠ Error: ' + e.message, 'error');
+    console.error('ChatGPT error:', e);
+    agregarMensajeChat('⚠ ' + e.message, 'error');
+    // Aplicar ajuste local como respaldo
     const cfg = interpretarMensajeLocal(mensaje);
     aplicarAjustesIA(rawPhotoData, cfg, (resultado) => {
       applyWatermark(resultado, (final) => {
@@ -2439,8 +2470,8 @@ Si NO pide cambio de fondo = none`
         iaImageBase = final;
         document.getElementById('photoPreviewImg').src = final;
         if (proc) proc.style.display = 'none';
-        if (btn)  btn.disabled = false;
-        agregarMensajeChat('✦ Ajuste local aplicado: ' + (cfg.descripcion || mensaje), 'ia');
+        if (btn)  { btn.disabled = false; btn.textContent = 'Enviar'; }
+        agregarMensajeChat('✦ Aplicado localmente: ' + (cfg.descripcion || mensaje), 'ia');
         showToast('✦ Ajuste aplicado');
       });
     });

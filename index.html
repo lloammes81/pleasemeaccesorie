@@ -1979,9 +1979,10 @@ const categories = [
 // ─── LOAD PRODUCTS FROM SUPABASE ─────────────────────────────────────
 async function loadProductsFromSupabase() {
   try {
+    // Cargar sin fotos primero — carga instantánea
     const { data, error } = await _sb
       .from('catalogo_productos')
-      .select('*')
+      .select('id,name,subtitle,category,category_label,price,description,material,medida,peso,badge,active,created_at')
       .eq('active', true)
       .order('created_at');
     if (error) throw error;
@@ -1998,14 +1999,65 @@ async function loadProductsFromSupabase() {
         medida:        p.medida        || '',
         peso:          p.peso          || '',
         badge:         p.badge         || null,
-        photo:         p.photo_data    || null,
+        photo:         null, // se carga después
       }));
     }
-    // Sin productos en BD — devolver array vacío (no productos demo)
     return [];
   } catch(e) {
     console.error('Error cargando productos:', e);
     return [];
+  }
+}
+
+// Carga fotos en segundo plano y actualiza las tarjetas
+async function cargarFotosCatalogo() {
+  if (!products || products.length === 0) return;
+  const ids = products.map(p => p.id);
+  const BATCH = 4;
+  for (let i = 0; i < ids.length; i += BATCH) {
+    const batch = ids.slice(i, i + BATCH);
+    try {
+      const { data } = await _sb
+        .from('catalogo_productos')
+        .select('id,photo_data')
+        .in('id', batch);
+      if (data) {
+        data.forEach(row => {
+          if (!row.photo_data) return;
+          const p = products.find(x => x.id === row.id);
+          if (!p) return;
+          p.photo = row.photo_data;
+          // Actualizar la tarjeta en el DOM sin re-renderizar todo
+          const card = document.querySelector(`[data-product-id="${p.id}"]`);
+          if (card) {
+            const visual = card.querySelector('.card-visual');
+            if (visual) {
+              // Reemplazar el ícono SVG con la foto real
+              const icon = visual.querySelector('.jewelry-icon');
+              if (icon) {
+                icon.innerHTML = `<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:4px;" alt="${p.name}">`;
+              }
+              // Activar el click para lightbox
+              visual.style.cursor = 'zoom-in';
+              visual.onclick = (e) => { e.stopPropagation(); openLightbox(p.photo); };
+              // Agregar botón de retroceso
+              if (!visual.querySelector('#lightboxBackBtn')) {
+                const backBtn = document.createElement('button');
+                backBtn.title = 'Volver';
+                backBtn.innerHTML = `<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>`;
+                backBtn.style.cssText = 'position:absolute;top:12px;left:12px;width:38px;height:38px;background:rgba(10,8,4,0.75);border:1px solid rgba(201,151,58,0.6);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#E8C96D;z-index:10;backdrop-filter:blur(6px);';
+                backBtn.onmouseenter = () => { backBtn.style.background = 'rgba(201,151,58,0.28)'; };
+                backBtn.onmouseleave = () => { backBtn.style.background = 'rgba(10,8,4,0.75)'; };
+                backBtn.onclick = (e) => { e.stopPropagation(); closeModal(); };
+                visual.style.position = 'relative';
+                visual.appendChild(backBtn);
+              }
+            }
+          }
+        });
+      }
+    } catch(e) { console.warn('Error cargando foto batch:', e); }
+    await new Promise(r => setTimeout(r, 100));
   }
 }
 
@@ -2238,7 +2290,7 @@ function renderGrid() {
   grid.innerHTML = filtered.map((p, i) => {
     const inCart = cart.some(c => c.id === p.id);
     return `
-    <div class="product-card card-enter ${inCart ? 'in-cart' : ''}" style="animation-delay:${i * 0.08}s" onclick="openModal('${p.id}')">
+    <div class="product-card card-enter ${inCart ? 'in-cart' : ''}" data-product-id="${p.id}" style="animation-delay:${i * 0.08}s" onclick="openModal('${p.id}')">
       <div class="card-visual" ${p.photo ? `onclick="event.stopPropagation(); openLightbox('${p.photo}')" style="cursor:zoom-in"` : ''}>
         <div class="card-bg" style="background:${productBg(p)}"></div>
         <div class="jewelry-icon">
@@ -2549,6 +2601,8 @@ function cerrarBanner() {
   renderGrid();
   renderCartItems();
   loadContactInfo();
+  // Cargar fotos en segundo plano
+  cargarFotosCatalogo();
   } catch(e) {
     console.error('Error iniciando catálogo:', e);
     products = [];
