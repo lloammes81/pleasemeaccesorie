@@ -2001,10 +2001,12 @@ async function loadProductsFromSupabase() {
         photo:         p.photo_data    || null,
       }));
     }
+    // Sin productos en BD — devolver array vacío (no productos demo)
+    return [];
   } catch(e) {
     console.error('Error cargando productos:', e);
+    return [];
   }
-  return defaultProducts;
 }
 
 let products = [];
@@ -2490,13 +2492,14 @@ function cerrarBanner() {
 
 // Cargar productos, contacto y todas las configs desde Supabase
 (async function initCatalog() {
-  const [prods, contactRes, configRes] = await Promise.all([
-    loadProductsFromSupabase(),
-    _sb.from('config').select('value').eq('key', 'pm_contact').single(),
-    _sb.from('config').select('key,value').in('key', ['pm_banner','pm_catalog_info','pm_info_sections','pm_discount'])
-  ]);
-  products = prods;
-  if (contactRes.data) appContact = contactRes.data.value || {};
+  try {
+    const [prods, contactRes, configRes] = await Promise.all([
+      loadProductsFromSupabase(),
+      _sb.from('config').select('value').eq('key', 'pm_contact').single(),
+      _sb.from('config').select('key,value').in('key', ['pm_banner','pm_catalog_info','pm_info_sections','pm_discount'])
+    ]);
+    products = Array.isArray(prods) && prods.length > 0 ? prods : defaultProducts;
+    if (contactRes.data) appContact = contactRes.data.value || {};
 
   // Poblar cache de configs
   const _cfg = {};
@@ -2546,6 +2549,12 @@ function cerrarBanner() {
   renderGrid();
   renderCartItems();
   loadContactInfo();
+  } catch(e) {
+    console.error('Error iniciando catálogo:', e);
+    products = [];
+    renderFilters();
+    renderGrid();
+  }
 })();
 
 // ─── CONTACT INFO IN FOOTER ───────────────────────────────────────────
