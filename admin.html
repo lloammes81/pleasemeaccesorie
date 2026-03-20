@@ -1832,27 +1832,6 @@ async function saveProduct() {
     active:         true,
   };
 
-  // ─── DUPLICATE CHECK (solo al agregar nueva prenda) ───────────────
-  if (!editingId) {
-    const nameLower = name.toLowerCase().trim();
-    // Verificar duplicado por nombre
-    const dupByName = products.find(p =>
-      p.name && p.name.toLowerCase().trim() === nameLower
-    );
-    if (dupByName) {
-      return showToast('✦ Ya existe una prenda con ese nombre: "' + dupByName.name + '"');
-    }
-    // Verificar duplicado por imagen (photo_data)
-    if (photoData) {
-      const dupByPhoto = products.find(p =>
-        p.photo && p.photo === photoData
-      );
-      if (dupByPhoto) {
-        return showToast('✦ Esa imagen ya está en uso: "' + dupByPhoto.name + '"');
-      }
-    }
-  }
-
   if (editingId) {
     const { error } = await _sb.from('catalogo_productos').update(data).eq('id', editingId);
     if (error) return showToast('Error al actualizar: ' + error.message);
