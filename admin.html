@@ -36,6 +36,21 @@
   --sidebar-w: 240px;
 }
 
+/* ─── DARK THEME ─── */
+body.dark-theme {
+  --bg: #0E0C09;
+  --bg2: #161210;
+  --bg3: #1E1A14;
+  --surface: #1A1610;
+  --text: #E8DCCA;
+  --text-mid: #C4A96A;
+  --text-muted: #8A7A62;
+  --border: rgba(201,151,58,0.2);
+  --border-strong: rgba(201,151,58,0.38);
+  --shadow: 0 2px 16px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.55);
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
@@ -884,10 +899,16 @@ textarea { resize: vertical; min-height: 80px; }
     <div class="topbar">
       <span class="topbar-title" id="topbarTitle">Productos</span>
       <div class="topbar-actions">
-        <div class="sb-status connecting" id="sbStatus">
+        <div class="sb-status connecting" id="sbStatus" title="Estado de conexión Supabase">
           <span class="sb-dot"></span>
           <span id="sbStatusText">Conectando</span>
         </div>
+        <button class="icon-btn" id="reconnectBtn" onclick="manualReconnect()" title="Reconectar" style="display:none">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.36-3.36L23 10M1 14l5.13 4.36A9 9 0 0020.49 15"/></svg>
+        </button>
+        <button class="icon-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Cambiar tema">
+          <svg id="themeIcon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+        </button>
         <button class="btn btn-primary" id="topbarAction" onclick="openDrawer()">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Nuevo producto
@@ -1536,15 +1557,20 @@ async function changePassword() {
   if (!p1) return showToast('Escribe una contraseña');
   if (p1 !== p2) return showToast('Las contraseñas no coinciden');
   if (p1.length < 6) return showToast('Mínimo 6 caracteres');
-  const { error } = await _sb.from('admin_auth').upsert({
-    id: 1,
-    password_hash: p1
-  }, { onConflict: 'id' });
-  if (error) return showToast('Error al guardar: ' + error.message);
+  let savedCloud = false;
+  try {
+    const { error } = await _sb.from('admin_auth').upsert({
+      id: 1,
+      password_hash: p1
+    }, { onConflict: 'id' });
+    if (!error) savedCloud = true;
+  } catch(e) { /* sin conexión, continúa con localStorage */ }
+  // Siempre guardar en localStorage como respaldo
+  localStorage.setItem(ADMIN_PASS_KEY, p1);
   adminPassword = p1;
   document.getElementById('c_newpass').value = '';
   document.getElementById('c_newpass2').value = '';
-  showToast('✦ Contraseña actualizada');
+  showToast(savedCloud ? '✦ Contraseña actualizada' : '✦ Contraseña guardada localmente');
 }
 
 // ─── PRODUCTS STATE ──────────────────────────────────────────────────
@@ -2295,19 +2321,53 @@ async function saveDiscount() {
 
 // ─── SUPABASE CONNECTION STATUS ──────────────────────────────────────
 async function checkSupabaseConnection() {
-  const el   = document.getElementById('sbStatus');
-  const txt  = document.getElementById('sbStatusText');
+  const el  = document.getElementById('sbStatus');
+  const txt = document.getElementById('sbStatusText');
+  const btn = document.getElementById('reconnectBtn');
   if (!el || !txt) return;
   try {
     const { error } = await _sb.from('config').select('key').limit(1);
     if (error) throw error;
-    el.className  = 'sb-status connected';
-    txt.textContent = 'Conectado';
+    el.className     = 'sb-status connected';
+    txt.textContent  = 'Conectado';
+    if (btn) btn.style.display = 'none';
   } catch(e) {
-    el.className  = 'sb-status offline';
-    txt.textContent = 'Sin conexión';
+    el.className     = 'sb-status offline';
+    txt.textContent  = 'Sin conexión';
+    if (btn) btn.style.display = '';
   }
 }
+
+async function manualReconnect() {
+  const el  = document.getElementById('sbStatus');
+  const txt = document.getElementById('sbStatusText');
+  const btn = document.getElementById('reconnectBtn');
+  if (el) { el.className = 'sb-status connecting'; txt.textContent = 'Reconectando...'; }
+  if (btn) btn.style.display = 'none';
+  await checkSupabaseConnection();
+}
+
+// ─── THEME TOGGLE ────────────────────────────────────────────────────
+function applyTheme(dark) {
+  document.body.classList.toggle('dark-theme', dark);
+  const icon = document.getElementById('themeIcon');
+  if (icon) {
+    icon.innerHTML = dark
+      ? '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>'
+      : '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>';
+  }
+}
+
+function toggleTheme() {
+  const isDark = !document.body.classList.contains('dark-theme');
+  localStorage.setItem('pm_theme', isDark ? 'dark' : 'light');
+  applyTheme(isDark);
+}
+
+// Aplicar tema guardado al cargar
+(function() {
+  applyTheme(localStorage.getItem('pm_theme') === 'dark');
+})();
 
 // ─── INIT ────────────────────────────────────────────────────────────
 async function init() {
