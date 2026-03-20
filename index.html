@@ -1809,25 +1809,60 @@ const categories = [
   { key: "temporada",  label: "Temporada"  },
 ];
 
-// ─── LOAD PRODUCTS FROM ADMIN ────────────────────────────────────────
-function loadProductsFromAdmin() {
+// ════════════════════════════════════════════════════════
+//  SUPABASE CONFIG
+// ════════════════════════════════════════════════════════
+const SB_URL = 'https://sqcggascnbcnfkymqcql.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxY2dnYXNjbmJjbmZreW1xY3FsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2ODQ2NzIsImV4cCI6MjA4NzI2MDY3Mn0.q0C_q3gOZZzcr6dWPrIhWS63gst5OBYIg9FDxThaKt4';
+const SB_H = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY };
+
+async function sbGET(path) {
   try {
-    const saved = localStorage.getItem('pm_products');
-    if (saved) {
-      const arr = JSON.parse(saved);
-      if (arr && arr.length > 0) return arr;
-    }
-  } catch(e) {}
-  return defaultProducts;
+    const r = await fetch(SB_URL + '/rest/v1/' + path, { headers: SB_H });
+    if (!r.ok) throw new Error(r.status);
+    return await r.json();
+  } catch(e) { console.warn('[SB]', path, e.message); return null; }
 }
 
-let products = loadProductsFromAdmin();
+// ─── LOAD PRODUCTS FROM SUPABASE ─────────────────────────────────────
+let products = [];
+
+async function loadProductsFromSupabase() {
+  const data = await sbGET('catalogo_productos?select=*&active=eq.true&order=created_at.desc');
+  if (data && data.length > 0) {
+    products = data.map(p => ({
+      id:            p.id,
+      name:          p.name          || '',
+      subtitle:      p.subtitle      || '',
+      category:      p.category      || '',
+      categoryLabel: p.category_label|| p.category || '',
+      price:         p.price != null ? String(p.price) : '0',
+      desc:          p.description   || '',
+      material:      p.material      || 'Oro laminado 14k',
+      medida:        p.medida        || '',
+      peso:          p.peso          || '',
+      badge:         p.badge         || null,
+      photo:         p.photo_data    || p.photo_url || null,
+      stock:         p.stock         != null ? p.stock : 999,
+      featured:      p.featured      || false,
+      icon:          p.icon          || null,
+    }));
+    localStorage.setItem('pm_cat_products_cache', JSON.stringify(products));
+    console.log('[SB] Productos cargados:', products.length);
+    return true;
+  }
+  // Fallback: cache local
+  try {
+    const cached = JSON.parse(localStorage.getItem('pm_cat_products_cache') || '[]');
+    if (cached.length) { products = cached; return true; }
+  } catch(e) {}
+  products = defaultProducts;
+  return false;
+}
 
 // ─── WHATSAPP NUMBER ─────────────────────────────────────────────────
-// Viene del admin; si no está configurado se usa el valor por defecto
-function getWhatsAppNumber() {
-  return localStorage.getItem('pm_whatsapp') || '573001234567';
-}
+let _waNumber = '573001234567';
+function getWhatsAppNumber() { return _waNumber; }
 
 let activeCategory = "todos";
 let currentModalId = null;
@@ -1840,7 +1875,8 @@ function cartCount() { return cart.reduce((s, i) => s + i.qty, 0); }
 function cartTotal() {
   return cart.reduce((s, item) => {
     const p = products.find(x => x.id === item.id);
-    const num = parseInt(p.price.replace(/[^0-9]/g, ''));
+    if (!p) return s;
+    const num = typeof p.price === 'number' ? p.price : parseFloat(String(p.price).replace(/[^0-9.]/g, '')) || 0;
     return s + num * item.qty;
   }, 0);
 }
@@ -2066,7 +2102,7 @@ function renderGrid() {
         <h3 class="card-name">${p.name}</h3>
         <p class="card-desc">${p.desc}</p>
         <div class="card-footer">
-          <div class="card-price"><span>$</span>${p.price}</div>
+          <div class="card-price"><span>$</span>${typeof p.price === "number" ? p.price.toLocaleString("es-CO") : String(p.price).replace(/[^0-9.,]/g,"")}</div>
           <button class="card-cta" onclick="event.stopPropagation(); openModal(${p.id})">Ver detalle</button>
         </div>
       </div>
@@ -2094,7 +2130,7 @@ function openModal(id) {
   document.getElementById('modalName').textContent = p.name;
   document.getElementById('modalSubtitle').textContent = p.subtitle;
   document.getElementById('modalDesc').textContent = p.desc;
-  document.getElementById('modalPrice').innerHTML = `<span class="currency">$</span>${p.price}`;
+  const fmtPrice = v => typeof v === 'number' ? v.toLocaleString('es-CO') : String(v).replace(/[^0-9.,]/g,''); document.getElementById('modalPrice').innerHTML = `<span class="currency">$</span>${fmtPrice(p.price)}`;
   document.getElementById('modalVisual').innerHTML = `
     <div style="position:absolute;inset:0;background:${productBg(p)}"></div>
     <div style="position:relative;z-index:1;filter:drop-shadow(0 12px 32px rgba(201,151,58,0.45))">
@@ -2195,23 +2231,16 @@ function checkPopup() {
 }
 
 
-// ─── ANNOUNCEMENT BANNER ─────────────────────────────────────────────
+// ─── ANNOUNCEMENT BANNER — cargado desde Supabase en initCatalog ─────
+// (gestionado por loadCatalogInfo, fallback desde localStorage)
 (function() {
-  const saved = localStorage.getItem('pm_banner');
-  if (saved) {
-    try {
-      const d = JSON.parse(saved);
-      if (!d.active) {
-        document.getElementById('announcementBanner').classList.add('hidden');
-        return;
-      }
-      if (d.text) {
-        const msg  = document.getElementById('bannerText');
-        const sep  = '<span class="banner-sep">✦</span>';
-        msg.innerHTML = d.text + sep + 'Oro laminado 14k · Calidad garantizada' + sep + 'Pedidos superiores a $10,000 obtienen el 35% de descuento mayorista' + sep + d.text + sep + 'Oro laminado 14k · Calidad garantizada';
-      }
-    } catch(e) {}
-  }
+  try {
+    const d = JSON.parse(localStorage.getItem('pm_banner') || '{}');
+    if (d.active === false) {
+      const b = document.getElementById('announcementBanner');
+      if (b) b.classList.add('hidden');
+    }
+  } catch(e) {}
 })();
 
 function cerrarBanner() {
@@ -2243,28 +2272,60 @@ function cerrarBanner() {
   } catch(e) {}
 })();
 
-renderFilters();
-renderGrid();
-renderCartItems();
+// ─── INIT PRINCIPAL (async — carga todo desde Supabase) ─────────────
+async function initCatalog() {
+  const grid = document.getElementById('catalogGrid');
+  if (grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:rgba(201,151,58,0.4);font-family:Cinzel,serif;font-size:11px;letter-spacing:2px">Cargando catálogo...</div>';
 
-// ─── CONTACT INFO IN FOOTER ───────────────────────────────────────────
-function loadContactInfo() {
-  try {
-    const c  = JSON.parse(localStorage.getItem('pm_contact') || '{}');
-    const el = document.getElementById('footerContactInfo');
-    if (!el) return;
-    const parts = [];
-    if (c.instagram) {
-      const link   = c.ig_link || '#';
-      const handle = c.instagram.startsWith('@') ? c.instagram : '@' + c.instagram;
-      parts.push(`<a href="${link}" target="_blank" style="color:rgba(201,151,58,0.55);text-decoration:none;">${handle}</a>`);
-    }
-    if (c.city)  parts.push(`<span>${c.city}</span>`);
-    if (c.hours) parts.push(`<span>${c.hours}</span>`);
-    el.innerHTML = parts.join('<span style="margin:0 6px;opacity:0.35;">·</span>');
-  } catch(e) {}
+  await Promise.all([
+    loadProductsFromSupabase(),
+    loadCatalogInfo(),
+    loadContactInfo(),
+    renderInfoSections(),
+  ]);
+
+  renderFilters();
+  renderGrid();
+  renderCartItems();
 }
-loadContactInfo();
+
+initCatalog();
+
+// ─── CONTACT INFO IN FOOTER (desde Supabase catalogo_contacto) ───────
+async function loadContactInfo() {
+  let c = {};
+  try { c = JSON.parse(localStorage.getItem('pm_cat_contact_cache') || '{}'); } catch(e) {}
+
+  const rows = await sbGET('catalogo_contacto?select=*&id=eq.main&limit=1');
+  if (rows && rows.length) {
+    const r = rows[0];
+    c = {
+      whatsapp:  r.whatsapp      || '',
+      wa_msg:    r.wa_mensaje     || '',
+      instagram: r.instagram     || '',
+      ig_link:   r.instagram_url || '',
+      email:     r.email         || '',
+      web:       r.sitio_web     || '',
+      city:      r.ciudad        || '',
+      address:   r.direccion     || '',
+      hours:     r.horarios      || '',
+    };
+    if (c.whatsapp) _waNumber = c.whatsapp;
+    localStorage.setItem('pm_cat_contact_cache', JSON.stringify(c));
+  }
+
+  const el = document.getElementById('footerContactInfo');
+  if (!el) return;
+  const parts = [];
+  if (c.instagram) {
+    const link   = c.ig_link || '#';
+    const handle = c.instagram.startsWith('@') ? c.instagram : '@' + c.instagram;
+    parts.push(`<a href="${link}" target="_blank" style="color:rgba(201,151,58,0.55);text-decoration:none;">${handle}</a>`);
+  }
+  if (c.city)  parts.push(`<span>${c.city}</span>`);
+  if (c.hours) parts.push(`<span>${c.hours}</span>`);
+  el.innerHTML = parts.join('<span style="margin:0 6px;opacity:0.35;">·</span>');
+}
 
 // ─── WELCOME POPUP — dynamic discount text ────────────────────────────
 (function() {
@@ -2291,25 +2352,54 @@ function cerrarWelcome() {
 // Auto-close after 10s
 setTimeout(cerrarWelcome, 10000);
 
-// ─── CATALOG INFO (title, subtitle, tagline) ──────────────────────────
-function loadCatalogInfo() {
-  try {
-    const c = JSON.parse(localStorage.getItem('pm_catalog_info') || '{}');
-    if (c.eyebrow !== undefined)  document.getElementById('headerEyebrow').textContent = c.eyebrow  || 'Catálogo';
-    if (c.title !== undefined)    document.getElementById('headerLogo').textContent    = c.title    || 'Pleaseme';
-    if (c.subtitle !== undefined) document.getElementById('headerSub').textContent     = c.subtitle || 'Accessories · Oro Laminado';
-    if (c.footerLogo !== undefined)  document.getElementById('footerLogo').textContent    = c.footerLogo  || 'Pleaseme Accessories';
-    if (c.footerText !== undefined)  document.getElementById('footerTagline').textContent = c.footerText  || 'Cada pieza, una historia · Oro laminado de alta calidad';
-  } catch(e) {}
-}
-loadCatalogInfo();
+// ─── CATALOG INFO (desde Supabase catalogo_config) ───────────────────
+async function loadCatalogInfo() {
+  let c = {};
+  try { c = JSON.parse(localStorage.getItem('pm_catalog_info') || '{}'); } catch(e) {}
 
-// ─── INFO SECTIONS ────────────────────────────────────────────────────
-function renderInfoSections() {
+  const rows = await sbGET('catalogo_config?select=*&id=eq.main&limit=1');
+  if (rows && rows.length) {
+    const r = rows[0];
+    c.title      = r.nombre_marca      || c.title      || 'Pleaseme';
+    c.subtitle   = r.subtitulo_header  || c.subtitle   || 'Accessories · Oro Laminado';
+    c.footerLogo = r.footer_nombre     || c.footerLogo || 'Pleaseme Accessories';
+    c.footerText = r.footer_frase      || c.footerText || 'Cada pieza, una historia · Oro laminado de alta calidad';
+    // Banner
+    if (r.banner_active !== null) {
+      const bannerEl = document.getElementById('announcementBanner');
+      const bannerTxt = document.getElementById('bannerText');
+      if (!r.banner_active && bannerEl) bannerEl.classList.add('hidden');
+      if (r.banner_active && r.banner_text && bannerTxt) {
+        const sep = '<span class="banner-sep">✦</span>';
+        bannerTxt.innerHTML = r.banner_text + sep + 'Oro laminado 14k · Calidad garantizada' + sep + r.banner_text;
+      }
+    }
+    // Descuento
+    if (r.descuento_pct) {
+      localStorage.setItem('pm_discount', JSON.stringify({ threshold: r.descuento_minimo, pct: r.descuento_pct }));
+    }
+    localStorage.setItem('pm_catalog_info', JSON.stringify(c));
+  }
+
+  const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.textContent = val; };
+  set('headerLogo',     c.title);
+  set('headerSub',      c.subtitle);
+  set('footerLogo',     c.footerLogo);
+  set('footerTagline',  c.footerText);
+}
+
+// ─── INFO SECTIONS (desde Supabase catalogo_secciones) ───────────────
+async function renderInfoSections() {
   const el = document.getElementById('infoSections');
   if (!el) return;
   let sections = [];
-  try { sections = JSON.parse(localStorage.getItem('pm_info_sections') || '[]'); } catch(e) {}
+  const data = await sbGET('catalogo_secciones?select=id,titulo,contenido&active=eq.true&order=position.asc');
+  if (data && data.length) {
+    sections = data.map(s => ({ id: s.id, title: s.titulo, content: s.contenido }));
+    localStorage.setItem('pm_info_sections', JSON.stringify(sections));
+  } else {
+    try { sections = JSON.parse(localStorage.getItem('pm_info_sections') || '[]'); } catch(e) {}
+  }
   if (!sections.length) { el.innerHTML = ''; return; }
   el.innerHTML = sections.map((s, i) => `
     <details style="border:1px solid rgba(201,151,58,0.2);margin-bottom:10px;background:rgba(255,255,255,0.02);" ${i===0?'open':''}>
@@ -2320,7 +2410,6 @@ function renderInfoSections() {
       <div style="padding:0 20px 18px;font-size:13px;font-weight:300;line-height:1.8;color:var(--text-muted,#9A8C76);white-space:pre-wrap;">${s.content}</div>
     </details>`).join('');
 }
-renderInfoSections();
 
 // ─── SINGLE TAB DETECTION ─────────────────────────────────────────────
 (function() {

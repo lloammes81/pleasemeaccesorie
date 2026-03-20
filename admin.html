@@ -1407,20 +1407,80 @@ textarea { resize: vertical; min-height: 80px; }
 <div class="toast" id="toast"></div>
 
 <script>
-// ─── CONFIG ──────────────────────────────────────────────────────────
-const ADMIN_PASS_KEY = 'pm_admin_pass';
-const PRODUCTS_KEY   = 'pm_products';
-const CONTACT_KEY    = 'pm_contact';
-const DEFAULT_PASS   = 'pleaseme2024';
+// ════════════════════════════════════════════════════════
+//  SUPABASE CONFIG
+// ════════════════════════════════════════════════════════
+const SB_URL = 'https://sqcggascnbcnfkymqcql.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxY2dnYXNjbmJjbmZreW1xY3FsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2ODQ2NzIsImV4cCI6MjA4NzI2MDY3Mn0.q0C_q3gOZZzcr6dWPrIhWS63gst5OBYIg9FDxThaKt4';
+const SB_H = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' };
 
-// ─── AUTH ────────────────────────────────────────────────────────────
-function getPass() {
-  return localStorage.getItem(ADMIN_PASS_KEY) || DEFAULT_PASS;
+async function sbGET(path) {
+  try {
+    const r = await fetch(SB_URL + '/rest/v1/' + path, { headers: SB_H });
+    if (!r.ok) throw new Error(await r.text());
+    return await r.json();
+  } catch(e) { console.error('[SB GET]', path, e.message); return null; }
+}
+async function sbUPSERT(table, body) {
+  try {
+    const r = await fetch(SB_URL + '/rest/v1/' + table, {
+      method: 'POST',
+      headers: { ...SB_H, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify(body)
+    });
+    if (!r.ok) throw new Error(await r.text());
+    return true;
+  } catch(e) { console.error('[SB UPSERT]', table, e.message); return false; }
+}
+async function sbPOST(table, body) {
+  try {
+    const r = await fetch(SB_URL + '/rest/v1/' + table, {
+      method: 'POST',
+      headers: { ...SB_H, 'Prefer': 'return=representation' },
+      body: JSON.stringify(body)
+    });
+    if (!r.ok) throw new Error(await r.text());
+    return await r.json();
+  } catch(e) { console.error('[SB POST]', table, e.message); return null; }
+}
+async function sbPATCH(table, filter, body) {
+  try {
+    const r = await fetch(SB_URL + '/rest/v1/' + table + '?' + filter, {
+      method: 'PATCH',
+      headers: { ...SB_H, 'Prefer': 'return=minimal' },
+      body: JSON.stringify(body)
+    });
+    if (!r.ok) throw new Error(await r.text());
+    return true;
+  } catch(e) { console.error('[SB PATCH]', table, e.message); return false; }
+}
+async function sbDELETE(table, filter) {
+  try {
+    const r = await fetch(SB_URL + '/rest/v1/' + table + '?' + filter, {
+      method: 'DELETE', headers: SB_H
+    });
+    if (!r.ok) throw new Error(await r.text());
+    return true;
+  } catch(e) { console.error('[SB DELETE]', table, e.message); return false; }
 }
 
-function doLogin() {
-  const val = document.getElementById('loginPass').value;
-  if (val === getPass()) {
+// ─── CONFIG ──────────────────────────────────────────────────────────
+const PRODUCTS_KEY = 'pm_cat_products_cache';
+const CONTACT_KEY  = 'pm_cat_contact_cache';
+
+// ─── AUTH — contraseña desde catalogo_password en Supabase ──────────
+async function getPass() {
+  try {
+    const rows = await sbGET("catalogo_password?select=password&id=eq.main&limit=1");
+    if (rows && rows.length) return rows[0].password;
+  } catch(e) {}
+  return 'pleaseme2024'; // fallback
+}
+
+async function doLogin() {
+  const val  = document.getElementById('loginPass').value;
+  const pass = await getPass();
+  if (val === pass) {
     document.getElementById('loginScreen').classList.add('hidden');
     sessionStorage.setItem('pm_auth', '1');
     init();
@@ -1432,8 +1492,10 @@ function doLogin() {
 
 document.getElementById('loginPass').addEventListener('keydown', e => {
   if (e.key === 'Enter') doLogin();
-  document.getElementById('loginError').textContent = '';
-  document.getElementById('loginPass').style.borderColor = '';
+  else {
+    document.getElementById('loginError').textContent = '';
+    document.getElementById('loginPass').style.borderColor = '';
+  }
 });
 
 function doLogout() {
@@ -1441,16 +1503,20 @@ function doLogout() {
   location.reload();
 }
 
-function changePassword() {
+async function changePassword() {
   const p1 = document.getElementById('c_newpass').value.trim();
   const p2 = document.getElementById('c_newpass2').value.trim();
   if (!p1) return showToast('Escribe una contraseña');
   if (p1 !== p2) return showToast('Las contraseñas no coinciden');
   if (p1.length < 6) return showToast('Mínimo 6 caracteres');
-  localStorage.setItem(ADMIN_PASS_KEY, p1);
-  document.getElementById('c_newpass').value = '';
-  document.getElementById('c_newpass2').value = '';
-  showToast('✦ Contraseña actualizada');
+  const ok = await sbUPSERT('catalogo_password', { id: 'main', password: p1 });
+  if (ok) {
+    document.getElementById('c_newpass').value = '';
+    document.getElementById('c_newpass2').value = '';
+    showToast('✦ Contraseña actualizada en Supabase');
+  } else {
+    showToast('⚠ Error al guardar contraseña');
+  }
 }
 
 // ─── PRODUCTS STATE ──────────────────────────────────────────────────
@@ -1464,45 +1530,88 @@ const CAT_LABELS = {
   pulseras: 'Pulseras', tobilleras: 'Tobilleras', dijes: 'Dijes'
 };
 
-function loadProducts() {
-  try {
-    products = JSON.parse(localStorage.getItem(PRODUCTS_KEY)) || [];
-  } catch { products = []; }
-}
-
-function saveProducts() {
-  localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
+async function loadProducts() {
+  const data = await sbGET('catalogo_productos?select=*&order=created_at.desc&active=eq.true');
+  if (data) {
+    products = data.map(p => ({
+      id:            p.id,
+      name:          p.name          || '',
+      subtitle:      p.subtitle      || '',
+      category:      p.category      || '',
+      categoryLabel: p.category_label|| '',
+      price:         p.price         || '',
+      desc:          p.description   || '',
+      material:      p.material      || 'Oro laminado 14k',
+      medida:        p.medida        || '',
+      peso:          p.peso          || '',
+      badge:         p.badge         || null,
+      photo:         p.photo_data    || p.photo_url || null,
+      stock:         p.stock         || 0,
+      sku:           p.sku           || '',
+      featured:      p.featured      || false,
+    }));
+    localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
+  } else {
+    try { products = JSON.parse(localStorage.getItem(PRODUCTS_KEY)) || []; } catch { products = []; }
+  }
 }
 
 function nextId() {
-  return products.length ? Math.max(...products.map(p => p.id)) + 1 : 1;
+  return 'prod-' + Date.now() + '-' + Math.random().toString(36).slice(2,6);
 }
 
 // ─── CONTACT STATE ────────────────────────────────────────────────────
 let contact = {};
 
-function loadContact() {
-  try { contact = JSON.parse(localStorage.getItem(CONTACT_KEY)) || {}; }
-  catch { contact = {}; }
+async function loadContact() {
+  const rows = await sbGET('catalogo_contacto?select=*&id=eq.main&limit=1');
+  if (rows && rows.length) {
+    const r  = rows[0];
+    contact = {
+      whatsapp:  r.whatsapp      || '',
+      wa_msg:    r.wa_mensaje     || '',
+      instagram: r.instagram     || '',
+      ig_link:   r.instagram_url || '',
+      email:     r.email         || '',
+      web:       r.sitio_web     || '',
+      city:      r.ciudad        || '',
+      address:   r.direccion     || '',
+      hours:     r.horarios      || '',
+    };
+    localStorage.setItem(CONTACT_KEY, JSON.stringify(contact));
+  } else {
+    try { contact = JSON.parse(localStorage.getItem(CONTACT_KEY)) || {}; } catch { contact = {}; }
+  }
 }
 
-function saveContact(section) {
+async function saveContact(section) {
   const fields = {
-    whatsapp: ['whatsapp','wa_msg'],
+    whatsapp:  ['whatsapp','wa_msg'],
     instagram: ['instagram','ig_link'],
-    email: ['email','web'],
-    location: ['city','address','hours']
+    email:     ['email','web'],
+    location:  ['city','address','hours']
   };
   (fields[section] || []).forEach(k => {
     const el = document.getElementById('c_' + k);
     if (el) contact[k] = el.value.trim();
   });
   localStorage.setItem(CONTACT_KEY, JSON.stringify(contact));
-  // Also update whatsapp in catalog data
-  if (section === 'whatsapp') {
-    localStorage.setItem('pm_whatsapp', contact.whatsapp || '');
-  }
-  showToast('✦ Información guardada');
+
+  const row = {
+    id:            'main',
+    whatsapp:      contact.whatsapp  || null,
+    wa_mensaje:    contact.wa_msg    || null,
+    instagram:     contact.instagram || null,
+    instagram_url: contact.ig_link   || null,
+    email:         contact.email     || null,
+    sitio_web:     contact.web       || null,
+    ciudad:        contact.city      || null,
+    direccion:     contact.address   || null,
+    horarios:      contact.hours     || null,
+    updated_at:    new Date().toISOString(),
+  };
+  const ok = await sbUPSERT('catalogo_contacto', row);
+  showToast(ok ? '✦ Información guardada en Supabase' : '⚠ Error al guardar contacto');
 }
 
 function fillContactForm() {
@@ -1661,39 +1770,50 @@ function closeDrawer() {
 
 function editProduct(id) { openDrawer(id); }
 
-function saveProduct() {
-  const name = document.getElementById('f_name').value.trim();
+async function saveProduct() {
+  const name     = document.getElementById('f_name').value.trim();
   const category = document.getElementById('f_category').value;
-  const price = document.getElementById('f_price').value.trim();
+  const price    = document.getElementById('f_price').value.trim();
 
-  if (!name) return showToast('El nombre es requerido');
+  if (!name)     return showToast('El nombre es requerido');
   if (!category) return showToast('Selecciona una categoría');
-  if (!price) return showToast('El precio es requerido');
+  if (!price)    return showToast('El precio es requerido');
 
-  const data = {
+  const row = {
     name,
-    subtitle: document.getElementById('f_subtitle').value.trim(),
+    subtitle:       document.getElementById('f_subtitle').value.trim(),
     category,
-    categoryLabel: CAT_LABELS[category] || category,
-    price,
-    desc: document.getElementById('f_desc').value.trim(),
-    material: document.getElementById('f_material').value.trim() || 'Oro laminado 14k',
-    medida: document.getElementById('f_medida').value.trim(),
-    peso: document.getElementById('f_peso').value.trim(),
-    badge: document.getElementById('f_badge').value || null,
-    photo: photoData || null,
+    category_label: CAT_LABELS[category] || category,
+    price:          parseFloat(price.replace(/[^0-9.]/g,'')) || 0,
+    description:    document.getElementById('f_desc').value.trim(),
+    material:       document.getElementById('f_material').value.trim() || 'Oro laminado 14k',
+    medida:         document.getElementById('f_medida').value.trim(),
+    peso:           document.getElementById('f_peso').value.trim(),
+    badge:          document.getElementById('f_badge').value || null,
+    photo_data:     photoData || null,
+    active:         true,
+    updated_at:     new Date().toISOString(),
   };
 
   if (editingId) {
-    const idx = products.findIndex(p => p.id === editingId);
-    products[idx] = { ...products[idx], ...data };
-    showToast('✦ Prenda actualizada');
+    const ok = await sbPATCH('catalogo_productos', 'id=eq.' + encodeURIComponent(editingId), row);
+    if (ok) {
+      const idx = products.findIndex(p => p.id === editingId);
+      if (idx >= 0) products[idx] = { ...products[idx], ...row, id: editingId, photo: photoData || products[idx].photo };
+      showToast('✦ Prenda actualizada');
+    } else { showToast('⚠ Error al actualizar'); }
   } else {
-    products.push({ id: nextId(), ...data });
-    showToast('✦ Prenda agregada al catálogo');
+    row.id         = nextId();
+    row.created_at = new Date().toISOString();
+    const res = await sbPOST('catalogo_productos', row);
+    if (res) {
+      const saved = Array.isArray(res) ? res[0] : res;
+      products.unshift({ ...row, id: saved.id || row.id, photo: photoData });
+      showToast('✦ Prenda agregada al catálogo');
+    } else { showToast('⚠ Error al guardar en Supabase'); }
   }
 
-  saveProducts();
+  localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
   renderTable();
   closeDrawer();
 }
@@ -1715,7 +1835,7 @@ function loadWatermarkConfig() {
   updateWmPreview();
 }
 
-function saveWatermarkConfig() {
+async function saveWatermarkConfig() {
   const en  = document.getElementById('wm_enabled');
   const txt = document.getElementById('wm_text');
   const pos = document.getElementById('wm_position');
@@ -1727,6 +1847,14 @@ function saveWatermarkConfig() {
     opacity:  opa ? parseInt(opa.value) / 100 : 0.55
   };
   localStorage.setItem('pm_watermark', JSON.stringify(cfg));
+  await sbUPSERT('catalogo_config', {
+    id:                 'main',
+    watermark_enabled:  cfg.enabled,
+    watermark_text:     cfg.text || null,
+    watermark_position: cfg.position,
+    watermark_opacity:  cfg.opacity,
+    updated_at:         new Date().toISOString(),
+  });
   showToast('✦ Configuración de marca de agua guardada');
 }
 
@@ -1908,13 +2036,18 @@ function closeConfirm() {
   deleteId = null;
 }
 
-function confirmDelete() {
+async function confirmDelete() {
   if (!deleteId) return;
-  products = products.filter(p => p.id !== deleteId);
-  saveProducts();
-  renderTable();
+  const ok = await sbDELETE('catalogo_productos', 'id=eq.' + encodeURIComponent(deleteId));
+  if (ok) {
+    products = products.filter(p => p.id !== deleteId);
+    localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
+    renderTable();
+    showToast('Prenda eliminada');
+  } else {
+    showToast('⚠ Error al eliminar');
+  }
   closeConfirm();
-  showToast('Prenda eliminada');
 }
 
 // ─── TOAST ───────────────────────────────────────────────────────────
@@ -2008,10 +2141,11 @@ function loadBanner() {
   } catch(e) {}
 }
 
-function saveBanner() {
+async function saveBanner() {
   const active = document.getElementById('bannerActive').checked;
   const text   = document.getElementById('bannerText').value.trim() || '🚚 Envío gratis hoy';
   localStorage.setItem(BANNER_KEY, JSON.stringify({ active, text }));
+  await sbUPSERT('catalogo_config', { id:'main', banner_active: active, banner_text: text, updated_at: new Date().toISOString() });
   showToast('✦ Banner actualizado en el catálogo');
 }
 
@@ -2041,18 +2175,33 @@ function updateToggleUI(checked) {
 // ─── CATALOG INFO (title, subtitle, etc.) ────────────────────────────
 const CATALOG_INFO_KEY = 'pm_catalog_info';
 
-function loadCatalogInfo() {
-  try {
-    const c = JSON.parse(localStorage.getItem(CATALOG_INFO_KEY) || '{}');
-    const set = (id, val, def) => { const el = document.getElementById(id); if (el) el.value = val !== undefined ? val : def; };
-    set('ci_title',      c.title,      'Pleaseme');
-    set('ci_subtitle',   c.subtitle,   'Accessories · Oro Laminado');
-    set('ci_footerLogo', c.footerLogo, 'Pleaseme Accessories');
-    set('ci_footerText', c.footerText, 'Cada pieza, una historia · Oro laminado de alta calidad');
-  } catch(e) {}
+async function loadCatalogInfo() {
+  let c = {};
+  try { c = JSON.parse(localStorage.getItem(CATALOG_INFO_KEY) || '{}'); } catch(e) {}
+  // Try Supabase first
+  const rows = await sbGET('catalogo_config?select=*&id=eq.main&limit=1');
+  if (rows && rows.length) {
+    const r = rows[0];
+    c = {
+      title:      r.nombre_marca      || c.title      || 'Pleaseme',
+      subtitle:   r.subtitulo_header  || c.subtitle   || 'Accessories · Oro Laminado',
+      footerLogo: r.footer_nombre     || c.footerLogo || 'Pleaseme Accessories',
+      footerText: r.footer_frase      || c.footerText || 'Cada pieza, una historia · Oro laminado de alta calidad',
+    };
+    // Also sync banner, discount, watermark to localStorage
+    if (r.banner_active !== null) localStorage.setItem('pm_banner', JSON.stringify({ active: r.banner_active, text: r.banner_text }));
+    if (r.descuento_pct)          localStorage.setItem('pm_discount', JSON.stringify({ threshold: r.descuento_minimo, pct: r.descuento_pct }));
+    if (r.watermark_enabled !== null) localStorage.setItem('pm_watermark', JSON.stringify({ enabled: r.watermark_enabled, text: r.watermark_text||'', position: r.watermark_position||'bottom-right', opacity: r.watermark_opacity||0.55 }));
+    localStorage.setItem(CATALOG_INFO_KEY, JSON.stringify(c));
+  }
+  const set = (id, val, def) => { const el = document.getElementById(id); if (el) el.value = val !== undefined ? val : def; };
+  set('ci_title',      c.title,      'Pleaseme');
+  set('ci_subtitle',   c.subtitle,   'Accessories · Oro Laminado');
+  set('ci_footerLogo', c.footerLogo, 'Pleaseme Accessories');
+  set('ci_footerText', c.footerText, 'Cada pieza, una historia · Oro laminado de alta calidad');
 }
 
-function saveCatalogInfo() {
+async function saveCatalogInfo() {
   const get = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
   const data = {
     title:      get('ci_title')      || 'Pleaseme',
@@ -2061,6 +2210,14 @@ function saveCatalogInfo() {
     footerText: get('ci_footerText') || 'Cada pieza, una historia · Oro laminado de alta calidad'
   };
   localStorage.setItem(CATALOG_INFO_KEY, JSON.stringify(data));
+  await sbUPSERT('catalogo_config', {
+    id:               'main',
+    nombre_marca:     data.title,
+    subtitulo_header: data.subtitle,
+    footer_nombre:    data.footerLogo,
+    footer_frase:     data.footerText,
+    updated_at:       new Date().toISOString(),
+  });
   showToast('✦ Textos del catálogo actualizados');
 }
 
@@ -2127,28 +2284,47 @@ function editInfoSection(id) {
   openInfoForm(true);
 }
 
-function saveInfoSection() {
+async function saveInfoSection() {
   const id      = document.getElementById('infoEditId').value;
   const title   = document.getElementById('infoTitle').value.trim();
   const content = document.getElementById('infoContent').value.trim();
   if (!title || !content) { showToast('✦ Completa el título y el contenido'); return; }
-  let sections = getInfoSections();
+
   if (id) {
+    // Update existing
+    const ok = await sbPATCH('catalogo_secciones', 'id=eq.' + encodeURIComponent(id),
+      { titulo: title, contenido: content, updated_at: new Date().toISOString() });
+    if (!ok) return showToast('⚠ Error al actualizar sección');
+    let sections = getInfoSections();
     const idx = sections.findIndex(x => x.id === id);
     if (idx >= 0) sections[idx] = { id, title, content };
+    saveInfoSections(sections);
   } else {
-    sections.push({ id: Date.now().toString(36), title, content });
+    // Insert new
+    const newId = Date.now().toString(36);
+    const res = await sbPOST('catalogo_secciones', {
+      id: newId, titulo: title, contenido: content,
+      position: getInfoSections().length, active: true,
+      created_at: new Date().toISOString(), updated_at: new Date().toISOString()
+    });
+    if (!res) return showToast('⚠ Error al guardar sección');
+    const saved = Array.isArray(res) ? res[0] : { id: newId };
+    let sections = getInfoSections();
+    sections.push({ id: saved.id || newId, title, content });
+    saveInfoSections(sections);
   }
-  saveInfoSections(sections);
+
   closeInfoForm();
   renderInfoTable();
   showToast('✦ Sección guardada en el catálogo');
 }
 
-function confirmDeleteInfo(id) {
+async function confirmDeleteInfo(id) {
   const s = getInfoSections().find(x => x.id === id);
   if (!s) return;
   if (!confirm('¿Eliminar la sección "' + s.title + '"?')) return;
+  const ok = await sbDELETE('catalogo_secciones', 'id=eq.' + encodeURIComponent(id));
+  if (!ok) return showToast('⚠ Error al eliminar sección');
   saveInfoSections(getInfoSections().filter(x => x.id !== id));
   renderInfoTable();
   showToast('✦ Sección eliminada');
@@ -2167,22 +2343,28 @@ function loadDiscount() {
   } catch(e) {}
 }
 
-function saveDiscount() {
+async function saveDiscount() {
   const threshold = parseInt(document.getElementById('d_threshold').value) || 10000;
   const pct       = parseInt(document.getElementById('d_pct').value)       || 35;
   localStorage.setItem(DISCOUNT_KEY, JSON.stringify({ threshold, pct }));
+  await sbUPSERT('catalogo_config', { id:'main', descuento_minimo: threshold, descuento_pct: pct, updated_at: new Date().toISOString() });
   showToast('✦ Descuento actualizado en el catálogo');
 }
 
 // ─── INIT ────────────────────────────────────────────────────────────
-function init() {
-  loadProducts();
-  loadContact();
+async function init() {
+  // Load from Supabase in parallel
+  await Promise.all([loadProducts(), loadContact(), loadCatalogInfo()]);
   fillContactForm();
   loadBanner();
   loadDiscount();
-  loadCatalogInfo();
   loadWatermarkConfig();
+  // Load info sections from Supabase
+  const secciones = await sbGET('catalogo_secciones?select=*&order=position.asc');
+  if (secciones) {
+    const mapped = secciones.map(s => ({ id: s.id, title: s.titulo, content: s.contenido }));
+    saveInfoSections(mapped);
+  }
   renderInfoTable();
   loadVisitas();
   renderTable();
