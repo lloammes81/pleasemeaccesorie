@@ -1386,6 +1386,7 @@
   }
 
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -1510,6 +1511,12 @@
 </div>
 
 <script>
+// ─── SUPABASE ─────────────────────────────────────────────────────────
+const _sb = supabase.createClient(
+  'https://sqcggascnbcnfkymqcql.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxY2dnYXNjbmJjbmZreW1xY3FsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2ODQ2NzIsImV4cCI6MjA4NzI2MDY3Mn0.q0C_q3gOZZzcr6dWPrIhWS63gst5OBYIg9FDxThaKt4'
+);
+
 // ─── SVG JEWELRY ICONS ───────────────────────────────────────────────
 const svgs = {
   anillo: (c1, c2) => `<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1809,19 +1816,38 @@ const categories = [
   { key: "temporada",  label: "Temporada"  },
 ];
 
-// ─── LOAD PRODUCTS FROM ADMIN ────────────────────────────────────────
-function loadProductsFromAdmin() {
+// ─── LOAD PRODUCTS FROM SUPABASE ─────────────────────────────────────
+async function loadProductsFromSupabase() {
   try {
-    const saved = localStorage.getItem('pm_products');
-    if (saved) {
-      const arr = JSON.parse(saved);
-      if (arr && arr.length > 0) return arr;
+    const { data, error } = await _sb
+      .from('catalogo_productos')
+      .select('*')
+      .eq('active', true)
+      .order('created_at');
+    if (error) throw error;
+    if (data && data.length > 0) {
+      return data.map(p => ({
+        id:            p.id,
+        name:          p.name,
+        subtitle:      p.subtitle      || '',
+        category:      p.category      || '',
+        categoryLabel: p.category_label || p.category,
+        price:         p.price,
+        desc:          p.description   || '',
+        material:      p.material      || 'Oro laminado 14k',
+        medida:        p.medida        || '',
+        peso:          p.peso          || '',
+        badge:         p.badge         || null,
+        photo:         p.photo_data    || null,
+      }));
     }
-  } catch(e) {}
+  } catch(e) {
+    console.error('Error cargando productos:', e);
+  }
   return defaultProducts;
 }
 
-let products = loadProductsFromAdmin();
+let products = [];
 
 // ─── WHATSAPP NUMBER ─────────────────────────────────────────────────
 // Viene del admin; si no está configurado se usa el valor por defecto
@@ -2052,7 +2078,7 @@ function renderGrid() {
   grid.innerHTML = filtered.map((p, i) => {
     const inCart = cart.some(c => c.id === p.id);
     return `
-    <div class="product-card card-enter ${inCart ? 'in-cart' : ''}" style="animation-delay:${i * 0.08}s" onclick="openModal(${p.id})">
+    <div class="product-card card-enter ${inCart ? 'in-cart' : ''}" style="animation-delay:${i * 0.08}s" onclick="openModal('${p.id}')">
       <div class="card-visual">
         <div class="card-bg" style="background:${productBg(p)}"></div>
         <div class="jewelry-icon">
@@ -2067,7 +2093,7 @@ function renderGrid() {
         <p class="card-desc">${p.desc}</p>
         <div class="card-footer">
           <div class="card-price"><span>$</span>${p.price}</div>
-          <button class="card-cta" onclick="event.stopPropagation(); openModal(${p.id})">Ver detalle</button>
+          <button class="card-cta" onclick="event.stopPropagation(); openModal('${p.id}')">Ver detalle</button>
         </div>
       </div>
     </div>`;
@@ -2243,9 +2269,13 @@ function cerrarBanner() {
   } catch(e) {}
 })();
 
-renderFilters();
-renderGrid();
-renderCartItems();
+// Cargar productos desde Supabase y luego renderizar
+(async function initCatalog() {
+  products = await loadProductsFromSupabase();
+  renderFilters();
+  renderGrid();
+  renderCartItems();
+})();
 
 // ─── CONTACT INFO IN FOOTER ───────────────────────────────────────────
 function loadContactInfo() {

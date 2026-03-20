@@ -757,6 +757,7 @@ textarea { resize: vertical; min-height: 80px; }
   margin-bottom: 32px;
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -1407,6 +1408,12 @@ textarea { resize: vertical; min-height: 80px; }
 <div class="toast" id="toast"></div>
 
 <script>
+// ─── SUPABASE ─────────────────────────────────────────────────────────
+const _sb = supabase.createClient(
+  'https://sqcggascnbcnfkymqcql.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxY2dnYXNjbmJjbmZreW1xY3FsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2ODQ2NzIsImV4cCI6MjA4NzI2MDY3Mn0.q0C_q3gOZZzcr6dWPrIhWS63gst5OBYIg9FDxThaKt4'
+);
+
 // ─── CONFIG ──────────────────────────────────────────────────────────
 const ADMIN_PASS_KEY = 'pm_admin_pass';
 const PRODUCTS_KEY   = 'pm_products';
@@ -1464,18 +1471,32 @@ const CAT_LABELS = {
   pulseras: 'Pulseras', tobilleras: 'Tobilleras', dijes: 'Dijes'
 };
 
-function loadProducts() {
+async function loadProducts() {
   try {
-    products = JSON.parse(localStorage.getItem(PRODUCTS_KEY)) || [];
-  } catch { products = []; }
-}
-
-function saveProducts() {
-  localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
-}
-
-function nextId() {
-  return products.length ? Math.max(...products.map(p => p.id)) + 1 : 1;
+    const { data, error } = await _sb
+      .from('catalogo_productos')
+      .select('*')
+      .order('created_at');
+    if (error) throw error;
+    products = (data || []).map(p => ({
+      id:            p.id,
+      name:          p.name,
+      subtitle:      p.subtitle      || '',
+      category:      p.category      || '',
+      categoryLabel: p.category_label || CAT_LABELS[p.category] || p.category,
+      price:         p.price,
+      desc:          p.description   || '',
+      material:      p.material      || 'Oro laminado 14k',
+      medida:        p.medida        || '',
+      peso:          p.peso          || '',
+      badge:         p.badge         || null,
+      photo:         p.photo_data    || null,
+    }));
+  } catch(e) {
+    console.error('Error cargando productos:', e);
+    products = [];
+    showToast('Error al conectar con Supabase');
+  }
 }
 
 // ─── CONTACT STATE ────────────────────────────────────────────────────
@@ -1601,10 +1622,10 @@ function renderTable() {
       <td>${p.badge ? `<span class="badge badge-gold">${p.badge}</span>` : '<span style="color:var(--text-muted);font-size:11px">—</span>'}</td>
       <td>
         <div class="actions-cell">
-          <button class="icon-btn" onclick="editProduct(${p.id})" title="Editar">
+          <button class="icon-btn" onclick="editProduct('${p.id}')" title="Editar">
             <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </button>
-          <button class="icon-btn del" onclick="askDelete(${p.id})" title="Eliminar">
+          <button class="icon-btn del" onclick="askDelete('${p.id}')" title="Eliminar">
             <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
           </button>
         </div>
@@ -1661,39 +1682,41 @@ function closeDrawer() {
 
 function editProduct(id) { openDrawer(id); }
 
-function saveProduct() {
-  const name = document.getElementById('f_name').value.trim();
+async function saveProduct() {
+  const name     = document.getElementById('f_name').value.trim();
   const category = document.getElementById('f_category').value;
-  const price = document.getElementById('f_price').value.trim();
+  const price    = document.getElementById('f_price').value.trim();
 
-  if (!name) return showToast('El nombre es requerido');
+  if (!name)     return showToast('El nombre es requerido');
   if (!category) return showToast('Selecciona una categoría');
-  if (!price) return showToast('El precio es requerido');
+  if (!price)    return showToast('El precio es requerido');
 
   const data = {
     name,
-    subtitle: document.getElementById('f_subtitle').value.trim(),
+    subtitle:       document.getElementById('f_subtitle').value.trim(),
     category,
-    categoryLabel: CAT_LABELS[category] || category,
-    price,
-    desc: document.getElementById('f_desc').value.trim(),
-    material: document.getElementById('f_material').value.trim() || 'Oro laminado 14k',
-    medida: document.getElementById('f_medida').value.trim(),
-    peso: document.getElementById('f_peso').value.trim(),
-    badge: document.getElementById('f_badge').value || null,
-    photo: photoData || null,
+    category_label: CAT_LABELS[category] || category,
+    price:          parseFloat(price),
+    description:    document.getElementById('f_desc').value.trim(),
+    material:       document.getElementById('f_material').value.trim() || 'Oro laminado 14k',
+    medida:         document.getElementById('f_medida').value.trim(),
+    peso:           document.getElementById('f_peso').value.trim(),
+    badge:          document.getElementById('f_badge').value || null,
+    photo_data:     photoData || null,
+    active:         true,
   };
 
   if (editingId) {
-    const idx = products.findIndex(p => p.id === editingId);
-    products[idx] = { ...products[idx], ...data };
+    const { error } = await _sb.from('catalogo_productos').update(data).eq('id', editingId);
+    if (error) return showToast('Error al actualizar: ' + error.message);
     showToast('✦ Prenda actualizada');
   } else {
-    products.push({ id: nextId(), ...data });
+    const { error } = await _sb.from('catalogo_productos').insert(data);
+    if (error) return showToast('Error al guardar: ' + error.message);
     showToast('✦ Prenda agregada al catálogo');
   }
 
-  saveProducts();
+  await loadProducts();
   renderTable();
   closeDrawer();
 }
@@ -1908,10 +1931,11 @@ function closeConfirm() {
   deleteId = null;
 }
 
-function confirmDelete() {
+async function confirmDelete() {
   if (!deleteId) return;
-  products = products.filter(p => p.id !== deleteId);
-  saveProducts();
+  const { error } = await _sb.from('catalogo_productos').delete().eq('id', deleteId);
+  if (error) return showToast('Error al eliminar: ' + error.message);
+  await loadProducts();
   renderTable();
   closeConfirm();
   showToast('Prenda eliminada');
@@ -2175,8 +2199,8 @@ function saveDiscount() {
 }
 
 // ─── INIT ────────────────────────────────────────────────────────────
-function init() {
-  loadProducts();
+async function init() {
+  await loadProducts();
   loadContact();
   fillContactForm();
   loadBanner();
