@@ -841,7 +841,7 @@ textarea { resize: vertical; min-height: 80px; }
     <div class="login-logo">Pleaseme</div>
     <div class="login-sub">Panel Administrativo</div>
     <label class="login-label">Contraseña</label>
-    <input class="login-input" type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
+    <input class="login-input" type="password" id="loginPass" placeholder="••••••••" autocomplete="off">
     <button class="login-btn" id="loginBtn" onclick="doLogin()" disabled>Cargando...</button>
     <div class="login-error" id="loginError"></div>
   </div>
@@ -2389,6 +2389,7 @@ async function init() {
 // Cargar config (contraseña + contacto) antes de mostrar el login
 (async function() {
   await loadConfig();
+  document.getElementById('loginPass').value = '';
   const btn = document.getElementById('loginBtn');
   btn.disabled = false;
   btn.textContent = 'Ingresar';
