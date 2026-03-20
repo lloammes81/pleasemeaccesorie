@@ -1983,13 +1983,7 @@ function changeQty(id, delta) {
 }
 
 function getDiscountSettings() {
-  try {
-    const d = JSON.parse(localStorage.getItem('pm_discount') || '{}');
-    return {
-      min: d.threshold !== undefined ? Number(d.threshold) : 10000,
-      pct: d.pct     !== undefined ? Number(d.pct)       : 35
-    };
-  } catch(e) { return { min: 10000, pct: 35 }; }
+  return window._discountSettings || { min: 10000, pct: 35 };
 }
 
 function updateCartUI() {
@@ -2348,23 +2342,7 @@ function checkPopup() {
 
 
 // ─── ANNOUNCEMENT BANNER ─────────────────────────────────────────────
-(function() {
-  const saved = localStorage.getItem('pm_banner');
-  if (saved) {
-    try {
-      const d = JSON.parse(saved);
-      if (!d.active) {
-        document.getElementById('announcementBanner').classList.add('hidden');
-        return;
-      }
-      if (d.text) {
-        const msg  = document.getElementById('bannerText');
-        const sep  = '<span class="banner-sep">✦</span>';
-        msg.innerHTML = d.text + sep + 'Oro laminado 14k · Calidad garantizada' + sep + 'Pedidos superiores a $10,000 obtienen el 35% de descuento mayorista' + sep + d.text + sep + 'Oro laminado 14k · Calidad garantizada';
-      }
-    } catch(e) {}
-  }
-})();
+// (cargado desde Supabase en initCatalog)
 
 function cerrarBanner() {
   document.getElementById('announcementBanner').style.animation = 'none';
@@ -2395,15 +2373,60 @@ function cerrarBanner() {
   } catch(e) {}
 })();
 
-// Cargar productos y contacto desde Supabase, luego renderizar
+// Cargar productos, contacto y todas las configs desde Supabase
 (async function initCatalog() {
-  // Cargar en paralelo
-  const [prods, contactRes] = await Promise.all([
+  const [prods, contactRes, configRes] = await Promise.all([
     loadProductsFromSupabase(),
-    _sb.from('config').select('value').eq('key', 'pm_contact').single()
+    _sb.from('config').select('value').eq('key', 'pm_contact').single(),
+    _sb.from('config').select('key,value').in('key', ['pm_banner','pm_catalog_info','pm_info_sections','pm_discount'])
   ]);
   products = prods;
   if (contactRes.data) appContact = contactRes.data.value || {};
+
+  // Poblar cache de configs
+  const _cfg = {};
+  if (configRes.data) configRes.data.forEach(r => { _cfg[r.key] = r.value; });
+
+  // Aplicar banner
+  const bannerData = _cfg['pm_banner'];
+  if (bannerData) {
+    if (!bannerData.active) {
+      document.getElementById('announcementBanner').classList.add('hidden');
+    } else if (bannerData.text) {
+      const msg = document.getElementById('bannerText');
+      const sep = '<span class="banner-sep">✦</span>';
+      msg.innerHTML = bannerData.text + sep + 'Oro laminado 14k · Calidad garantizada' + sep + 'Pedidos superiores a $10,000 obtienen el 35% de descuento mayorista' + sep + bannerData.text + sep + 'Oro laminado 14k · Calidad garantizada';
+    }
+  }
+
+  // Aplicar catalog info
+  const ci = _cfg['pm_catalog_info'] || {};
+  if (ci.title !== undefined)      document.getElementById('headerLogo').textContent     = ci.title    || 'Pleaseme';
+  if (ci.subtitle !== undefined)   document.getElementById('headerSub').textContent      = ci.subtitle || 'Accessories · Oro Laminado';
+  if (ci.footerLogo !== undefined) document.getElementById('footerLogo').textContent     = ci.footerLogo  || 'Pleaseme Accessories';
+  if (ci.footerText !== undefined) document.getElementById('footerTagline').textContent  = ci.footerText  || 'Cada pieza, una historia · Oro laminado de alta calidad';
+
+  // Aplicar info sections
+  const sections = Array.isArray(_cfg['pm_info_sections']) ? _cfg['pm_info_sections'] : [];
+  const infoEl = document.getElementById('infoSections');
+  if (infoEl && sections.length) {
+    infoEl.innerHTML = sections.map((s, i) => `
+      <details style="border:1px solid rgba(201,151,58,0.2);margin-bottom:10px;background:rgba(255,255,255,0.02);" ${i===0?'open':''}>
+        <summary style="padding:16px 20px;cursor:pointer;font-family:'Cinzel',serif;font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold-deep,#C9973A);list-style:none;display:flex;justify-content:space-between;align-items:center;user-select:none;">
+          ${s.title}
+          <span style="font-size:16px;opacity:0.6;">+</span>
+        </summary>
+        <div style="padding:0 20px 18px;font-size:13px;font-weight:300;line-height:1.8;color:var(--text-muted,#9A8C76);white-space:pre-wrap;">${s.content}</div>
+      </details>`).join('');
+  }
+
+  // Guardar descuento en window para uso del carrito
+  const disc = _cfg['pm_discount'] || {};
+  window._discountSettings = {
+    min: disc.threshold !== undefined ? Number(disc.threshold) : 10000,
+    pct: disc.pct       !== undefined ? Number(disc.pct)       : 35
+  };
+
   renderFilters();
   renderGrid();
   renderCartItems();
@@ -2451,36 +2474,8 @@ function cerrarWelcome() {
 // Auto-close after 10s
 setTimeout(cerrarWelcome, 10000);
 
-// ─── CATALOG INFO (title, subtitle, tagline) ──────────────────────────
-function loadCatalogInfo() {
-  try {
-    const c = JSON.parse(localStorage.getItem('pm_catalog_info') || '{}');
-    if (c.eyebrow !== undefined)  document.getElementById('headerEyebrow').textContent = c.eyebrow  || 'Catálogo';
-    if (c.title !== undefined)    document.getElementById('headerLogo').textContent    = c.title    || 'Pleaseme';
-    if (c.subtitle !== undefined) document.getElementById('headerSub').textContent     = c.subtitle || 'Accessories · Oro Laminado';
-    if (c.footerLogo !== undefined)  document.getElementById('footerLogo').textContent    = c.footerLogo  || 'Pleaseme Accessories';
-    if (c.footerText !== undefined)  document.getElementById('footerTagline').textContent = c.footerText  || 'Cada pieza, una historia · Oro laminado de alta calidad';
-  } catch(e) {}
-}
-loadCatalogInfo();
-
-// ─── INFO SECTIONS ────────────────────────────────────────────────────
-function renderInfoSections() {
-  const el = document.getElementById('infoSections');
-  if (!el) return;
-  let sections = [];
-  try { sections = JSON.parse(localStorage.getItem('pm_info_sections') || '[]'); } catch(e) {}
-  if (!sections.length) { el.innerHTML = ''; return; }
-  el.innerHTML = sections.map((s, i) => `
-    <details style="border:1px solid rgba(201,151,58,0.2);margin-bottom:10px;background:rgba(255,255,255,0.02);" ${i===0?'open':''}>
-      <summary style="padding:16px 20px;cursor:pointer;font-family:'Cinzel',serif;font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold-deep,#C9973A);list-style:none;display:flex;justify-content:space-between;align-items:center;user-select:none;">
-        ${s.title}
-        <span style="font-size:16px;opacity:0.6;">+</span>
-      </summary>
-      <div style="padding:0 20px 18px;font-size:13px;font-weight:300;line-height:1.8;color:var(--text-muted,#9A8C76);white-space:pre-wrap;">${s.content}</div>
-    </details>`).join('');
-}
-renderInfoSections();
+// ─── CATALOG INFO e INFO SECTIONS ─────────────────────────────────────
+// (cargados desde Supabase en initCatalog)
 
 // ─── SINGLE TAB DETECTION ─────────────────────────────────────────────
 (function() {

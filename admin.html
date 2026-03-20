@@ -1420,6 +1420,23 @@ const PRODUCTS_KEY   = 'pm_products';
 const CONTACT_KEY    = 'pm_contact';
 const DEFAULT_PASS   = 'pleaseme2024';
 
+// ─── CONFIG CACHE (Supabase) ─────────────────────────────────────────
+let _cfgCache = {};
+
+async function _loadConfigs() {
+  try {
+    const { data } = await _sb.from('config').select('key,value')
+      .in('key', ['pm_watermark','pm_banner','pm_catalog_info','pm_info_sections','pm_discount']);
+    if (data) data.forEach(r => { _cfgCache[r.key] = r.value; });
+  } catch(e) { console.error('Error cargando configs:', e); }
+}
+
+async function _saveConfig(key, value) {
+  _cfgCache[key] = value;
+  const { error } = await _sb.from('config').upsert({ key, value }, { onConflict: 'key' });
+  return error;
+}
+
 // ─── AUTH ────────────────────────────────────────────────────────────
 let adminPassword = DEFAULT_PASS;
 
@@ -1757,7 +1774,7 @@ function loadWatermarkConfig() {
   updateWmPreview();
 }
 
-function saveWatermarkConfig() {
+async function saveWatermarkConfig() {
   const en  = document.getElementById('wm_enabled');
   const txt = document.getElementById('wm_text');
   const pos = document.getElementById('wm_position');
@@ -1768,7 +1785,8 @@ function saveWatermarkConfig() {
     position: pos ? pos.value : 'bottom-right',
     opacity:  opa ? parseInt(opa.value) / 100 : 0.55
   };
-  localStorage.setItem('pm_watermark', JSON.stringify(cfg));
+  const error = await _saveConfig('pm_watermark', cfg);
+  if (error) return showToast('Error al guardar: ' + error.message);
   showToast('✦ Configuración de marca de agua guardada');
 }
 
@@ -1793,7 +1811,7 @@ function updateWmPreview() {
 
   let brand = (txt && txt.value.trim()) ? txt.value.trim() : '';
   if (!brand) {
-    try { brand = JSON.parse(localStorage.getItem('pm_catalog_info')||'{}').title || 'Pleaseme'; } catch(e) { brand = 'Pleaseme'; }
+    brand = (_cfgCache['pm_catalog_info'] || {}).title || 'Pleaseme';
   }
   prev.textContent = brand;
 
@@ -1811,7 +1829,7 @@ function updateWmPreview() {
 
 // ─── WATERMARK ───────────────────────────────────────────────────────
 function getWatermarkConfig() {
-  try { return JSON.parse(localStorage.getItem('pm_watermark') || '{}'); } catch(e) { return {}; }
+  return _cfgCache['pm_watermark'] || {};
 }
 
 function applyWatermark(dataUrl, callback) {
@@ -1820,10 +1838,7 @@ function applyWatermark(dataUrl, callback) {
 
   let brand = cfg.text || '';
   if (!brand) {
-    try {
-      const ci = JSON.parse(localStorage.getItem('pm_catalog_info') || '{}');
-      brand = ci.title || 'Pleaseme';
-    } catch(e) { brand = 'Pleaseme'; }
+    brand = (_cfgCache['pm_catalog_info'] || {}).title || 'Pleaseme';
   }
 
   const position = cfg.position || 'bottom-right';
@@ -2035,11 +2050,9 @@ function resetVisitas() {
 }
 
 // ─── BANNER ──────────────────────────────────────────────────────────
-const BANNER_KEY = 'pm_banner';
-
 function loadBanner() {
   try {
-    const d = JSON.parse(localStorage.getItem(BANNER_KEY)) || {};
+    const d = _cfgCache['pm_banner'] || {};
     const activeEl = document.getElementById('bannerActive');
     const textEl   = document.getElementById('bannerText');
     if (activeEl) {
@@ -2051,10 +2064,11 @@ function loadBanner() {
   } catch(e) {}
 }
 
-function saveBanner() {
+async function saveBanner() {
   const active = document.getElementById('bannerActive').checked;
   const text   = document.getElementById('bannerText').value.trim() || '🚚 Envío gratis hoy';
-  localStorage.setItem(BANNER_KEY, JSON.stringify({ active, text }));
+  const error  = await _saveConfig('pm_banner', { active, text });
+  if (error) return showToast('Error al guardar: ' + error.message);
   showToast('✦ Banner actualizado en el catálogo');
 }
 
@@ -2082,11 +2096,9 @@ function updateToggleUI(checked) {
 }
 
 // ─── CATALOG INFO (title, subtitle, etc.) ────────────────────────────
-const CATALOG_INFO_KEY = 'pm_catalog_info';
-
 function loadCatalogInfo() {
   try {
-    const c = JSON.parse(localStorage.getItem(CATALOG_INFO_KEY) || '{}');
+    const c = _cfgCache['pm_catalog_info'] || {};
     const set = (id, val, def) => { const el = document.getElementById(id); if (el) el.value = val !== undefined ? val : def; };
     set('ci_title',      c.title,      'Pleaseme');
     set('ci_subtitle',   c.subtitle,   'Accessories · Oro Laminado');
@@ -2095,7 +2107,7 @@ function loadCatalogInfo() {
   } catch(e) {}
 }
 
-function saveCatalogInfo() {
+async function saveCatalogInfo() {
   const get = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
   const data = {
     title:      get('ci_title')      || 'Pleaseme',
@@ -2103,19 +2115,18 @@ function saveCatalogInfo() {
     footerLogo: get('ci_footerLogo') || 'Pleaseme Accessories',
     footerText: get('ci_footerText') || 'Cada pieza, una historia · Oro laminado de alta calidad'
   };
-  localStorage.setItem(CATALOG_INFO_KEY, JSON.stringify(data));
+  const error = await _saveConfig('pm_catalog_info', data);
+  if (error) return showToast('Error al guardar: ' + error.message);
   showToast('✦ Textos del catálogo actualizados');
 }
 
 // ─── INFO SECTIONS ────────────────────────────────────────────────────
-const INFO_SECTIONS_KEY = 'pm_info_sections';
-
 function getInfoSections() {
-  try { return JSON.parse(localStorage.getItem(INFO_SECTIONS_KEY) || '[]'); } catch(e) { return []; }
+  return Array.isArray(_cfgCache['pm_info_sections']) ? _cfgCache['pm_info_sections'] : [];
 }
 
-function saveInfoSections(arr) {
-  localStorage.setItem(INFO_SECTIONS_KEY, JSON.stringify(arr));
+async function saveInfoSections(arr) {
+  await _saveConfig('pm_info_sections', arr);
 }
 
 function renderInfoTable() {
@@ -2170,7 +2181,7 @@ function editInfoSection(id) {
   openInfoForm(true);
 }
 
-function saveInfoSection() {
+async function saveInfoSection() {
   const id      = document.getElementById('infoEditId').value;
   const title   = document.getElementById('infoTitle').value.trim();
   const content = document.getElementById('infoContent').value.trim();
@@ -2182,27 +2193,27 @@ function saveInfoSection() {
   } else {
     sections.push({ id: Date.now().toString(36), title, content });
   }
-  saveInfoSections(sections);
+  const error = await saveInfoSections(sections);
+  if (error) return showToast('Error al guardar: ' + error.message);
   closeInfoForm();
   renderInfoTable();
   showToast('✦ Sección guardada en el catálogo');
 }
 
-function confirmDeleteInfo(id) {
+async function confirmDeleteInfo(id) {
   const s = getInfoSections().find(x => x.id === id);
   if (!s) return;
   if (!confirm('¿Eliminar la sección "' + s.title + '"?')) return;
-  saveInfoSections(getInfoSections().filter(x => x.id !== id));
+  const error = await saveInfoSections(getInfoSections().filter(x => x.id !== id));
+  if (error) return showToast('Error al eliminar: ' + error.message);
   renderInfoTable();
   showToast('✦ Sección eliminada');
 }
 
 // ─── DESCUENTO ────────────────────────────────────────────────────────
-const DISCOUNT_KEY = 'pm_discount';
-
 function loadDiscount() {
   try {
-    const d    = JSON.parse(localStorage.getItem(DISCOUNT_KEY) || '{}');
+    const d    = _cfgCache['pm_discount'] || {};
     const tEl  = document.getElementById('d_threshold');
     const pEl  = document.getElementById('d_pct');
     if (tEl) tEl.value = d.threshold !== undefined ? d.threshold : 10000;
@@ -2210,16 +2221,17 @@ function loadDiscount() {
   } catch(e) {}
 }
 
-function saveDiscount() {
+async function saveDiscount() {
   const threshold = parseInt(document.getElementById('d_threshold').value) || 10000;
   const pct       = parseInt(document.getElementById('d_pct').value)       || 35;
-  localStorage.setItem(DISCOUNT_KEY, JSON.stringify({ threshold, pct }));
+  const error     = await _saveConfig('pm_discount', { threshold, pct });
+  if (error) return showToast('Error al guardar: ' + error.message);
   showToast('✦ Descuento actualizado en el catálogo');
 }
 
 // ─── INIT ────────────────────────────────────────────────────────────
 async function init() {
-  await loadProducts();
+  await Promise.all([loadProducts(), _loadConfigs()]);
   fillContactForm();
   loadBanner();
   loadDiscount();
