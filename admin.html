@@ -879,9 +879,9 @@ textarea { resize: vertical; min-height: 80px; }
         Información
       </button>
       <div class="nav-section-label" style="margin-top:8px">Catálogo</div>
-      <button class="nav-item" onclick="openCatalog()">
-        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-        Ver catálogo
+      <button class="nav-item" onclick="volverAlCatalogo()">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/><line x1="9" y1="12" x2="21" y2="12"/></svg>
+        Volver al catálogo
       </button>
     </nav>
     <div class="sidebar-footer">
@@ -1750,8 +1750,14 @@ function goTo(page) {
   }
 }
 
-function openCatalog() {
-  window.open('index.html', '_blank');
+function volverAlCatalogo() {
+  // Si fue abierto desde index.html (tiene opener), cierra esta ventana
+  // Si no tiene opener (abrió directo), navega al index
+  if (window.opener && !window.opener.closed) {
+    window.close();
+  } else {
+    window.location.href = 'index.html';
+  }
 }
 
 // ─── RENDER TABLE ─────────────────────────────────────────────────────
