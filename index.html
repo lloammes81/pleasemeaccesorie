@@ -1605,6 +1605,33 @@
 </div>
 
 <script>
+// ─── SINGLE TAB GUARD ────────────────────────────────────────────────
+(function() {
+  try {
+    const ch = new BroadcastChannel('pleaseme_catalog');
+    let leader = false;
+
+    ch.onmessage = function(e) {
+      if (e.data === 'ping' && leader) ch.postMessage('pong');
+      if (e.data === 'pong') {
+        ch.close();
+        document.body.innerHTML = `
+          <div style="position:fixed;inset:0;background:#0A0804;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;font-family:'Montserrat',sans-serif;color:#C9973A;text-align:center;padding:32px;">
+            <div style="font-size:48px;margin-bottom:24px;">⚠</div>
+            <div style="font-size:18px;font-weight:600;margin-bottom:12px;">Página ya abierta</div>
+            <div style="font-size:13px;color:#9A8C76;max-width:320px;line-height:1.6;">El catálogo de Pleaseme ya está abierto en otra ventana o pestaña.<br>Por favor úsala.</div>
+            <button onclick="window.close()" style="margin-top:32px;background:linear-gradient(135deg,#C9973A,#E8C96D);border:none;color:#0A0804;font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;padding:12px 28px;cursor:pointer;border-radius:2px;">Cerrar esta pestaña</button>
+          </div>`;
+      }
+    };
+
+    ch.postMessage('ping');
+    setTimeout(function() { leader = true; }, 300);
+
+    window.addEventListener('beforeunload', function() { ch.close(); });
+  } catch(e) { /* BroadcastChannel no soportado, continúa normal */ }
+})();
+
 // ─── SUPABASE ─────────────────────────────────────────────────────────
 const _sb = supabase.createClient(
   'https://sqcggascnbcnfkymqcql.supabase.co',
