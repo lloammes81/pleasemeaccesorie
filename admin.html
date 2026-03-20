@@ -832,12 +832,117 @@ textarea { resize: vertical; min-height: 80px; }
   .sidebar { transform: translateX(-100%); transition: transform 0.3s; }
   .sidebar.mobile-open { transform: translateX(0); }
   .main { margin-left: 0; }
-  .page { padding: 20px 16px; }
+  .page { padding: 16px 14px 100px; }
   .field-row { grid-template-columns: 1fr; }
   .stats-row { grid-template-columns: 1fr 1fr; }
-  .topbar { padding: 0 16px; }
+  .topbar { padding: 0 14px; }
   .topbar-title { font-size: 9px; letter-spacing: 2px; }
-  .sb-status { font-size: 7px; padding: 4px 8px; letter-spacing: 1px; }
+  .sb-status { display: none; }
+  .drawer { width: 100vw; max-width: 100vw; }
+  .table-wrap { overflow-x: auto; }
+  th, td { padding: 10px 10px; font-size: 12px; }
+  .actions-cell { gap: 4px; }
+}
+
+/* ─── MOBILE BOTTOM NAV ─── */
+#mobileNav {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 68px;
+  background: var(--dark2);
+  border-top: 1px solid rgba(201,151,58,0.2);
+  z-index: 300;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 4px;
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.4);
+}
+
+.mob-nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  color: #5A4F3E;
+  font-family: 'Cinzel', serif;
+  font-size: 7px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.2s;
+  flex: 1;
+  border-radius: 8px;
+}
+
+.mob-nav-btn svg { width: 22px; height: 22px; }
+
+.mob-nav-btn.active {
+  color: var(--gold-light);
+}
+
+.mob-nav-btn.active svg {
+  filter: drop-shadow(0 0 6px rgba(201,151,58,0.5));
+}
+
+/* Botón central destacado (nuevo producto) */
+.mob-nav-btn.mob-center {
+  background: linear-gradient(135deg, var(--gold-deep), var(--gold-light));
+  color: var(--dark);
+  border-radius: 50%;
+  width: 52px; height: 52px;
+  padding: 0;
+  flex: none;
+  box-shadow: 0 4px 16px rgba(201,151,58,0.4);
+  margin-bottom: 10px;
+}
+
+.mob-nav-btn.mob-center svg { width: 24px; height: 24px; }
+
+/* Topbar móvil */
+#mobileTopbar {
+  display: none;
+  position: sticky;
+  top: 0; z-index: 150;
+  background: var(--dark2);
+  border-bottom: 1px solid rgba(201,151,58,0.15);
+  padding: 12px 16px;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+}
+
+.mob-topbar-logo {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px;
+  font-weight: 300;
+  background: linear-gradient(135deg, var(--gold-deep), var(--gold-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.mob-topbar-title {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--text-mid);
+  text-transform: uppercase;
+}
+
+.mob-topbar-actions { display: flex; align-items: center; gap: 8px; }
+
+@media (max-width: 768px) {
+  #mobileNav     { display: flex; }
+  #mobileTopbar  { display: flex; }
+  /* Ocultar sidebar y topbar desktop */
+  .sidebar       { display: none; }
+  .topbar        { display: none; }
+  /* Main sin margen */
+  .main          { margin-left: 0; }
 }
 
 .gold-line {
@@ -849,6 +954,20 @@ textarea { resize: vertical; min-height: 80px; }
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+
+<!-- ═══ MOBILE TOPBAR ═══ -->
+<div id="mobileTopbar">
+  <div class="mob-topbar-logo">Pleaseme</div>
+  <span class="mob-topbar-title" id="mobPageTitle">Productos</span>
+  <div class="mob-topbar-actions">
+    <button class="icon-btn" onclick="toggleTheme()" style="width:36px;height:36px;border-color:rgba(201,151,58,0.2);">
+      <svg id="themeIconMob" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+    </button>
+    <button class="icon-btn" onclick="doLogout()" style="width:36px;height:36px;border-color:rgba(192,57,43,0.3);color:#9A6060;">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    </button>
+  </div>
+</div>
 
 <!-- ═══ LOGIN ═══ -->
 <div id="loginScreen">
@@ -2250,27 +2369,36 @@ function applyWatermark(dataUrl, callback) {
 
 // ─── API KEY GEMINI ─────────────────────────────────────────────────
 const OPENAI_KEY_STORAGE = 'pm_openai_key';
-const PROXY_URL_STORAGE     = 'pm_proxy_url';
+const OPENAI_KEY_SB      = 'pm_openai_apikey';
 
-function mostrarInstruccionesProxy() {
-  const el = document.getElementById('proxyInstrucciones');
-  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
-}
+function mostrarInstruccionesProxy() {}
 
-function guardarApiKey() {
-  const val      = document.getElementById('anthropicKey').value.trim();
-  const proxyVal = document.getElementById('proxyUrl') ? document.getElementById('proxyUrl').value.trim() : '';
-
-  if (!val && !proxyVal) return showToast('Escribe la API Key o la URL del proxy');
-  if (val && val.length < 10) return showToast('API Key inválida');
-
-  if (val)      localStorage.setItem(OPENAI_KEY_STORAGE, val);
-  if (proxyVal) localStorage.setItem(PROXY_URL_STORAGE, proxyVal);
+async function guardarApiKey() {
+  const val = document.getElementById('anthropicKey').value.trim();
+  if (!val) return showToast('Escribe la API Key');
+  if (val.length < 10) return showToast('API Key invalida');
 
   const st = document.getElementById('apiKeyStatus');
-  if (st) { st.style.color = 'var(--green)'; st.textContent = '✦ Configuración guardada'; setTimeout(() => { st.textContent = ''; }, 2000); }
+  if (st) { st.style.color = 'var(--text-muted)'; st.textContent = 'Guardando...'; }
+
+  // Guardar en localStorage inmediatamente
+  localStorage.setItem(OPENAI_KEY_STORAGE, val);
+
+  // Guardar en Supabase — disponible desde cualquier dispositivo
+  const { error } = await _sb.from('config').upsert(
+    { key: OPENAI_KEY_SB, value: { apikey: val } },
+    { onConflict: 'key' }
+  );
+
+  if (error) {
+    if (st) { st.style.color = 'var(--gold)'; st.textContent = 'Guardada solo localmente'; setTimeout(() => { st.textContent = ''; }, 2500); }
+    console.warn('Supabase error guardando apikey:', error.message);
+  } else {
+    if (st) { st.style.color = 'var(--green)'; st.textContent = 'Guardada en la nube ✓'; setTimeout(() => { st.textContent = ''; }, 2500); }
+  }
+
   minimizerApiKey();
-  showToast('✦ Configuración guardada');
+  showToast('API Key guardada');
 }
 
 function minimizerApiKey() {
@@ -2287,14 +2415,32 @@ function expandirApiKey() {
   if (mini)  mini.style.display  = 'none';
 }
 
-function cargarApiKey() {
-  const savedKey   = localStorage.getItem(OPENAI_KEY_STORAGE);
-  const savedProxy = localStorage.getItem(PROXY_URL_STORAGE);
-  const inputKey   = document.getElementById('anthropicKey');
-  const inputProxy = document.getElementById('proxyUrl');
-  if (inputKey   && savedKey)   inputKey.value   = savedKey;
-  if (inputProxy && savedProxy) inputProxy.value = savedProxy;
-  if (savedKey || savedProxy)   minimizerApiKey();
+async function cargarApiKey() {
+  const inputKey = document.getElementById('anthropicKey');
+  if (!inputKey) return;
+
+  // 1. Intentar Supabase primero
+  try {
+    const { data, error } = await _sb
+      .from('config')
+      .select('value')
+      .eq('key', OPENAI_KEY_SB)
+      .single();
+
+    if (!error && data?.value?.apikey) {
+      inputKey.value = data.value.apikey;
+      localStorage.setItem(OPENAI_KEY_STORAGE, data.value.apikey);
+      minimizerApiKey();
+      return;
+    }
+  } catch(e) {}
+
+  // 2. Fallback localStorage
+  const saved = localStorage.getItem(OPENAI_KEY_STORAGE);
+  if (saved) {
+    inputKey.value = saved;
+    minimizerApiKey();
+  }
 }
 
 function toggleVerKey() {
@@ -2308,7 +2454,6 @@ function toggleVerKey() {
     icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
   }
 }
-
 
 // ─── CHAT IA ─────────────────────────────────────────────────────────
 let iaChatHistory = [];  // historial de conversación
@@ -3156,5 +3301,70 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { closeDrawer(); closeConfirm(); }
 });
 </script>
+<!-- ═══ MOBILE BOTTOM NAV ═══ -->
+<nav id="mobileNav">
+  <button class="mob-nav-btn active" id="mob-nav-productos" onclick="mobGoTo('productos')">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    Productos
+  </button>
+  <button class="mob-nav-btn" id="mob-nav-contacto" onclick="mobGoTo('contacto')">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 11.5 19.79 19.79 0 01.12 2.86 2 2 0 012.11.68h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.09a16 16 0 006 6l.61-.54a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+    Contacto
+  </button>
+  <!-- Botón central — Nuevo producto -->
+  <button class="mob-nav-btn mob-center" onclick="openDrawer()" title="Nuevo producto">
+    <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+  <button class="mob-nav-btn" id="mob-nav-banner" onclick="mobGoTo('banner')">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 3h18v4H3z"/><path d="M3 10h18v4H3z"/><path d="M3 17h18v4H3z"/></svg>
+    Banner
+  </button>
+  <button class="mob-nav-btn" id="mob-nav-visitas" onclick="mobGoTo('visitas')">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    Visitas
+  </button>
+</nav>
+
+<script>
+// ─── DETECCIÓN DE MÓVIL ──────────────────────────────────────────────
+function esMobile() {
+  return window.innerWidth <= 768 ||
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+function mobGoTo(page) {
+  // Reutilizar goTo del desktop
+  goTo(page);
+  // Actualizar título
+  const titles = {
+    productos: 'Productos',
+    contacto:  'Contacto',
+    banner:    'Banner',
+    visitas:   'Visitas',
+    info:      'Información'
+  };
+  const titleEl = document.getElementById('mobPageTitle');
+  if (titleEl) titleEl.textContent = titles[page] || '';
+  // Actualizar botón activo
+  document.querySelectorAll('.mob-nav-btn:not(.mob-center)').forEach(b => b.classList.remove('active'));
+  const activeBtn = document.getElementById('mob-nav-' + page);
+  if (activeBtn) activeBtn.classList.add('active');
+  // Scroll al tope
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Aplicar modo móvil si corresponde
+(function() {
+  if (esMobile()) {
+    document.body.classList.add('is-mobile');
+  }
+  // Re-verificar en resize
+  window.addEventListener('resize', () => {
+    if (esMobile()) document.body.classList.add('is-mobile');
+    else document.body.classList.remove('is-mobile');
+  });
+})();
+</script>
+
 </body>
 </html>
