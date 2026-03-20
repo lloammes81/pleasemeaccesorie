@@ -1531,12 +1531,21 @@ function getPass() {
 function doLogin() {
   const val = document.getElementById('loginPass').value;
   if (val === getPass()) {
+    document.getElementById('loginPass').value = '';
+    document.getElementById('loginError').textContent = '';
+    document.getElementById('loginPass').style.borderColor = '';
     document.getElementById('loginScreen').classList.add('hidden');
     sessionStorage.setItem('pm_auth', '1');
     init();
   } else {
+    document.getElementById('loginPass').value = '';
     document.getElementById('loginError').textContent = 'Contraseña incorrecta';
     document.getElementById('loginPass').style.borderColor = 'rgba(192,57,43,0.5)';
+    document.getElementById('loginPass').focus();
+    setTimeout(() => {
+      document.getElementById('loginError').textContent = '';
+      document.getElementById('loginPass').style.borderColor = '';
+    }, 2000);
   }
 }
 
@@ -1545,6 +1554,20 @@ document.getElementById('loginPass').addEventListener('keydown', e => {
   document.getElementById('loginError').textContent = '';
   document.getElementById('loginPass').style.borderColor = '';
 });
+
+// Limpiar campo cada vez que la pantalla de login se muestre
+(function() {
+  const observer = new MutationObserver(() => {
+    const screen = document.getElementById('loginScreen');
+    if (screen && !screen.classList.contains('hidden')) {
+      document.getElementById('loginPass').value = '';
+      document.getElementById('loginError').textContent = '';
+      document.getElementById('loginPass').style.borderColor = '';
+      document.getElementById('loginPass').focus();
+    }
+  });
+  observer.observe(document.getElementById('loginScreen'), { attributes: true, attributeFilter: ['class'] });
+})();
 
 function doLogout() {
   sessionStorage.removeItem('pm_auth');
@@ -1610,6 +1633,52 @@ async function loadProducts() {
     products = [];
     showToast('Error al conectar con Supabase');
   }
+}
+
+// ─── ELIMINAR DUPLICADOS AUTOMÁTICAMENTE ─────────────────────────────
+async function eliminarDuplicados() {
+  // Agrupar por photo_data — solo los que tienen foto
+  const conFoto = products.filter(p => p.photo);
+  const visto = {};
+  const idsEliminar = [];
+
+  conFoto.forEach(p => {
+    if (visto[p.photo]) {
+      // Ya existe uno con esta imagen — este es duplicado
+      idsEliminar.push(p.id);
+    } else {
+      visto[p.photo] = p.id;
+    }
+  });
+
+  // También agrupar por nombre (sin foto)
+  const vistoNombre = {};
+  products.forEach(p => {
+    const key = p.name.toLowerCase().trim();
+    if (vistoNombre[key]) {
+      if (!idsEliminar.includes(p.id)) idsEliminar.push(p.id);
+    } else {
+      vistoNombre[key] = p.id;
+    }
+  });
+
+  if (idsEliminar.length === 0) return;
+
+  // Eliminar de Supabase
+  const { error } = await _sb
+    .from('catalogo_productos')
+    .delete()
+    .in('id', idsEliminar);
+
+  if (error) {
+    console.error('Error eliminando duplicados:', error);
+    return;
+  }
+
+  // Recargar lista
+  await loadProducts();
+  renderTable();
+  showToast(`✦ ${idsEliminar.length} duplicado${idsEliminar.length > 1 ? 's' : ''} eliminado${idsEliminar.length > 1 ? 's' : ''} automáticamente`);
 }
 
 // ─── CONTACT + CONFIG STATE ───────────────────────────────────────────
@@ -1831,6 +1900,27 @@ async function saveProduct() {
     photo_data:     photoData || null,
     active:         true,
   };
+
+  // ─── DUPLICATE CHECK (solo al agregar nueva prenda) ───────────────
+  if (!editingId) {
+    const nameLower = name.toLowerCase().trim();
+    // Verificar duplicado por nombre
+    const dupByName = products.find(p =>
+      p.name && p.name.toLowerCase().trim() === nameLower
+    );
+    if (dupByName) {
+      return showToast('✦ Ya existe una prenda con ese nombre: "' + dupByName.name + '"');
+    }
+    // Verificar duplicado por imagen (photo_data)
+    if (photoData) {
+      const dupByPhoto = products.find(p =>
+        p.photo && p.photo === photoData
+      );
+      if (dupByPhoto) {
+        return showToast('✦ Esa imagen ya está en uso: "' + dupByPhoto.name + '"');
+      }
+    }
+  }
 
   if (editingId) {
     const { error } = await _sb.from('catalogo_productos').update(data).eq('id', editingId);
@@ -2380,6 +2470,8 @@ async function init() {
   renderInfoTable();
   loadVisitas();
   renderTable();
+  // Eliminar duplicados automáticamente al iniciar
+  await eliminarDuplicados();
   // Reverificar conexión cada 30 s
   setInterval(checkSupabaseConnection, 30000);
 }
