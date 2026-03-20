@@ -3,7 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Catálogo — Pleaseme Accessories</title>
+<title>Pleaseme Catálogo</title>
+
+<!-- PWA -->
+<link rel="icon" type="image/png" href="pleaseme.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0A0804">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pleaseme Catálogo">
+<link rel="apple-touch-icon" href="pleaseme.png">
+
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Cinzel:wght@400;600&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -380,7 +391,67 @@
 
   @media (max-width: 560px) {
     .modal-inner { grid-template-columns: 1fr; }
+
+    /* ── Bottom-sheet en móvil ── */
+    .modal-overlay {
+      align-items: flex-end;
+      padding: 0;
+    }
+    .modal {
+      width: 100%;
+      max-width: 100%;
+      max-height: 92dvh;
+      overflow-y: auto;
+      border-radius: 20px 20px 0 0;
+      transform: translateY(100%);
+    }
+    .modal-overlay.open .modal {
+      transform: translateY(0);
+    }
+    /* Manija visual */
+    .modal::before {
+      content: '';
+      display: block;
+      width: 40px;
+      height: 4px;
+      background: rgba(201,151,58,0.35);
+      border-radius: 2px;
+      margin: 12px auto 0;
+    }
+    /* Botón × más grande para touch */
+    .modal-close {
+      top: 10px;
+      right: 14px;
+      width: 44px;
+      height: 44px;
+      font-size: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-visual { min-height: 220px; }
+    .modal-content { padding: 20px 20px 24px; }
+    /* Ocultar botón atrás interno en escritorio */
+    .modal-back-row { display: flex; }
   }
+
+  /* Botón atrás dentro del modal — solo visible en móvil */
+  .modal-back-row {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 20px 0;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border: none;
+    background: none;
+    width: 100%;
+  }
+  .modal-back-row:active { color: var(--gold-mid); }
 
   .modal-visual {
     position: relative;
@@ -509,6 +580,19 @@
     text-align: center;
     padding: 60px 20px;
     margin-top: 80px;
+  }
+
+  .footer-logo-img {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(201,151,58,0.35);
+    box-shadow: 0 0 32px rgba(201,151,58,0.18), 0 0 0 6px rgba(201,151,58,0.07);
+    margin-bottom: 20px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .footer-logo {
@@ -1386,6 +1470,7 @@
   }
 
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -1435,6 +1520,7 @@
 
 <!-- FOOTER -->
 <footer>
+  <img src="pleaseme.png" alt="Pleaseme Accessories" class="footer-logo-img">
   <div class="footer-logo" id="footerLogo">Pleaseme Accessories</div>
   <p class="footer-text" id="footerTagline">Cada pieza, una historia · Oro laminado de alta calidad</p>
   <div id="footerContactInfo" style="margin-top:18px;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;color:var(--text-muted);display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;"></div>
@@ -1490,6 +1576,10 @@
 <!-- MODAL -->
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal" id="modal">
+    <button class="modal-back-row" onclick="closeModal()" aria-label="Volver">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      Volver
+    </button>
     <button class="modal-close" id="modalClose">×</button>
     <div class="modal-inner">
       <div class="modal-visual" id="modalVisual"></div>
@@ -1509,7 +1599,45 @@
   </div>
 </div>
 
+<!-- LIGHTBOX -->
+<div id="lightboxOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:2000;align-items:center;justify-content:center;cursor:zoom-out;" onclick="closeLightbox()">
+  <img id="lightboxImg" src="" alt="" style="max-width:92vw;max-height:92vh;object-fit:contain;border-radius:4px;box-shadow:0 8px 60px rgba(0,0,0,0.7);">
+</div>
+
 <script>
+// ─── SINGLE TAB GUARD ────────────────────────────────────────────────
+(function() {
+  try {
+    const ch = new BroadcastChannel('pleaseme_catalog');
+    let leader = false;
+
+    ch.onmessage = function(e) {
+      if (e.data === 'ping' && leader) ch.postMessage('pong');
+      if (e.data === 'pong') {
+        ch.close();
+        document.body.innerHTML = `
+          <div style="position:fixed;inset:0;background:#0A0804;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;font-family:'Montserrat',sans-serif;color:#C9973A;text-align:center;padding:32px;">
+            <div style="font-size:48px;margin-bottom:24px;">⚠</div>
+            <div style="font-size:18px;font-weight:600;margin-bottom:12px;">Página ya abierta</div>
+            <div style="font-size:13px;color:#9A8C76;max-width:320px;line-height:1.6;">El catálogo de Pleaseme ya está abierto en otra ventana o pestaña.<br>Por favor úsala.</div>
+            <button onclick="window.close()" style="margin-top:32px;background:linear-gradient(135deg,#C9973A,#E8C96D);border:none;color:#0A0804;font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;padding:12px 28px;cursor:pointer;border-radius:2px;">Cerrar esta pestaña</button>
+          </div>`;
+      }
+    };
+
+    ch.postMessage('ping');
+    setTimeout(function() { leader = true; }, 300);
+
+    window.addEventListener('beforeunload', function() { ch.close(); });
+  } catch(e) { /* BroadcastChannel no soportado, continúa normal */ }
+})();
+
+// ─── SUPABASE ─────────────────────────────────────────────────────────
+const _sb = supabase.createClient(
+  'https://sqcggascnbcnfkymqcql.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxY2dnYXNjbmJjbmZreW1xY3FsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2ODQ2NzIsImV4cCI6MjA4NzI2MDY3Mn0.q0C_q3gOZZzcr6dWPrIhWS63gst5OBYIg9FDxThaKt4'
+);
+
 // ─── SVG JEWELRY ICONS ───────────────────────────────────────────────
 const svgs = {
   anillo: (c1, c2) => `<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1809,60 +1937,44 @@ const categories = [
   { key: "temporada",  label: "Temporada"  },
 ];
 
-// ════════════════════════════════════════════════════════
-//  SUPABASE CONFIG
-// ════════════════════════════════════════════════════════
-const SB_URL = 'https://sqcggascnbcnfkymqcql.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxY2dnYXNjbmJjbmZreW1xY3FsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2ODQ2NzIsImV4cCI6MjA4NzI2MDY3Mn0.q0C_q3gOZZzcr6dWPrIhWS63gst5OBYIg9FDxThaKt4';
-const SB_H = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY };
-
-async function sbGET(path) {
-  try {
-    const r = await fetch(SB_URL + '/rest/v1/' + path, { headers: SB_H });
-    if (!r.ok) throw new Error(r.status);
-    return await r.json();
-  } catch(e) { console.warn('[SB]', path, e.message); return null; }
-}
-
 // ─── LOAD PRODUCTS FROM SUPABASE ─────────────────────────────────────
-let products = [];
-
 async function loadProductsFromSupabase() {
-  const data = await sbGET('catalogo_productos?select=*&active=eq.true&order=created_at.desc');
-  if (data && data.length > 0) {
-    products = data.map(p => ({
-      id:            p.id,
-      name:          p.name          || '',
-      subtitle:      p.subtitle      || '',
-      category:      p.category      || '',
-      categoryLabel: p.category_label|| p.category || '',
-      price:         p.price != null ? String(p.price) : '0',
-      desc:          p.description   || '',
-      material:      p.material      || 'Oro laminado 14k',
-      medida:        p.medida        || '',
-      peso:          p.peso          || '',
-      badge:         p.badge         || null,
-      photo:         p.photo_data    || p.photo_url || null,
-      stock:         p.stock         != null ? p.stock : 999,
-      featured:      p.featured      || false,
-      icon:          p.icon          || null,
-    }));
-    localStorage.setItem('pm_cat_products_cache', JSON.stringify(products));
-    console.log('[SB] Productos cargados:', products.length);
-    return true;
-  }
-  // Fallback: cache local
   try {
-    const cached = JSON.parse(localStorage.getItem('pm_cat_products_cache') || '[]');
-    if (cached.length) { products = cached; return true; }
-  } catch(e) {}
-  products = defaultProducts;
-  return false;
+    const { data, error } = await _sb
+      .from('catalogo_productos')
+      .select('*')
+      .eq('active', true)
+      .order('created_at');
+    if (error) throw error;
+    if (data && data.length > 0) {
+      return data.map(p => ({
+        id:            p.id,
+        name:          p.name,
+        subtitle:      p.subtitle      || '',
+        category:      p.category      || '',
+        categoryLabel: p.category_label || p.category,
+        price:         p.price,
+        desc:          p.description   || '',
+        material:      p.material      || 'Oro laminado 14k',
+        medida:        p.medida        || '',
+        peso:          p.peso          || '',
+        badge:         p.badge         || null,
+        photo:         p.photo_data    || null,
+      }));
+    }
+  } catch(e) {
+    console.error('Error cargando productos:', e);
+  }
+  return defaultProducts;
 }
+
+let products = [];
+let appContact = {};
 
 // ─── WHATSAPP NUMBER ─────────────────────────────────────────────────
-let _waNumber = '573001234567';
-function getWhatsAppNumber() { return _waNumber; }
+function getWhatsAppNumber() {
+  return appContact.whatsapp || '573001234567';
+}
 
 let activeCategory = "todos";
 let currentModalId = null;
@@ -1875,8 +1987,7 @@ function cartCount() { return cart.reduce((s, i) => s + i.qty, 0); }
 function cartTotal() {
   return cart.reduce((s, item) => {
     const p = products.find(x => x.id === item.id);
-    if (!p) return s;
-    const num = typeof p.price === 'number' ? p.price : parseFloat(String(p.price).replace(/[^0-9.]/g, '')) || 0;
+    const num = parseInt(p.price.replace(/[^0-9]/g, ''));
     return s + num * item.qty;
   }, 0);
 }
@@ -1905,13 +2016,7 @@ function changeQty(id, delta) {
 }
 
 function getDiscountSettings() {
-  try {
-    const d = JSON.parse(localStorage.getItem('pm_discount') || '{}');
-    return {
-      min: d.threshold !== undefined ? Number(d.threshold) : 10000,
-      pct: d.pct     !== undefined ? Number(d.pct)       : 35
-    };
-  } catch(e) { return { min: 10000, pct: 35 }; }
+  return window._discountSettings || { min: 10000, pct: 35 };
 }
 
 function updateCartUI() {
@@ -2025,10 +2130,8 @@ function sendWhatsApp() {
   if (cart.length === 0) return;
   const note = document.getElementById('cartNote').value.trim();
 
-  let waContact = {};
-  try { waContact = JSON.parse(localStorage.getItem('pm_contact') || '{}'); } catch(e) {}
-  let msg = (waContact.wa_msg && waContact.wa_msg.trim())
-    ? waContact.wa_msg.trim() + '\n\n'
+  let msg = (appContact.wa_msg && appContact.wa_msg.trim())
+    ? appContact.wa_msg.trim() + '\n\n'
     : '✨ *Hola Pleaseme!* Quiero hacer un pedido:\n\n';
 
   cart.forEach(item => {
@@ -2088,8 +2191,8 @@ function renderGrid() {
   grid.innerHTML = filtered.map((p, i) => {
     const inCart = cart.some(c => c.id === p.id);
     return `
-    <div class="product-card card-enter ${inCart ? 'in-cart' : ''}" style="animation-delay:${i * 0.08}s" onclick="openModal(${p.id})">
-      <div class="card-visual">
+    <div class="product-card card-enter ${inCart ? 'in-cart' : ''}" style="animation-delay:${i * 0.08}s" onclick="openModal('${p.id}')">
+      <div class="card-visual" ${p.photo ? `onclick="event.stopPropagation(); openLightbox('${p.photo}')" style="cursor:zoom-in"` : ''}>
         <div class="card-bg" style="background:${productBg(p)}"></div>
         <div class="jewelry-icon">
           ${productIconHTML(p)}
@@ -2102,8 +2205,8 @@ function renderGrid() {
         <h3 class="card-name">${p.name}</h3>
         <p class="card-desc">${p.desc}</p>
         <div class="card-footer">
-          <div class="card-price"><span>$</span>${typeof p.price === "number" ? p.price.toLocaleString("es-CO") : String(p.price).replace(/[^0-9.,]/g,"")}</div>
-          <button class="card-cta" onclick="event.stopPropagation(); openModal(${p.id})">Ver detalle</button>
+          <div class="card-price"><span>$</span>${p.price}</div>
+          <button class="card-cta" onclick="event.stopPropagation(); openModal('${p.id}')">Ver detalle</button>
         </div>
       </div>
     </div>`;
@@ -2114,7 +2217,8 @@ function renderGrid() {
 function updateModalBtn(id) {
   const btn = document.getElementById('modalAddBtn');
   if (!btn) return;
-  const inCart = cart.some(c => c.id === id);
+  // eslint-disable-next-line eqeqeq
+  const inCart = cart.some(c => c.id == id);
   btn.textContent = inCart ? '✓ En tu selección' : '✦ Agregar a selección';
   btn.style.background = inCart
     ? 'linear-gradient(135deg, #2d5a3d, #3a7a52)'
@@ -2122,30 +2226,46 @@ function updateModalBtn(id) {
 }
 
 function openModal(id) {
-  const p = products.find(x => x.id === id);
+  // eslint-disable-next-line eqeqeq — IDs can be number (Supabase) or string
+  const p = products.find(x => x.id == id);
   if (!p) return;
-  currentModalId = id;
+  currentModalId = p.id;
 
   document.getElementById('modalCategory').textContent = p.categoryLabel;
   document.getElementById('modalName').textContent = p.name;
   document.getElementById('modalSubtitle').textContent = p.subtitle;
   document.getElementById('modalDesc').textContent = p.desc;
-  const fmtPrice = v => typeof v === 'number' ? v.toLocaleString('es-CO') : String(v).replace(/[^0-9.,]/g,''); document.getElementById('modalPrice').innerHTML = `<span class="currency">$</span>${fmtPrice(p.price)}`;
-  document.getElementById('modalVisual').innerHTML = `
+  document.getElementById('modalPrice').innerHTML = `<span class="currency">$</span>${p.price}`;
+  const mv = document.getElementById('modalVisual');
+  mv.innerHTML = `
     <div style="position:absolute;inset:0;background:${productBg(p)}"></div>
-    <div style="position:relative;z-index:1;filter:drop-shadow(0 12px 32px rgba(201,151,58,0.45))">
+    <div style="position:relative;z-index:1;filter:drop-shadow(0 12px 32px rgba(201,151,58,0.45))${p.photo ? ';width:100%;height:100%' : ''}">
       ${productIconHTML(p)}
     </div>
   `;
+  if (p.photo) {
+    mv.style.cursor = 'zoom-in';
+    mv.onclick = () => openLightbox(p.photo);
+  } else {
+    mv.style.cursor = '';
+    mv.onclick = null;
+  }
   document.getElementById('modalDetails').innerHTML = `
     <div class="modal-detail-row"><span class="label">Material</span><span class="value">${p.material}</span></div>
     <div class="modal-detail-row"><span class="label">Medida</span><span class="value">${p.medida}</span></div>
     <div class="modal-detail-row"><span class="label">Peso</span><span class="value">${p.peso}</span></div>
   `;
 
+  // Scroll al tope del modal
+  const modalEl = document.getElementById('modal');
+  if (modalEl) modalEl.scrollTop = 0;
+
   updateModalBtn(id);
   document.getElementById('modalOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
+
+  // Soporte botón físico de retroceso (Android)
+  history.pushState({ modal: true }, '');
 }
 
 function addFromModal() {
@@ -2160,11 +2280,61 @@ function closeModal() {
   }
 }
 
+// Botón físico de retroceso del teléfono cierra el modal
+window.addEventListener('popstate', () => {
+  if (document.getElementById('modalOverlay').classList.contains('open')) {
+    closeModal();
+  }
+});
+
 document.getElementById('modalClose').addEventListener('click', closeModal);
 document.getElementById('modalOverlay').addEventListener('click', e => {
   if (e.target === document.getElementById('modalOverlay')) closeModal();
 });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeCart(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeCart(); closeLightbox(); } });
+
+// ─── LIGHTBOX ────────────────────────────────────────────────────────
+function openLightbox(src) {
+  const ov = document.getElementById('lightboxOverlay');
+  document.getElementById('lightboxImg').src = src;
+  ov.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox() {
+  const ov = document.getElementById('lightboxOverlay');
+  ov.style.display = 'none';
+  document.getElementById('lightboxImg').src = '';
+  if (!document.getElementById('modalOverlay').classList.contains('open') &&
+      !document.getElementById('cartPanel').classList.contains('open')) {
+    document.body.style.overflow = '';
+  }
+}
+
+// ─── SWIPE ABAJO PARA CERRAR MODAL (móvil) ─────────────────────────
+(function() {
+  const modal = document.getElementById('modal');
+  let startY = 0, isDragging = false;
+  modal.addEventListener('touchstart', e => {
+    if (modal.scrollTop === 0) { startY = e.touches[0].clientY; isDragging = true; }
+  }, { passive: true });
+  modal.addEventListener('touchmove', e => {
+    if (!isDragging) return;
+    const delta = e.touches[0].clientY - startY;
+    if (delta > 0) modal.style.transform = `translateY(${delta}px)`;
+  }, { passive: true });
+  modal.addEventListener('touchend', e => {
+    if (!isDragging) return;
+    isDragging = false;
+    const delta = e.changedTouches[0].clientY - startY;
+    if (delta > 80) {
+      modal.style.transform = '';
+      closeModal();
+      if (history.state && history.state.modal) history.back();
+    } else {
+      modal.style.transform = '';
+    }
+  }, { passive: true });
+})();
 
 
 // ─── POPUP DESCUENTO MAYORISTA ────────────────────────────────────────
@@ -2231,17 +2401,8 @@ function checkPopup() {
 }
 
 
-// ─── ANNOUNCEMENT BANNER — cargado desde Supabase en initCatalog ─────
-// (gestionado por loadCatalogInfo, fallback desde localStorage)
-(function() {
-  try {
-    const d = JSON.parse(localStorage.getItem('pm_banner') || '{}');
-    if (d.active === false) {
-      const b = document.getElementById('announcementBanner');
-      if (b) b.classList.add('hidden');
-    }
-  } catch(e) {}
-})();
+// ─── ANNOUNCEMENT BANNER ─────────────────────────────────────────────
+// (cargado desde Supabase en initCatalog)
 
 function cerrarBanner() {
   document.getElementById('announcementBanner').style.animation = 'none';
@@ -2272,48 +2433,69 @@ function cerrarBanner() {
   } catch(e) {}
 })();
 
-// ─── INIT PRINCIPAL (async — carga todo desde Supabase) ─────────────
-async function initCatalog() {
-  const grid = document.getElementById('catalogGrid');
-  if (grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:rgba(201,151,58,0.4);font-family:Cinzel,serif;font-size:11px;letter-spacing:2px">Cargando catálogo...</div>';
-
-  await Promise.all([
+// Cargar productos, contacto y todas las configs desde Supabase
+(async function initCatalog() {
+  const [prods, contactRes, configRes] = await Promise.all([
     loadProductsFromSupabase(),
-    loadCatalogInfo(),
-    loadContactInfo(),
-    renderInfoSections(),
+    _sb.from('config').select('value').eq('key', 'pm_contact').single(),
+    _sb.from('config').select('key,value').in('key', ['pm_banner','pm_catalog_info','pm_info_sections','pm_discount'])
   ]);
+  products = prods;
+  if (contactRes.data) appContact = contactRes.data.value || {};
+
+  // Poblar cache de configs
+  const _cfg = {};
+  if (configRes.data) configRes.data.forEach(r => { _cfg[r.key] = r.value; });
+
+  // Aplicar banner
+  const bannerData = _cfg['pm_banner'];
+  if (bannerData) {
+    if (!bannerData.active) {
+      document.getElementById('announcementBanner').classList.add('hidden');
+    } else if (bannerData.text) {
+      const msg = document.getElementById('bannerText');
+      const sep = '<span class="banner-sep">✦</span>';
+      msg.innerHTML = bannerData.text + sep + 'Oro laminado 14k · Calidad garantizada' + sep + 'Pedidos superiores a $10,000 obtienen el 35% de descuento mayorista' + sep + bannerData.text + sep + 'Oro laminado 14k · Calidad garantizada';
+    }
+  }
+
+  // Aplicar catalog info
+  const ci = _cfg['pm_catalog_info'] || {};
+  if (ci.title !== undefined)      document.getElementById('headerLogo').textContent     = ci.title    || 'Pleaseme';
+  if (ci.subtitle !== undefined)   document.getElementById('headerSub').textContent      = ci.subtitle || 'Accessories · Oro Laminado';
+  if (ci.footerLogo !== undefined) document.getElementById('footerLogo').textContent     = ci.footerLogo  || 'Pleaseme Accessories';
+  if (ci.footerText !== undefined) document.getElementById('footerTagline').textContent  = ci.footerText  || 'Cada pieza, una historia · Oro laminado de alta calidad';
+
+  // Aplicar info sections
+  const sections = Array.isArray(_cfg['pm_info_sections']) ? _cfg['pm_info_sections'] : [];
+  const infoEl = document.getElementById('infoSections');
+  if (infoEl && sections.length) {
+    infoEl.innerHTML = sections.map((s, i) => `
+      <details style="border:1px solid rgba(201,151,58,0.2);margin-bottom:10px;background:rgba(255,255,255,0.02);" ${i===0?'open':''}>
+        <summary style="padding:16px 20px;cursor:pointer;font-family:'Cinzel',serif;font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold-deep,#C9973A);list-style:none;display:flex;justify-content:space-between;align-items:center;user-select:none;">
+          ${s.title}
+          <span style="font-size:16px;opacity:0.6;">+</span>
+        </summary>
+        <div style="padding:0 20px 18px;font-size:13px;font-weight:300;line-height:1.8;color:var(--text-muted,#9A8C76);white-space:pre-wrap;">${s.content}</div>
+      </details>`).join('');
+  }
+
+  // Guardar descuento en window para uso del carrito
+  const disc = _cfg['pm_discount'] || {};
+  window._discountSettings = {
+    min: disc.threshold !== undefined ? Number(disc.threshold) : 10000,
+    pct: disc.pct       !== undefined ? Number(disc.pct)       : 35
+  };
 
   renderFilters();
   renderGrid();
   renderCartItems();
-}
+  loadContactInfo();
+})();
 
-initCatalog();
-
-// ─── CONTACT INFO IN FOOTER (desde Supabase catalogo_contacto) ───────
-async function loadContactInfo() {
-  let c = {};
-  try { c = JSON.parse(localStorage.getItem('pm_cat_contact_cache') || '{}'); } catch(e) {}
-
-  const rows = await sbGET('catalogo_contacto?select=*&id=eq.main&limit=1');
-  if (rows && rows.length) {
-    const r = rows[0];
-    c = {
-      whatsapp:  r.whatsapp      || '',
-      wa_msg:    r.wa_mensaje     || '',
-      instagram: r.instagram     || '',
-      ig_link:   r.instagram_url || '',
-      email:     r.email         || '',
-      web:       r.sitio_web     || '',
-      city:      r.ciudad        || '',
-      address:   r.direccion     || '',
-      hours:     r.horarios      || '',
-    };
-    if (c.whatsapp) _waNumber = c.whatsapp;
-    localStorage.setItem('pm_cat_contact_cache', JSON.stringify(c));
-  }
-
+// ─── CONTACT INFO IN FOOTER ───────────────────────────────────────────
+function loadContactInfo() {
+  const c  = appContact;
   const el = document.getElementById('footerContactInfo');
   if (!el) return;
   const parts = [];
@@ -2352,64 +2534,8 @@ function cerrarWelcome() {
 // Auto-close after 10s
 setTimeout(cerrarWelcome, 10000);
 
-// ─── CATALOG INFO (desde Supabase catalogo_config) ───────────────────
-async function loadCatalogInfo() {
-  let c = {};
-  try { c = JSON.parse(localStorage.getItem('pm_catalog_info') || '{}'); } catch(e) {}
-
-  const rows = await sbGET('catalogo_config?select=*&id=eq.main&limit=1');
-  if (rows && rows.length) {
-    const r = rows[0];
-    c.title      = r.nombre_marca      || c.title      || 'Pleaseme';
-    c.subtitle   = r.subtitulo_header  || c.subtitle   || 'Accessories · Oro Laminado';
-    c.footerLogo = r.footer_nombre     || c.footerLogo || 'Pleaseme Accessories';
-    c.footerText = r.footer_frase      || c.footerText || 'Cada pieza, una historia · Oro laminado de alta calidad';
-    // Banner
-    if (r.banner_active !== null) {
-      const bannerEl = document.getElementById('announcementBanner');
-      const bannerTxt = document.getElementById('bannerText');
-      if (!r.banner_active && bannerEl) bannerEl.classList.add('hidden');
-      if (r.banner_active && r.banner_text && bannerTxt) {
-        const sep = '<span class="banner-sep">✦</span>';
-        bannerTxt.innerHTML = r.banner_text + sep + 'Oro laminado 14k · Calidad garantizada' + sep + r.banner_text;
-      }
-    }
-    // Descuento
-    if (r.descuento_pct) {
-      localStorage.setItem('pm_discount', JSON.stringify({ threshold: r.descuento_minimo, pct: r.descuento_pct }));
-    }
-    localStorage.setItem('pm_catalog_info', JSON.stringify(c));
-  }
-
-  const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.textContent = val; };
-  set('headerLogo',     c.title);
-  set('headerSub',      c.subtitle);
-  set('footerLogo',     c.footerLogo);
-  set('footerTagline',  c.footerText);
-}
-
-// ─── INFO SECTIONS (desde Supabase catalogo_secciones) ───────────────
-async function renderInfoSections() {
-  const el = document.getElementById('infoSections');
-  if (!el) return;
-  let sections = [];
-  const data = await sbGET('catalogo_secciones?select=id,titulo,contenido&active=eq.true&order=position.asc');
-  if (data && data.length) {
-    sections = data.map(s => ({ id: s.id, title: s.titulo, content: s.contenido }));
-    localStorage.setItem('pm_info_sections', JSON.stringify(sections));
-  } else {
-    try { sections = JSON.parse(localStorage.getItem('pm_info_sections') || '[]'); } catch(e) {}
-  }
-  if (!sections.length) { el.innerHTML = ''; return; }
-  el.innerHTML = sections.map((s, i) => `
-    <details style="border:1px solid rgba(201,151,58,0.2);margin-bottom:10px;background:rgba(255,255,255,0.02);" ${i===0?'open':''}>
-      <summary style="padding:16px 20px;cursor:pointer;font-family:'Cinzel',serif;font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold-deep,#C9973A);list-style:none;display:flex;justify-content:space-between;align-items:center;user-select:none;">
-        ${s.title}
-        <span style="font-size:16px;opacity:0.6;">+</span>
-      </summary>
-      <div style="padding:0 20px 18px;font-size:13px;font-weight:300;line-height:1.8;color:var(--text-muted,#9A8C76);white-space:pre-wrap;">${s.content}</div>
-    </details>`).join('');
-}
+// ─── CATALOG INFO e INFO SECTIONS ─────────────────────────────────────
+// (cargados desde Supabase en initCatalog)
 
 // ─── SINGLE TAB DETECTION ─────────────────────────────────────────────
 (function() {

@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin — Pleaseme Accessories</title>
+<link rel="icon" type="image/png" href="pleaseme.png">
+<link rel="apple-touch-icon" href="pleaseme.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Admin · Pleaseme">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Cinzel:wght@400;600&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -29,6 +34,21 @@
   --shadow: 0 2px 16px rgba(46,39,25,0.08);
   --shadow-lg: 0 8px 40px rgba(46,39,25,0.14);
   --sidebar-w: 240px;
+}
+
+/* ─── DARK THEME ─── */
+body.dark-theme {
+  --bg: #0E0C09;
+  --bg2: #161210;
+  --bg3: #1E1A14;
+  --surface: #1A1610;
+  --text: #E8DCCA;
+  --text-mid: #C4A96A;
+  --text-muted: #8A7A62;
+  --border: rgba(201,151,58,0.2);
+  --border-strong: rgba(201,151,58,0.38);
+  --shadow: 0 2px 16px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.55);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -277,6 +297,57 @@ body {
 }
 
 .topbar-actions { display: flex; align-items: center; gap: 12px; }
+
+/* ─── SUPABASE STATUS LABEL ─── */
+.sb-status {
+  display: flex; align-items: center; gap: 6px;
+  font-family: 'Cinzel', serif;
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 5px 11px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  transition: all 0.4s ease;
+  white-space: nowrap;
+}
+.sb-status .sb-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background 0.4s;
+}
+.sb-status.connecting {
+  color: var(--text-muted);
+  border-color: rgba(139,105,20,0.2);
+  background: rgba(139,105,20,0.06);
+}
+.sb-status.connecting .sb-dot {
+  background: var(--gold);
+  animation: sbPulse 1.2s ease-in-out infinite;
+}
+.sb-status.connected {
+  color: var(--green);
+  border-color: rgba(26,122,58,0.25);
+  background: rgba(26,122,58,0.07);
+}
+.sb-status.connected .sb-dot {
+  background: var(--green);
+  animation: sbPulse 2.5s ease-in-out infinite;
+}
+.sb-status.offline {
+  color: var(--red);
+  border-color: rgba(192,57,43,0.25);
+  background: rgba(192,57,43,0.07);
+}
+.sb-status.offline .sb-dot {
+  background: var(--red);
+  animation: none;
+}
+@keyframes sbPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.45; transform: scale(0.8); }
+}
 
 .btn {
   font-family: 'Cinzel', serif;
@@ -749,6 +820,9 @@ textarea { resize: vertical; min-height: 80px; }
   .page { padding: 20px 16px; }
   .field-row { grid-template-columns: 1fr; }
   .stats-row { grid-template-columns: 1fr 1fr; }
+  .topbar { padding: 0 16px; }
+  .topbar-title { font-size: 9px; letter-spacing: 2px; }
+  .sb-status { font-size: 7px; padding: 4px 8px; letter-spacing: 1px; }
 }
 
 .gold-line {
@@ -757,6 +831,7 @@ textarea { resize: vertical; min-height: 80px; }
   margin-bottom: 32px;
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -824,6 +899,16 @@ textarea { resize: vertical; min-height: 80px; }
     <div class="topbar">
       <span class="topbar-title" id="topbarTitle">Productos</span>
       <div class="topbar-actions">
+        <div class="sb-status connecting" id="sbStatus" title="Estado de conexión Supabase">
+          <span class="sb-dot"></span>
+          <span id="sbStatusText">Conectando</span>
+        </div>
+        <button class="icon-btn" id="reconnectBtn" onclick="manualReconnect()" title="Reconectar" style="display:none">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.36-3.36L23 10M1 14l5.13 4.36A9 9 0 0020.49 15"/></svg>
+        </button>
+        <button class="icon-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Cambiar tema">
+          <svg id="themeIcon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+        </button>
         <button class="btn btn-primary" id="topbarAction" onclick="openDrawer()">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Nuevo producto
@@ -1407,80 +1492,45 @@ textarea { resize: vertical; min-height: 80px; }
 <div class="toast" id="toast"></div>
 
 <script>
-// ════════════════════════════════════════════════════════
-//  SUPABASE CONFIG
-// ════════════════════════════════════════════════════════
-const SB_URL = 'https://sqcggascnbcnfkymqcql.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxY2dnYXNjbmJjbmZreW1xY3FsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2ODQ2NzIsImV4cCI6MjA4NzI2MDY3Mn0.q0C_q3gOZZzcr6dWPrIhWS63gst5OBYIg9FDxThaKt4';
-const SB_H = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' };
-
-async function sbGET(path) {
-  try {
-    const r = await fetch(SB_URL + '/rest/v1/' + path, { headers: SB_H });
-    if (!r.ok) throw new Error(await r.text());
-    return await r.json();
-  } catch(e) { console.error('[SB GET]', path, e.message); return null; }
-}
-async function sbUPSERT(table, body) {
-  try {
-    const r = await fetch(SB_URL + '/rest/v1/' + table, {
-      method: 'POST',
-      headers: { ...SB_H, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
-      body: JSON.stringify(body)
-    });
-    if (!r.ok) throw new Error(await r.text());
-    return true;
-  } catch(e) { console.error('[SB UPSERT]', table, e.message); return false; }
-}
-async function sbPOST(table, body) {
-  try {
-    const r = await fetch(SB_URL + '/rest/v1/' + table, {
-      method: 'POST',
-      headers: { ...SB_H, 'Prefer': 'return=representation' },
-      body: JSON.stringify(body)
-    });
-    if (!r.ok) throw new Error(await r.text());
-    return await r.json();
-  } catch(e) { console.error('[SB POST]', table, e.message); return null; }
-}
-async function sbPATCH(table, filter, body) {
-  try {
-    const r = await fetch(SB_URL + '/rest/v1/' + table + '?' + filter, {
-      method: 'PATCH',
-      headers: { ...SB_H, 'Prefer': 'return=minimal' },
-      body: JSON.stringify(body)
-    });
-    if (!r.ok) throw new Error(await r.text());
-    return true;
-  } catch(e) { console.error('[SB PATCH]', table, e.message); return false; }
-}
-async function sbDELETE(table, filter) {
-  try {
-    const r = await fetch(SB_URL + '/rest/v1/' + table + '?' + filter, {
-      method: 'DELETE', headers: SB_H
-    });
-    if (!r.ok) throw new Error(await r.text());
-    return true;
-  } catch(e) { console.error('[SB DELETE]', table, e.message); return false; }
-}
+// ─── SUPABASE ─────────────────────────────────────────────────────────
+const _sb = supabase.createClient(
+  'https://sqcggascnbcnfkymqcql.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxY2dnYXNjbmJjbmZreW1xY3FsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2ODQ2NzIsImV4cCI6MjA4NzI2MDY3Mn0.q0C_q3gOZZzcr6dWPrIhWS63gst5OBYIg9FDxThaKt4'
+);
 
 // ─── CONFIG ──────────────────────────────────────────────────────────
-const PRODUCTS_KEY = 'pm_cat_products_cache';
-const CONTACT_KEY  = 'pm_cat_contact_cache';
+const ADMIN_PASS_KEY = 'pm_admin_pass';
+const PRODUCTS_KEY   = 'pm_products';
+const CONTACT_KEY    = 'pm_contact';
+const DEFAULT_PASS   = 'pleaseme2024';
 
-// ─── AUTH — contraseña desde catalogo_password en Supabase ──────────
-async function getPass() {
+// ─── CONFIG CACHE (Supabase) ─────────────────────────────────────────
+let _cfgCache = {};
+
+async function _loadConfigs() {
   try {
-    const rows = await sbGET("catalogo_password?select=password&id=eq.main&limit=1");
-    if (rows && rows.length) return rows[0].password;
-  } catch(e) {}
-  return 'pleaseme2024'; // fallback
+    const { data } = await _sb.from('config').select('key,value')
+      .in('key', ['pm_watermark','pm_banner','pm_catalog_info','pm_info_sections','pm_discount']);
+    if (data) data.forEach(r => { _cfgCache[r.key] = r.value; });
+  } catch(e) { console.error('Error cargando configs:', e); }
 }
 
-async function doLogin() {
-  const val  = document.getElementById('loginPass').value;
-  const pass = await getPass();
-  if (val === pass) {
+async function _saveConfig(key, value) {
+  _cfgCache[key] = value;
+  const { error } = await _sb.from('config').upsert({ key, value }, { onConflict: 'key' });
+  return error;
+}
+
+// ─── AUTH ────────────────────────────────────────────────────────────
+let adminPassword = DEFAULT_PASS;
+
+function getPass() {
+  return adminPassword;
+}
+
+function doLogin() {
+  const val = document.getElementById('loginPass').value;
+  if (val === getPass()) {
     document.getElementById('loginScreen').classList.add('hidden');
     sessionStorage.setItem('pm_auth', '1');
     init();
@@ -1492,10 +1542,8 @@ async function doLogin() {
 
 document.getElementById('loginPass').addEventListener('keydown', e => {
   if (e.key === 'Enter') doLogin();
-  else {
-    document.getElementById('loginError').textContent = '';
-    document.getElementById('loginPass').style.borderColor = '';
-  }
+  document.getElementById('loginError').textContent = '';
+  document.getElementById('loginPass').style.borderColor = '';
 });
 
 function doLogout() {
@@ -1509,14 +1557,20 @@ async function changePassword() {
   if (!p1) return showToast('Escribe una contraseña');
   if (p1 !== p2) return showToast('Las contraseñas no coinciden');
   if (p1.length < 6) return showToast('Mínimo 6 caracteres');
-  const ok = await sbUPSERT('catalogo_password', { id: 'main', password: p1 });
-  if (ok) {
-    document.getElementById('c_newpass').value = '';
-    document.getElementById('c_newpass2').value = '';
-    showToast('✦ Contraseña actualizada en Supabase');
-  } else {
-    showToast('⚠ Error al guardar contraseña');
-  }
+  let savedCloud = false;
+  try {
+    const { error } = await _sb.from('admin_auth').upsert({
+      id: 1,
+      password_hash: p1
+    }, { onConflict: 'id' });
+    if (!error) savedCloud = true;
+  } catch(e) { /* sin conexión, continúa con localStorage */ }
+  // Siempre guardar en localStorage como respaldo
+  localStorage.setItem(ADMIN_PASS_KEY, p1);
+  adminPassword = p1;
+  document.getElementById('c_newpass').value = '';
+  document.getElementById('c_newpass2').value = '';
+  showToast(savedCloud ? '✦ Contraseña actualizada' : '✦ Contraseña guardada localmente');
 }
 
 // ─── PRODUCTS STATE ──────────────────────────────────────────────────
@@ -1531,87 +1585,71 @@ const CAT_LABELS = {
 };
 
 async function loadProducts() {
-  const data = await sbGET('catalogo_productos?select=*&order=created_at.desc&active=eq.true');
-  if (data) {
-    products = data.map(p => ({
+  try {
+    const { data, error } = await _sb
+      .from('catalogo_productos')
+      .select('*')
+      .order('created_at');
+    if (error) throw error;
+    products = (data || []).map(p => ({
       id:            p.id,
-      name:          p.name          || '',
+      name:          p.name,
       subtitle:      p.subtitle      || '',
       category:      p.category      || '',
-      categoryLabel: p.category_label|| '',
-      price:         p.price         || '',
+      categoryLabel: p.category_label || CAT_LABELS[p.category] || p.category,
+      price:         p.price,
       desc:          p.description   || '',
       material:      p.material      || 'Oro laminado 14k',
       medida:        p.medida        || '',
       peso:          p.peso          || '',
       badge:         p.badge         || null,
-      photo:         p.photo_data    || p.photo_url || null,
-      stock:         p.stock         || 0,
-      sku:           p.sku           || '',
-      featured:      p.featured      || false,
+      photo:         p.photo_data    || null,
     }));
-    localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
-  } else {
-    try { products = JSON.parse(localStorage.getItem(PRODUCTS_KEY)) || []; } catch { products = []; }
+  } catch(e) {
+    console.error('Error cargando productos:', e);
+    products = [];
+    showToast('Error al conectar con Supabase');
   }
 }
 
-function nextId() {
-  return 'prod-' + Date.now() + '-' + Math.random().toString(36).slice(2,6);
-}
-
-// ─── CONTACT STATE ────────────────────────────────────────────────────
+// ─── CONTACT + CONFIG STATE ───────────────────────────────────────────
 let contact = {};
 
-async function loadContact() {
-  const rows = await sbGET('catalogo_contacto?select=*&id=eq.main&limit=1');
-  if (rows && rows.length) {
-    const r  = rows[0];
-    contact = {
-      whatsapp:  r.whatsapp      || '',
-      wa_msg:    r.wa_mensaje     || '',
-      instagram: r.instagram     || '',
-      ig_link:   r.instagram_url || '',
-      email:     r.email         || '',
-      web:       r.sitio_web     || '',
-      city:      r.ciudad        || '',
-      address:   r.direccion     || '',
-      hours:     r.horarios      || '',
-    };
-    localStorage.setItem(CONTACT_KEY, JSON.stringify(contact));
-  } else {
-    try { contact = JSON.parse(localStorage.getItem(CONTACT_KEY)) || {}; } catch { contact = {}; }
+// Carga contacto (config) y contraseña (admin_auth) desde Supabase
+async function loadConfig() {
+  try {
+    const [contactRes, authRes] = await Promise.all([
+      _sb.from('config').select('value').eq('key', 'pm_contact').single(),
+      _sb.from('admin_auth').select('password_hash').eq('id', 1).single()
+    ]);
+    if (contactRes.data) contact       = contactRes.data.value || {};
+    if (authRes.data)    adminPassword = authRes.data.password_hash || DEFAULT_PASS;
+  } catch(e) {
+    console.error('Error cargando config:', e);
+    try { contact = JSON.parse(localStorage.getItem(CONTACT_KEY)) || {}; } catch {}
+    adminPassword = localStorage.getItem(ADMIN_PASS_KEY) || DEFAULT_PASS;
   }
 }
+
+function loadContact() { /* cargado por loadConfig() */ }
 
 async function saveContact(section) {
   const fields = {
-    whatsapp:  ['whatsapp','wa_msg'],
-    instagram: ['instagram','ig_link'],
-    email:     ['email','web'],
-    location:  ['city','address','hours']
+    whatsapp:  ['whatsapp', 'wa_msg'],
+    instagram: ['instagram', 'ig_link'],
+    email:     ['email', 'web'],
+    location:  ['city', 'address', 'hours']
   };
   (fields[section] || []).forEach(k => {
     const el = document.getElementById('c_' + k);
     if (el) contact[k] = el.value.trim();
   });
-  localStorage.setItem(CONTACT_KEY, JSON.stringify(contact));
-
-  const row = {
-    id:            'main',
-    whatsapp:      contact.whatsapp  || null,
-    wa_mensaje:    contact.wa_msg    || null,
-    instagram:     contact.instagram || null,
-    instagram_url: contact.ig_link   || null,
-    email:         contact.email     || null,
-    sitio_web:     contact.web       || null,
-    ciudad:        contact.city      || null,
-    direccion:     contact.address   || null,
-    horarios:      contact.hours     || null,
-    updated_at:    new Date().toISOString(),
-  };
-  const ok = await sbUPSERT('catalogo_contacto', row);
-  showToast(ok ? '✦ Información guardada en Supabase' : '⚠ Error al guardar contacto');
+  const { error } = await _sb.from('config').upsert({
+    key: 'pm_contact',
+    value: contact
+  }, { onConflict: 'key' });
+  if (error) return showToast('Error al guardar: ' + error.message);
+  showToast('✦ Información guardada');
 }
 
 function fillContactForm() {
@@ -1710,10 +1748,10 @@ function renderTable() {
       <td>${p.badge ? `<span class="badge badge-gold">${p.badge}</span>` : '<span style="color:var(--text-muted);font-size:11px">—</span>'}</td>
       <td>
         <div class="actions-cell">
-          <button class="icon-btn" onclick="editProduct(${p.id})" title="Editar">
+          <button class="icon-btn" onclick="editProduct('${p.id}')" title="Editar">
             <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </button>
-          <button class="icon-btn del" onclick="askDelete(${p.id})" title="Eliminar">
+          <button class="icon-btn del" onclick="askDelete('${p.id}')" title="Eliminar">
             <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
           </button>
         </div>
@@ -1779,12 +1817,12 @@ async function saveProduct() {
   if (!category) return showToast('Selecciona una categoría');
   if (!price)    return showToast('El precio es requerido');
 
-  const row = {
+  const data = {
     name,
     subtitle:       document.getElementById('f_subtitle').value.trim(),
     category,
     category_label: CAT_LABELS[category] || category,
-    price:          parseFloat(price.replace(/[^0-9.]/g,'')) || 0,
+    price:          parseFloat(price),
     description:    document.getElementById('f_desc').value.trim(),
     material:       document.getElementById('f_material').value.trim() || 'Oro laminado 14k',
     medida:         document.getElementById('f_medida').value.trim(),
@@ -1792,28 +1830,19 @@ async function saveProduct() {
     badge:          document.getElementById('f_badge').value || null,
     photo_data:     photoData || null,
     active:         true,
-    updated_at:     new Date().toISOString(),
   };
 
   if (editingId) {
-    const ok = await sbPATCH('catalogo_productos', 'id=eq.' + encodeURIComponent(editingId), row);
-    if (ok) {
-      const idx = products.findIndex(p => p.id === editingId);
-      if (idx >= 0) products[idx] = { ...products[idx], ...row, id: editingId, photo: photoData || products[idx].photo };
-      showToast('✦ Prenda actualizada');
-    } else { showToast('⚠ Error al actualizar'); }
+    const { error } = await _sb.from('catalogo_productos').update(data).eq('id', editingId);
+    if (error) return showToast('Error al actualizar: ' + error.message);
+    showToast('✦ Prenda actualizada');
   } else {
-    row.id         = nextId();
-    row.created_at = new Date().toISOString();
-    const res = await sbPOST('catalogo_productos', row);
-    if (res) {
-      const saved = Array.isArray(res) ? res[0] : res;
-      products.unshift({ ...row, id: saved.id || row.id, photo: photoData });
-      showToast('✦ Prenda agregada al catálogo');
-    } else { showToast('⚠ Error al guardar en Supabase'); }
+    const { error } = await _sb.from('catalogo_productos').insert(data);
+    if (error) return showToast('Error al guardar: ' + error.message);
+    showToast('✦ Prenda agregada al catálogo');
   }
 
-  localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
+  await loadProducts();
   renderTable();
   closeDrawer();
 }
@@ -1846,15 +1875,8 @@ async function saveWatermarkConfig() {
     position: pos ? pos.value : 'bottom-right',
     opacity:  opa ? parseInt(opa.value) / 100 : 0.55
   };
-  localStorage.setItem('pm_watermark', JSON.stringify(cfg));
-  await sbUPSERT('catalogo_config', {
-    id:                 'main',
-    watermark_enabled:  cfg.enabled,
-    watermark_text:     cfg.text || null,
-    watermark_position: cfg.position,
-    watermark_opacity:  cfg.opacity,
-    updated_at:         new Date().toISOString(),
-  });
+  const error = await _saveConfig('pm_watermark', cfg);
+  if (error) return showToast('Error al guardar: ' + error.message);
   showToast('✦ Configuración de marca de agua guardada');
 }
 
@@ -1879,7 +1901,7 @@ function updateWmPreview() {
 
   let brand = (txt && txt.value.trim()) ? txt.value.trim() : '';
   if (!brand) {
-    try { brand = JSON.parse(localStorage.getItem('pm_catalog_info')||'{}').title || 'Pleaseme'; } catch(e) { brand = 'Pleaseme'; }
+    brand = (_cfgCache['pm_catalog_info'] || {}).title || 'Pleaseme';
   }
   prev.textContent = brand;
 
@@ -1897,7 +1919,7 @@ function updateWmPreview() {
 
 // ─── WATERMARK ───────────────────────────────────────────────────────
 function getWatermarkConfig() {
-  try { return JSON.parse(localStorage.getItem('pm_watermark') || '{}'); } catch(e) { return {}; }
+  return _cfgCache['pm_watermark'] || {};
 }
 
 function applyWatermark(dataUrl, callback) {
@@ -1906,10 +1928,7 @@ function applyWatermark(dataUrl, callback) {
 
   let brand = cfg.text || '';
   if (!brand) {
-    try {
-      const ci = JSON.parse(localStorage.getItem('pm_catalog_info') || '{}');
-      brand = ci.title || 'Pleaseme';
-    } catch(e) { brand = 'Pleaseme'; }
+    brand = (_cfgCache['pm_catalog_info'] || {}).title || 'Pleaseme';
   }
 
   const position = cfg.position || 'bottom-right';
@@ -2038,16 +2057,12 @@ function closeConfirm() {
 
 async function confirmDelete() {
   if (!deleteId) return;
-  const ok = await sbDELETE('catalogo_productos', 'id=eq.' + encodeURIComponent(deleteId));
-  if (ok) {
-    products = products.filter(p => p.id !== deleteId);
-    localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
-    renderTable();
-    showToast('Prenda eliminada');
-  } else {
-    showToast('⚠ Error al eliminar');
-  }
+  const { error } = await _sb.from('catalogo_productos').delete().eq('id', deleteId);
+  if (error) return showToast('Error al eliminar: ' + error.message);
+  await loadProducts();
+  renderTable();
   closeConfirm();
+  showToast('Prenda eliminada');
 }
 
 // ─── TOAST ───────────────────────────────────────────────────────────
@@ -2125,11 +2140,9 @@ function resetVisitas() {
 }
 
 // ─── BANNER ──────────────────────────────────────────────────────────
-const BANNER_KEY = 'pm_banner';
-
 function loadBanner() {
   try {
-    const d = JSON.parse(localStorage.getItem(BANNER_KEY)) || {};
+    const d = _cfgCache['pm_banner'] || {};
     const activeEl = document.getElementById('bannerActive');
     const textEl   = document.getElementById('bannerText');
     if (activeEl) {
@@ -2144,8 +2157,8 @@ function loadBanner() {
 async function saveBanner() {
   const active = document.getElementById('bannerActive').checked;
   const text   = document.getElementById('bannerText').value.trim() || '🚚 Envío gratis hoy';
-  localStorage.setItem(BANNER_KEY, JSON.stringify({ active, text }));
-  await sbUPSERT('catalogo_config', { id:'main', banner_active: active, banner_text: text, updated_at: new Date().toISOString() });
+  const error  = await _saveConfig('pm_banner', { active, text });
+  if (error) return showToast('Error al guardar: ' + error.message);
   showToast('✦ Banner actualizado en el catálogo');
 }
 
@@ -2173,32 +2186,15 @@ function updateToggleUI(checked) {
 }
 
 // ─── CATALOG INFO (title, subtitle, etc.) ────────────────────────────
-const CATALOG_INFO_KEY = 'pm_catalog_info';
-
-async function loadCatalogInfo() {
-  let c = {};
-  try { c = JSON.parse(localStorage.getItem(CATALOG_INFO_KEY) || '{}'); } catch(e) {}
-  // Try Supabase first
-  const rows = await sbGET('catalogo_config?select=*&id=eq.main&limit=1');
-  if (rows && rows.length) {
-    const r = rows[0];
-    c = {
-      title:      r.nombre_marca      || c.title      || 'Pleaseme',
-      subtitle:   r.subtitulo_header  || c.subtitle   || 'Accessories · Oro Laminado',
-      footerLogo: r.footer_nombre     || c.footerLogo || 'Pleaseme Accessories',
-      footerText: r.footer_frase      || c.footerText || 'Cada pieza, una historia · Oro laminado de alta calidad',
-    };
-    // Also sync banner, discount, watermark to localStorage
-    if (r.banner_active !== null) localStorage.setItem('pm_banner', JSON.stringify({ active: r.banner_active, text: r.banner_text }));
-    if (r.descuento_pct)          localStorage.setItem('pm_discount', JSON.stringify({ threshold: r.descuento_minimo, pct: r.descuento_pct }));
-    if (r.watermark_enabled !== null) localStorage.setItem('pm_watermark', JSON.stringify({ enabled: r.watermark_enabled, text: r.watermark_text||'', position: r.watermark_position||'bottom-right', opacity: r.watermark_opacity||0.55 }));
-    localStorage.setItem(CATALOG_INFO_KEY, JSON.stringify(c));
-  }
-  const set = (id, val, def) => { const el = document.getElementById(id); if (el) el.value = val !== undefined ? val : def; };
-  set('ci_title',      c.title,      'Pleaseme');
-  set('ci_subtitle',   c.subtitle,   'Accessories · Oro Laminado');
-  set('ci_footerLogo', c.footerLogo, 'Pleaseme Accessories');
-  set('ci_footerText', c.footerText, 'Cada pieza, una historia · Oro laminado de alta calidad');
+function loadCatalogInfo() {
+  try {
+    const c = _cfgCache['pm_catalog_info'] || {};
+    const set = (id, val, def) => { const el = document.getElementById(id); if (el) el.value = val !== undefined ? val : def; };
+    set('ci_title',      c.title,      'Pleaseme');
+    set('ci_subtitle',   c.subtitle,   'Accessories · Oro Laminado');
+    set('ci_footerLogo', c.footerLogo, 'Pleaseme Accessories');
+    set('ci_footerText', c.footerText, 'Cada pieza, una historia · Oro laminado de alta calidad');
+  } catch(e) {}
 }
 
 async function saveCatalogInfo() {
@@ -2209,27 +2205,18 @@ async function saveCatalogInfo() {
     footerLogo: get('ci_footerLogo') || 'Pleaseme Accessories',
     footerText: get('ci_footerText') || 'Cada pieza, una historia · Oro laminado de alta calidad'
   };
-  localStorage.setItem(CATALOG_INFO_KEY, JSON.stringify(data));
-  await sbUPSERT('catalogo_config', {
-    id:               'main',
-    nombre_marca:     data.title,
-    subtitulo_header: data.subtitle,
-    footer_nombre:    data.footerLogo,
-    footer_frase:     data.footerText,
-    updated_at:       new Date().toISOString(),
-  });
+  const error = await _saveConfig('pm_catalog_info', data);
+  if (error) return showToast('Error al guardar: ' + error.message);
   showToast('✦ Textos del catálogo actualizados');
 }
 
 // ─── INFO SECTIONS ────────────────────────────────────────────────────
-const INFO_SECTIONS_KEY = 'pm_info_sections';
-
 function getInfoSections() {
-  try { return JSON.parse(localStorage.getItem(INFO_SECTIONS_KEY) || '[]'); } catch(e) { return []; }
+  return Array.isArray(_cfgCache['pm_info_sections']) ? _cfgCache['pm_info_sections'] : [];
 }
 
-function saveInfoSections(arr) {
-  localStorage.setItem(INFO_SECTIONS_KEY, JSON.stringify(arr));
+async function saveInfoSections(arr) {
+  await _saveConfig('pm_info_sections', arr);
 }
 
 function renderInfoTable() {
@@ -2289,31 +2276,15 @@ async function saveInfoSection() {
   const title   = document.getElementById('infoTitle').value.trim();
   const content = document.getElementById('infoContent').value.trim();
   if (!title || !content) { showToast('✦ Completa el título y el contenido'); return; }
-
+  let sections = getInfoSections();
   if (id) {
-    // Update existing
-    const ok = await sbPATCH('catalogo_secciones', 'id=eq.' + encodeURIComponent(id),
-      { titulo: title, contenido: content, updated_at: new Date().toISOString() });
-    if (!ok) return showToast('⚠ Error al actualizar sección');
-    let sections = getInfoSections();
     const idx = sections.findIndex(x => x.id === id);
     if (idx >= 0) sections[idx] = { id, title, content };
-    saveInfoSections(sections);
   } else {
-    // Insert new
-    const newId = Date.now().toString(36);
-    const res = await sbPOST('catalogo_secciones', {
-      id: newId, titulo: title, contenido: content,
-      position: getInfoSections().length, active: true,
-      created_at: new Date().toISOString(), updated_at: new Date().toISOString()
-    });
-    if (!res) return showToast('⚠ Error al guardar sección');
-    const saved = Array.isArray(res) ? res[0] : { id: newId };
-    let sections = getInfoSections();
-    sections.push({ id: saved.id || newId, title, content });
-    saveInfoSections(sections);
+    sections.push({ id: Date.now().toString(36), title, content });
   }
-
+  const error = await saveInfoSections(sections);
+  if (error) return showToast('Error al guardar: ' + error.message);
   closeInfoForm();
   renderInfoTable();
   showToast('✦ Sección guardada en el catálogo');
@@ -2323,19 +2294,16 @@ async function confirmDeleteInfo(id) {
   const s = getInfoSections().find(x => x.id === id);
   if (!s) return;
   if (!confirm('¿Eliminar la sección "' + s.title + '"?')) return;
-  const ok = await sbDELETE('catalogo_secciones', 'id=eq.' + encodeURIComponent(id));
-  if (!ok) return showToast('⚠ Error al eliminar sección');
-  saveInfoSections(getInfoSections().filter(x => x.id !== id));
+  const error = await saveInfoSections(getInfoSections().filter(x => x.id !== id));
+  if (error) return showToast('Error al eliminar: ' + error.message);
   renderInfoTable();
   showToast('✦ Sección eliminada');
 }
 
 // ─── DESCUENTO ────────────────────────────────────────────────────────
-const DISCOUNT_KEY = 'pm_discount';
-
 function loadDiscount() {
   try {
-    const d    = JSON.parse(localStorage.getItem(DISCOUNT_KEY) || '{}');
+    const d    = _cfgCache['pm_discount'] || {};
     const tEl  = document.getElementById('d_threshold');
     const pEl  = document.getElementById('d_pct');
     if (tEl) tEl.value = d.threshold !== undefined ? d.threshold : 10000;
@@ -2346,35 +2314,84 @@ function loadDiscount() {
 async function saveDiscount() {
   const threshold = parseInt(document.getElementById('d_threshold').value) || 10000;
   const pct       = parseInt(document.getElementById('d_pct').value)       || 35;
-  localStorage.setItem(DISCOUNT_KEY, JSON.stringify({ threshold, pct }));
-  await sbUPSERT('catalogo_config', { id:'main', descuento_minimo: threshold, descuento_pct: pct, updated_at: new Date().toISOString() });
+  const error     = await _saveConfig('pm_discount', { threshold, pct });
+  if (error) return showToast('Error al guardar: ' + error.message);
   showToast('✦ Descuento actualizado en el catálogo');
 }
 
+// ─── SUPABASE CONNECTION STATUS ──────────────────────────────────────
+async function checkSupabaseConnection() {
+  const el  = document.getElementById('sbStatus');
+  const txt = document.getElementById('sbStatusText');
+  const btn = document.getElementById('reconnectBtn');
+  if (!el || !txt) return;
+  try {
+    const { error } = await _sb.from('config').select('key').limit(1);
+    if (error) throw error;
+    el.className     = 'sb-status connected';
+    txt.textContent  = 'Conectado';
+    if (btn) btn.style.display = 'none';
+  } catch(e) {
+    el.className     = 'sb-status offline';
+    txt.textContent  = 'Sin conexión';
+    if (btn) btn.style.display = '';
+  }
+}
+
+async function manualReconnect() {
+  const el  = document.getElementById('sbStatus');
+  const txt = document.getElementById('sbStatusText');
+  const btn = document.getElementById('reconnectBtn');
+  if (el) { el.className = 'sb-status connecting'; txt.textContent = 'Reconectando...'; }
+  if (btn) btn.style.display = 'none';
+  await checkSupabaseConnection();
+}
+
+// ─── THEME TOGGLE ────────────────────────────────────────────────────
+function applyTheme(dark) {
+  document.body.classList.toggle('dark-theme', dark);
+  const icon = document.getElementById('themeIcon');
+  if (icon) {
+    icon.innerHTML = dark
+      ? '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>'
+      : '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>';
+  }
+}
+
+function toggleTheme() {
+  const isDark = !document.body.classList.contains('dark-theme');
+  localStorage.setItem('pm_theme', isDark ? 'dark' : 'light');
+  applyTheme(isDark);
+}
+
+// Aplicar tema guardado al cargar
+(function() {
+  applyTheme(localStorage.getItem('pm_theme') === 'dark');
+})();
+
 // ─── INIT ────────────────────────────────────────────────────────────
 async function init() {
-  // Load from Supabase in parallel
-  await Promise.all([loadProducts(), loadContact(), loadCatalogInfo()]);
+  await Promise.all([loadProducts(), _loadConfigs(), checkSupabaseConnection()]);
   fillContactForm();
   loadBanner();
   loadDiscount();
+  loadCatalogInfo();
   loadWatermarkConfig();
-  // Load info sections from Supabase
-  const secciones = await sbGET('catalogo_secciones?select=*&order=position.asc');
-  if (secciones) {
-    const mapped = secciones.map(s => ({ id: s.id, title: s.titulo, content: s.contenido }));
-    saveInfoSections(mapped);
-  }
   renderInfoTable();
   loadVisitas();
   renderTable();
+  // Reverificar conexión cada 30 s
+  setInterval(checkSupabaseConnection, 30000);
 }
 
-// Check session
-if (sessionStorage.getItem('pm_auth') === '1') {
-  document.getElementById('loginScreen').classList.add('hidden');
-  init();
-}
+// Cargar config (contraseña + contacto) antes de mostrar el login
+(async function() {
+  await loadConfig();
+  if (sessionStorage.getItem('pm_auth') === '1') {
+    document.getElementById('loginScreen').classList.add('hidden');
+    init();
+  }
+})();
 
 // Keyboard
 document.addEventListener('keydown', e => {
