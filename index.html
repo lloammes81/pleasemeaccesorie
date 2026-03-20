@@ -1599,6 +1599,11 @@
   </div>
 </div>
 
+<!-- LIGHTBOX -->
+<div id="lightboxOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:2000;align-items:center;justify-content:center;cursor:zoom-out;" onclick="closeLightbox()">
+  <img id="lightboxImg" src="" alt="" style="max-width:92vw;max-height:92vh;object-fit:contain;border-radius:4px;box-shadow:0 8px 60px rgba(0,0,0,0.7);">
+</div>
+
 <script>
 // ─── SUPABASE ─────────────────────────────────────────────────────────
 const _sb = supabase.createClient(
@@ -2160,7 +2165,7 @@ function renderGrid() {
     const inCart = cart.some(c => c.id === p.id);
     return `
     <div class="product-card card-enter ${inCart ? 'in-cart' : ''}" style="animation-delay:${i * 0.08}s" onclick="openModal('${p.id}')">
-      <div class="card-visual">
+      <div class="card-visual" ${p.photo ? `onclick="event.stopPropagation(); openLightbox('${p.photo}')" style="cursor:zoom-in"` : ''}>
         <div class="card-bg" style="background:${productBg(p)}"></div>
         <div class="jewelry-icon">
           ${productIconHTML(p)}
@@ -2185,7 +2190,8 @@ function renderGrid() {
 function updateModalBtn(id) {
   const btn = document.getElementById('modalAddBtn');
   if (!btn) return;
-  const inCart = cart.some(c => c.id === id);
+  // eslint-disable-next-line eqeqeq
+  const inCart = cart.some(c => c.id == id);
   btn.textContent = inCart ? '✓ En tu selección' : '✦ Agregar a selección';
   btn.style.background = inCart
     ? 'linear-gradient(135deg, #2d5a3d, #3a7a52)'
@@ -2193,21 +2199,30 @@ function updateModalBtn(id) {
 }
 
 function openModal(id) {
-  const p = products.find(x => x.id === id);
+  // eslint-disable-next-line eqeqeq — IDs can be number (Supabase) or string
+  const p = products.find(x => x.id == id);
   if (!p) return;
-  currentModalId = id;
+  currentModalId = p.id;
 
   document.getElementById('modalCategory').textContent = p.categoryLabel;
   document.getElementById('modalName').textContent = p.name;
   document.getElementById('modalSubtitle').textContent = p.subtitle;
   document.getElementById('modalDesc').textContent = p.desc;
   document.getElementById('modalPrice').innerHTML = `<span class="currency">$</span>${p.price}`;
-  document.getElementById('modalVisual').innerHTML = `
+  const mv = document.getElementById('modalVisual');
+  mv.innerHTML = `
     <div style="position:absolute;inset:0;background:${productBg(p)}"></div>
-    <div style="position:relative;z-index:1;filter:drop-shadow(0 12px 32px rgba(201,151,58,0.45))">
+    <div style="position:relative;z-index:1;filter:drop-shadow(0 12px 32px rgba(201,151,58,0.45))${p.photo ? ';width:100%;height:100%' : ''}">
       ${productIconHTML(p)}
     </div>
   `;
+  if (p.photo) {
+    mv.style.cursor = 'zoom-in';
+    mv.onclick = () => openLightbox(p.photo);
+  } else {
+    mv.style.cursor = '';
+    mv.onclick = null;
+  }
   document.getElementById('modalDetails').innerHTML = `
     <div class="modal-detail-row"><span class="label">Material</span><span class="value">${p.material}</span></div>
     <div class="modal-detail-row"><span class="label">Medida</span><span class="value">${p.medida}</span></div>
@@ -2249,7 +2264,24 @@ document.getElementById('modalClose').addEventListener('click', closeModal);
 document.getElementById('modalOverlay').addEventListener('click', e => {
   if (e.target === document.getElementById('modalOverlay')) closeModal();
 });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeCart(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeCart(); closeLightbox(); } });
+
+// ─── LIGHTBOX ────────────────────────────────────────────────────────
+function openLightbox(src) {
+  const ov = document.getElementById('lightboxOverlay');
+  document.getElementById('lightboxImg').src = src;
+  ov.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox() {
+  const ov = document.getElementById('lightboxOverlay');
+  ov.style.display = 'none';
+  document.getElementById('lightboxImg').src = '';
+  if (!document.getElementById('modalOverlay').classList.contains('open') &&
+      !document.getElementById('cartPanel').classList.contains('open')) {
+    document.body.style.overflow = '';
+  }
+}
 
 // ─── SWIPE ABAJO PARA CERRAR MODAL (móvil) ─────────────────────────
 (function() {
