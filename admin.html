@@ -1406,10 +1406,11 @@ textarea { resize: vertical; min-height: 80px; }
       <div id="fotoProcessPanel" style="display:none;margin-top:12px;border:1px solid var(--border);padding:14px;background:var(--bg2);">
         <label style="font-family:'Cinzel',serif;font-size:8px;letter-spacing:2px;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:8px;">Fondo profesional</label>
         <select id="bgToneSelect" style="width:100%;font-size:11px;padding:8px 10px;background:var(--bg);border:1px solid var(--border);color:var(--text);margin-bottom:10px;">
-          <option value="gold">✦ Dorado lujoso</option>
-          <option value="dark">◆ Oscuro elegante</option>
-          <option value="cream">○ Crema suave</option>
-          <option value="marble">▦ Mármol blanco</option>
+          <option value="negro">⬛ Negro premium</option>
+          <option value="carbon">◼ Carbón con destello</option>
+          <option value="noche">🌑 Azul noche</option>
+          <option value="botella">◾ Verde botella</option>
+          <option value="burdeos">🔴 Burdeos oscuro</option>
           <option value="none">— Sin cambio de fondo</option>
         </select>
         <button type="button" onclick="procesarFoto()" style="width:100%;background:linear-gradient(135deg,var(--gold-deep),var(--gold-light));border:none;color:var(--dark);font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
@@ -2184,108 +2185,111 @@ function aplicarFondoProfesional(dataUrl, tono, callback) {
     canvas.height = H;
     const ctx = canvas.getContext('2d');
 
-    // Fondos profesionales por tono
+    // ── FONDOS OSCUROS PROFESIONALES ──────────────────────────────
     const fondos = {
-      gold: () => {
-        const grd = ctx.createRadialGradient(W*0.5, H*0.35, 0, W*0.5, H*0.5, W*0.75);
-        grd.addColorStop(0,   '#F5E6B8');
-        grd.addColorStop(0.4, '#E8C96D');
-        grd.addColorStop(0.75,'#C9973A');
-        grd.addColorStop(1,   '#8B6914');
-        ctx.fillStyle = grd;
+
+      // Negro puro con luz central dorada — fondo joyería premium
+      negro: () => {
+        ctx.fillStyle = '#000000';
         ctx.fillRect(0, 0, W, H);
-        // Brillo central
-        const shine = ctx.createRadialGradient(W*0.5, H*0.3, 0, W*0.5, H*0.3, W*0.4);
-        shine.addColorStop(0,   'rgba(255,255,255,0.35)');
-        shine.addColorStop(1,   'rgba(255,255,255,0)');
-        ctx.fillStyle = shine;
+        const glow = ctx.createRadialGradient(W*0.5, H*0.45, 0, W*0.5, H*0.45, W*0.55);
+        glow.addColorStop(0,   'rgba(201,151,58,0.22)');
+        glow.addColorStop(0.5, 'rgba(139,105,20,0.08)');
+        glow.addColorStop(1,   'rgba(0,0,0,0)');
+        ctx.fillStyle = glow;
         ctx.fillRect(0, 0, W, H);
       },
-      dark: () => {
-        const grd = ctx.createRadialGradient(W*0.5, H*0.4, 0, W*0.5, H*0.5, W*0.8);
-        grd.addColorStop(0,   '#2E2719');
-        grd.addColorStop(0.5, '#1A1610');
-        grd.addColorStop(1,   '#0A0804');
+
+      // Carbón profundo con destello lateral
+      carbon: () => {
+        const grd = ctx.createLinearGradient(0, 0, W, H);
+        grd.addColorStop(0,   '#0D0D0D');
+        grd.addColorStop(0.4, '#1A1A1A');
+        grd.addColorStop(1,   '#080808');
         ctx.fillStyle = grd;
         ctx.fillRect(0, 0, W, H);
-        // Toque dorado suave
-        const glow = ctx.createRadialGradient(W*0.5, H*0.35, 0, W*0.5, H*0.35, W*0.45);
+        // Destello lateral izquierdo
+        const side = ctx.createRadialGradient(W*0.15, H*0.35, 0, W*0.15, H*0.35, W*0.5);
+        side.addColorStop(0,   'rgba(232,201,109,0.15)');
+        side.addColorStop(1,   'rgba(0,0,0,0)');
+        ctx.fillStyle = side;
+        ctx.fillRect(0, 0, W, H);
+      },
+
+      // Azul noche oscuro — elegante para oro
+      noche: () => {
+        const grd = ctx.createRadialGradient(W*0.5, H*0.4, 0, W*0.5, H*0.5, W*0.8);
+        grd.addColorStop(0,   '#0F1623');
+        grd.addColorStop(0.5, '#080E1A');
+        grd.addColorStop(1,   '#030609');
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 0, W, H);
+        // Brillo dorado centro
+        const glow = ctx.createRadialGradient(W*0.5, H*0.42, 0, W*0.5, H*0.42, W*0.4);
+        glow.addColorStop(0,   'rgba(201,151,58,0.2)');
+        glow.addColorStop(1,   'rgba(201,151,58,0)');
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, W, H);
+      },
+
+      // Verde botella oscuro — sofisticado
+      botella: () => {
+        const grd = ctx.createRadialGradient(W*0.5, H*0.4, 0, W*0.5, H*0.5, W*0.85);
+        grd.addColorStop(0,   '#0E1A10');
+        grd.addColorStop(0.5, '#070F08');
+        grd.addColorStop(1,   '#030604');
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 0, W, H);
+        const glow = ctx.createRadialGradient(W*0.5, H*0.4, 0, W*0.5, H*0.4, W*0.45);
         glow.addColorStop(0,   'rgba(201,151,58,0.18)');
         glow.addColorStop(1,   'rgba(201,151,58,0)');
         ctx.fillStyle = glow;
         ctx.fillRect(0, 0, W, H);
       },
-      cream: () => {
-        const grd = ctx.createRadialGradient(W*0.5, H*0.35, 0, W*0.5, H*0.5, W*0.8);
-        grd.addColorStop(0,   '#FFFFFF');
-        grd.addColorStop(0.5, '#F7F4EF');
-        grd.addColorStop(1,   '#E4DDD1');
+
+      // Burdeos oscuro — lujo y poder
+      burdeos: () => {
+        const grd = ctx.createRadialGradient(W*0.5, H*0.4, 0, W*0.5, H*0.5, W*0.85);
+        grd.addColorStop(0,   '#1A0810');
+        grd.addColorStop(0.5, '#0F0508');
+        grd.addColorStop(1,   '#060203');
         ctx.fillStyle = grd;
         ctx.fillRect(0, 0, W, H);
-        // Sombra perimetral suave
-        const shadow = ctx.createRadialGradient(W*0.5, H*0.5, W*0.3, W*0.5, H*0.5, W*0.75);
-        shadow.addColorStop(0, 'rgba(0,0,0,0)');
-        shadow.addColorStop(1, 'rgba(139,105,20,0.1)');
-        ctx.fillStyle = shadow;
+        const glow = ctx.createRadialGradient(W*0.5, H*0.4, 0, W*0.5, H*0.4, W*0.45);
+        glow.addColorStop(0,   'rgba(232,201,109,0.2)');
+        glow.addColorStop(1,   'rgba(232,201,109,0)');
+        ctx.fillStyle = glow;
         ctx.fillRect(0, 0, W, H);
       },
-      marble: () => {
-        // Base blanca
-        ctx.fillStyle = '#F8F6F2';
-        ctx.fillRect(0, 0, W, H);
-        // Venas de mármol
-        ctx.save();
-        ctx.globalAlpha = 0.07;
-        for (let i = 0; i < 6; i++) {
-          ctx.beginPath();
-          ctx.moveTo(Math.random()*W, 0);
-          ctx.bezierCurveTo(
-            Math.random()*W, H*0.33,
-            Math.random()*W, H*0.66,
-            Math.random()*W, H
-          );
-          ctx.strokeStyle = '#8B6914';
-          ctx.lineWidth = Math.random()*3 + 1;
-          ctx.stroke();
-        }
-        ctx.restore();
-        // Degradado suave
-        const grd = ctx.createLinearGradient(0, 0, W, H);
-        grd.addColorStop(0,   'rgba(245,230,184,0.15)');
-        grd.addColorStop(0.5, 'rgba(255,255,255,0)');
-        grd.addColorStop(1,   'rgba(201,151,58,0.1)');
-        ctx.fillStyle = grd;
-        ctx.fillRect(0, 0, W, H);
-      }
     };
 
     // Dibujar fondo
-    fondos[tono]();
+    (fondos[tono] || fondos.negro)();
 
-    // Dibujar imagen encima con mezcla suave
-    // Recorte circular/ovalado centrado para destacar el producto
-    const margen = Math.min(W, H) * 0.05;
-    const rx = W/2 - margen;
-    const ry = H/2 - margen;
-    ctx.save();
-    ctx.beginPath();
-    ctx.ellipse(W/2, H/2, rx, ry, 0, 0, Math.PI*2);
-    ctx.clip();
-    ctx.globalAlpha = 1;
+    // Dibujar imagen completa encima (sin recorte)
     ctx.drawImage(img, 0, 0, W, H);
-    ctx.restore();
 
-    // Viñeta perimetral para integrar bordes
-    const vignette = ctx.createRadialGradient(W/2, H/2, Math.min(W,H)*0.35, W/2, H/2, Math.min(W,H)*0.72);
+    // Viñeta oscura en bordes para integrar naturalmente
+    const vignette = ctx.createRadialGradient(W/2, H/2, Math.min(W,H)*0.3, W/2, H/2, Math.min(W,H)*0.78);
     vignette.addColorStop(0, 'rgba(0,0,0,0)');
-    vignette.addColorStop(1, 'rgba(0,0,0,0.22)');
+    vignette.addColorStop(1, 'rgba(0,0,0,0.55)');
     ctx.fillStyle = vignette;
     ctx.fillRect(0, 0, W, H);
 
-    callback(canvas.toDataURL('image/jpeg', 0.93));
+    callback(canvas.toDataURL('image/jpeg', 0.94));
   };
   img.src = dataUrl;
 }
+
+// Preview en tiempo real al cambiar el selector
+document.addEventListener('DOMContentLoaded', () => {
+  const sel = document.getElementById('bgToneSelect');
+  if (sel) {
+    sel.addEventListener('change', () => {
+      if (rawPhotoData) procesarFoto();
+    });
+  }
+});
 
 // Drag & drop
 const dropArea = document.getElementById('photoUploadArea');
