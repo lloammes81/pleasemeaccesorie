@@ -1536,9 +1536,10 @@ async function changePassword() {
   if (!p1) return showToast('Escribe una contraseña');
   if (p1 !== p2) return showToast('Las contraseñas no coinciden');
   if (p1.length < 6) return showToast('Mínimo 6 caracteres');
-  const { error } = await _sb.from('admin_auth').update({
+  const { error } = await _sb.from('admin_auth').upsert({
+    id: 1,
     password_hash: p1
-  }).eq('id', 1);
+  }, { onConflict: 'id' });
   if (error) return showToast('Error al guardar: ' + error.message);
   adminPassword = p1;
   document.getElementById('c_newpass').value = '';
