@@ -278,6 +278,57 @@ body {
 
 .topbar-actions { display: flex; align-items: center; gap: 12px; }
 
+/* ─── SUPABASE STATUS LABEL ─── */
+.sb-status {
+  display: flex; align-items: center; gap: 6px;
+  font-family: 'Cinzel', serif;
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 5px 11px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  transition: all 0.4s ease;
+  white-space: nowrap;
+}
+.sb-status .sb-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background 0.4s;
+}
+.sb-status.connecting {
+  color: var(--text-muted);
+  border-color: rgba(139,105,20,0.2);
+  background: rgba(139,105,20,0.06);
+}
+.sb-status.connecting .sb-dot {
+  background: var(--gold);
+  animation: sbPulse 1.2s ease-in-out infinite;
+}
+.sb-status.connected {
+  color: var(--green);
+  border-color: rgba(26,122,58,0.25);
+  background: rgba(26,122,58,0.07);
+}
+.sb-status.connected .sb-dot {
+  background: var(--green);
+  animation: sbPulse 2.5s ease-in-out infinite;
+}
+.sb-status.offline {
+  color: var(--red);
+  border-color: rgba(192,57,43,0.25);
+  background: rgba(192,57,43,0.07);
+}
+.sb-status.offline .sb-dot {
+  background: var(--red);
+  animation: none;
+}
+@keyframes sbPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.45; transform: scale(0.8); }
+}
+
 .btn {
   font-family: 'Cinzel', serif;
   font-size: 8.5px;
@@ -825,6 +876,10 @@ textarea { resize: vertical; min-height: 80px; }
     <div class="topbar">
       <span class="topbar-title" id="topbarTitle">Productos</span>
       <div class="topbar-actions">
+        <div class="sb-status connecting" id="sbStatus">
+          <span class="sb-dot"></span>
+          <span id="sbStatusText">Conectando</span>
+        </div>
         <button class="btn btn-primary" id="topbarAction" onclick="openDrawer()">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Nuevo producto
@@ -2229,9 +2284,25 @@ async function saveDiscount() {
   showToast('✦ Descuento actualizado en el catálogo');
 }
 
+// ─── SUPABASE CONNECTION STATUS ──────────────────────────────────────
+async function checkSupabaseConnection() {
+  const el   = document.getElementById('sbStatus');
+  const txt  = document.getElementById('sbStatusText');
+  if (!el || !txt) return;
+  try {
+    const { error } = await _sb.from('config').select('key').limit(1);
+    if (error) throw error;
+    el.className  = 'sb-status connected';
+    txt.textContent = 'Conectado';
+  } catch(e) {
+    el.className  = 'sb-status offline';
+    txt.textContent = 'Sin conexión';
+  }
+}
+
 // ─── INIT ────────────────────────────────────────────────────────────
 async function init() {
-  await Promise.all([loadProducts(), _loadConfigs()]);
+  await Promise.all([loadProducts(), _loadConfigs(), checkSupabaseConnection()]);
   fillContactForm();
   loadBanner();
   loadDiscount();
@@ -2240,6 +2311,8 @@ async function init() {
   renderInfoTable();
   loadVisitas();
   renderTable();
+  // Reverificar conexión cada 30 s
+  setInterval(checkSupabaseConnection, 30000);
 }
 
 // Cargar config (contraseña + contacto) antes de mostrar el login
