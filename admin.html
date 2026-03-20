@@ -1421,8 +1421,10 @@ const CONTACT_KEY    = 'pm_contact';
 const DEFAULT_PASS   = 'pleaseme2024';
 
 // ─── AUTH ────────────────────────────────────────────────────────────
+let adminPassword = DEFAULT_PASS;
+
 function getPass() {
-  return localStorage.getItem(ADMIN_PASS_KEY) || DEFAULT_PASS;
+  return adminPassword;
 }
 
 function doLogin() {
@@ -1448,13 +1450,19 @@ function doLogout() {
   location.reload();
 }
 
-function changePassword() {
+async function changePassword() {
   const p1 = document.getElementById('c_newpass').value.trim();
   const p2 = document.getElementById('c_newpass2').value.trim();
   if (!p1) return showToast('Escribe una contraseña');
   if (p1 !== p2) return showToast('Las contraseñas no coinciden');
   if (p1.length < 6) return showToast('Mínimo 6 caracteres');
-  localStorage.setItem(ADMIN_PASS_KEY, p1);
+  const { error } = await _sb.from('config').upsert({
+    key: 'admin_password',
+    value: p1,
+    description: 'Contraseña del panel admin'
+  }, { onConflict: 'key' });
+  if (error) return showToast('Error al guardar: ' + error.message);
+  adminPassword = p1;
   document.getElementById('c_newpass').value = '';
   document.getElementById('c_newpass2').value = '';
   showToast('✦ Contraseña actualizada');
@@ -1499,30 +1507,48 @@ async function loadProducts() {
   }
 }
 
-// ─── CONTACT STATE ────────────────────────────────────────────────────
+// ─── CONTACT + CONFIG STATE ───────────────────────────────────────────
 let contact = {};
 
-function loadContact() {
-  try { contact = JSON.parse(localStorage.getItem(CONTACT_KEY)) || {}; }
-  catch { contact = {}; }
+// Carga contacto Y contraseña desde la tabla config de Supabase
+async function loadConfig() {
+  try {
+    const { data, error } = await _sb
+      .from('config')
+      .select('key, value')
+      .in('key', ['contact', 'admin_password']);
+    if (error) throw error;
+    (data || []).forEach(row => {
+      if (row.key === 'contact')        contact       = row.value || {};
+      if (row.key === 'admin_password') adminPassword = row.value || DEFAULT_PASS;
+    });
+  } catch(e) {
+    console.error('Error cargando config:', e);
+    // Fallback a localStorage
+    try { contact = JSON.parse(localStorage.getItem(CONTACT_KEY)) || {}; } catch {}
+    adminPassword = localStorage.getItem(ADMIN_PASS_KEY) || DEFAULT_PASS;
+  }
 }
 
-function saveContact(section) {
+function loadContact() { /* cargado por loadConfig() */ }
+
+async function saveContact(section) {
   const fields = {
-    whatsapp: ['whatsapp','wa_msg'],
-    instagram: ['instagram','ig_link'],
-    email: ['email','web'],
-    location: ['city','address','hours']
+    whatsapp:  ['whatsapp', 'wa_msg'],
+    instagram: ['instagram', 'ig_link'],
+    email:     ['email', 'web'],
+    location:  ['city', 'address', 'hours']
   };
   (fields[section] || []).forEach(k => {
     const el = document.getElementById('c_' + k);
     if (el) contact[k] = el.value.trim();
   });
-  localStorage.setItem(CONTACT_KEY, JSON.stringify(contact));
-  // Also update whatsapp in catalog data
-  if (section === 'whatsapp') {
-    localStorage.setItem('pm_whatsapp', contact.whatsapp || '');
-  }
+  const { error } = await _sb.from('config').upsert({
+    key: 'contact',
+    value: contact,
+    description: 'Información de contacto'
+  }, { onConflict: 'key' });
+  if (error) return showToast('Error al guardar: ' + error.message);
   showToast('✦ Información guardada');
 }
 
@@ -2201,7 +2227,6 @@ function saveDiscount() {
 // ─── INIT ────────────────────────────────────────────────────────────
 async function init() {
   await loadProducts();
-  loadContact();
   fillContactForm();
   loadBanner();
   loadDiscount();
@@ -2212,11 +2237,14 @@ async function init() {
   renderTable();
 }
 
-// Check session
-if (sessionStorage.getItem('pm_auth') === '1') {
-  document.getElementById('loginScreen').classList.add('hidden');
-  init();
-}
+// Cargar config (contraseña + contacto) antes de mostrar el login
+(async function() {
+  await loadConfig();
+  if (sessionStorage.getItem('pm_auth') === '1') {
+    document.getElementById('loginScreen').classList.add('hidden');
+    init();
+  }
+})();
 
 // Keyboard
 document.addEventListener('keydown', e => {

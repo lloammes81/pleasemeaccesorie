@@ -1912,11 +1912,11 @@ async function loadProductsFromSupabase() {
 }
 
 let products = [];
+let appContact = {};
 
 // ─── WHATSAPP NUMBER ─────────────────────────────────────────────────
-// Viene del admin; si no está configurado se usa el valor por defecto
 function getWhatsAppNumber() {
-  return localStorage.getItem('pm_whatsapp') || '573001234567';
+  return appContact.whatsapp || '573001234567';
 }
 
 let activeCategory = "todos";
@@ -2079,10 +2079,8 @@ function sendWhatsApp() {
   if (cart.length === 0) return;
   const note = document.getElementById('cartNote').value.trim();
 
-  let waContact = {};
-  try { waContact = JSON.parse(localStorage.getItem('pm_contact') || '{}'); } catch(e) {}
-  let msg = (waContact.wa_msg && waContact.wa_msg.trim())
-    ? waContact.wa_msg.trim() + '\n\n'
+  let msg = (appContact.wa_msg && appContact.wa_msg.trim())
+    ? appContact.wa_msg.trim() + '\n\n'
     : '✨ *Hola Pleaseme!* Quiero hacer un pedido:\n\n';
 
   cart.forEach(item => {
@@ -2373,32 +2371,37 @@ function cerrarBanner() {
   } catch(e) {}
 })();
 
-// Cargar productos desde Supabase y luego renderizar
+// Cargar productos y contacto desde Supabase, luego renderizar
 (async function initCatalog() {
-  products = await loadProductsFromSupabase();
+  // Cargar en paralelo
+  const [prods, configRows] = await Promise.all([
+    loadProductsFromSupabase(),
+    _sb.from('config').select('key, value').eq('key', 'contact')
+  ]);
+  products = prods;
+  const contactRow = (configRows.data || []).find(r => r.key === 'contact');
+  if (contactRow) appContact = contactRow.value || {};
   renderFilters();
   renderGrid();
   renderCartItems();
+  loadContactInfo();
 })();
 
 // ─── CONTACT INFO IN FOOTER ───────────────────────────────────────────
 function loadContactInfo() {
-  try {
-    const c  = JSON.parse(localStorage.getItem('pm_contact') || '{}');
-    const el = document.getElementById('footerContactInfo');
-    if (!el) return;
-    const parts = [];
-    if (c.instagram) {
-      const link   = c.ig_link || '#';
-      const handle = c.instagram.startsWith('@') ? c.instagram : '@' + c.instagram;
-      parts.push(`<a href="${link}" target="_blank" style="color:rgba(201,151,58,0.55);text-decoration:none;">${handle}</a>`);
-    }
-    if (c.city)  parts.push(`<span>${c.city}</span>`);
-    if (c.hours) parts.push(`<span>${c.hours}</span>`);
-    el.innerHTML = parts.join('<span style="margin:0 6px;opacity:0.35;">·</span>');
-  } catch(e) {}
+  const c  = appContact;
+  const el = document.getElementById('footerContactInfo');
+  if (!el) return;
+  const parts = [];
+  if (c.instagram) {
+    const link   = c.ig_link || '#';
+    const handle = c.instagram.startsWith('@') ? c.instagram : '@' + c.instagram;
+    parts.push(`<a href="${link}" target="_blank" style="color:rgba(201,151,58,0.55);text-decoration:none;">${handle}</a>`);
+  }
+  if (c.city)  parts.push(`<span>${c.city}</span>`);
+  if (c.hours) parts.push(`<span>${c.hours}</span>`);
+  el.innerHTML = parts.join('<span style="margin:0 6px;opacity:0.35;">·</span>');
 }
-loadContactInfo();
 
 // ─── WELCOME POPUP — dynamic discount text ────────────────────────────
 (function() {
