@@ -1684,11 +1684,7 @@ function goTo(page) {
 }
 
 function openCatalog() {
-  if (window.opener && !window.opener.closed) {
-    window.opener.focus();
-  } else {
-    window.open('index.html', '_blank');
-  }
+  window.open('index.html', '_blank');
   window.close();
 }
 
