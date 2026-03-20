@@ -1402,20 +1402,23 @@ textarea { resize: vertical; min-height: 80px; }
       </button>
       <!-- Input oculto para cámara -->
       <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this)">
-      <!-- Selector de fondo -->
-      <div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <label style="font-family:'Cinzel',serif;font-size:8px;letter-spacing:2px;color:var(--text-muted);text-transform:uppercase;white-space:nowrap;">Fondo automático:</label>
-        <select id="bgToneSelect" style="flex:1;min-width:120px;font-size:11px;padding:7px 10px;background:var(--bg);border:1px solid var(--border);color:var(--text);">
+      <!-- Selector de fondo + botón aplicar -->
+      <div id="fotoProcessPanel" style="display:none;margin-top:12px;border:1px solid var(--border);padding:14px;background:var(--bg2);">
+        <label style="font-family:'Cinzel',serif;font-size:8px;letter-spacing:2px;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:8px;">Fondo profesional</label>
+        <select id="bgToneSelect" style="width:100%;font-size:11px;padding:8px 10px;background:var(--bg);border:1px solid var(--border);color:var(--text);margin-bottom:10px;">
           <option value="gold">✦ Dorado lujoso</option>
           <option value="dark">◆ Oscuro elegante</option>
           <option value="cream">○ Crema suave</option>
           <option value="marble">▦ Mármol blanco</option>
-          <option value="none">— Sin cambio</option>
+          <option value="none">— Sin cambio de fondo</option>
         </select>
-      </div>
-      <!-- Indicador de procesamiento -->
-      <div id="bgProcessing" style="display:none;margin-top:8px;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;color:var(--gold);text-align:center;">
-        ✦ Aplicando fondo profesional...
+        <button type="button" onclick="procesarFoto()" style="width:100%;background:linear-gradient(135deg,var(--gold-deep),var(--gold-light));border:none;color:var(--dark);font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          Aplicar fondo + marca de agua
+        </button>
+        <div id="bgProcessing" style="display:none;margin-top:8px;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;color:var(--gold);text-align:center;">
+          ✦ Procesando imagen...
+        </div>
       </div>
       <div class="photo-preview" id="photoPreview">
         <img id="photoPreviewImg" src="" alt="Preview">
@@ -1860,9 +1863,11 @@ function renderTable() {
 // ─── DRAWER ──────────────────────────────────────────────────────────
 function openDrawer(id) {
   editingId = id || null;
-  photoData = null;
+  photoData    = null;
+  rawPhotoData = null;
   document.getElementById('photoPreview').style.display = 'none';
   document.getElementById('photoInput').value = '';
+  document.getElementById('fotoProcessPanel').style.display = 'none';
 
   if (id) {
     const p = products.find(x => x.id === id);
@@ -2127,7 +2132,46 @@ function abrirCamara() {
   document.getElementById('cameraInput').click();
 }
 
-// ─── FONDO PROFESIONAL ───────────────────────────────────────────────
+let rawPhotoData = null; // foto original sin procesar
+
+function handlePhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) return showToast('La foto no puede superar 5MB');
+  const reader = new FileReader();
+  reader.onload = e => {
+    rawPhotoData = e.target.result;
+    photoData    = e.target.result; // guardar sin procesar por defecto
+    document.getElementById('photoPreviewImg').src = rawPhotoData;
+    document.getElementById('photoPreview').style.display = 'block';
+    document.getElementById('fotoProcessPanel').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function procesarFoto() {
+  if (!rawPhotoData) return showToast('Primero sube una foto');
+  const tono = document.getElementById('bgToneSelect').value;
+  const proc = document.getElementById('bgProcessing');
+  proc.style.display = 'block';
+  aplicarFondoProfesional(rawPhotoData, tono, (conFondo) => {
+    applyWatermark(conFondo, (result) => {
+      proc.style.display = 'none';
+      photoData = result;
+      document.getElementById('photoPreviewImg').src = result;
+      showToast('✦ Fondo y marca de agua aplicados');
+    });
+  });
+}
+
+function removePhoto() {
+  photoData    = null;
+  rawPhotoData = null;
+  document.getElementById('photoPreviewImg').src = '';
+  document.getElementById('photoPreview').style.display = 'none';
+  document.getElementById('photoInput').value = '';
+  document.getElementById('fotoProcessPanel').style.display = 'none';
+}
 function aplicarFondoProfesional(dataUrl, tono, callback) {
   if (tono === 'none') { callback(dataUrl); return; }
 
@@ -2241,34 +2285,6 @@ function aplicarFondoProfesional(dataUrl, tono, callback) {
     callback(canvas.toDataURL('image/jpeg', 0.93));
   };
   img.src = dataUrl;
-}
-
-function handlePhoto(input) {
-  const file = input.files[0];
-  if (!file) return;
-  if (file.size > 5 * 1024 * 1024) return showToast('La foto no puede superar 5MB');
-  const tono = document.getElementById('bgToneSelect') ? document.getElementById('bgToneSelect').value : 'none';
-  const proc = document.getElementById('bgProcessing');
-  if (proc && tono !== 'none') proc.style.display = 'block';
-  const reader = new FileReader();
-  reader.onload = e => {
-    aplicarFondoProfesional(e.target.result, tono, (conFondo) => {
-      applyWatermark(conFondo, (result) => {
-        if (proc) proc.style.display = 'none';
-        photoData = result;
-        document.getElementById('photoPreviewImg').src = result;
-        document.getElementById('photoPreview').style.display = 'block';
-      });
-    });
-  };
-  reader.readAsDataURL(file);
-}
-
-function removePhoto() {
-  photoData = null;
-  document.getElementById('photoPreviewImg').src = '';
-  document.getElementById('photoPreview').style.display = 'none';
-  document.getElementById('photoInput').value = '';
 }
 
 // Drag & drop
