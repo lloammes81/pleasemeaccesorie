@@ -928,12 +928,21 @@ textarea { resize: vertical; min-height: 80px; }
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Nuevo producto
         </button>
+        <button class="btn btn-outline" onclick="recargarProductos()" title="Recargar productos" style="gap:6px;">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.36-3.36L23 10M1 14l5.13 4.36A9 9 0 0020.49 15"/></svg>
+          Recargar
+        </button>
       </div>
     </div>
 
     <!-- PAGE: PRODUCTOS -->
     <div class="page active" id="page-productos">
       <div class="gold-line"></div>
+
+      <!-- Panel de diagnóstico temporal -->
+      <div id="diagPanel" style="display:none;margin-bottom:16px;padding:14px;background:rgba(192,57,43,0.08);border:1px solid rgba(192,57,43,0.3);font-size:12px;font-family:'Montserrat',sans-serif;color:var(--text);">
+        <strong>⚠ Diagnóstico:</strong> <span id="diagMsg"></span>
+      </div>
 
       <div class="stats-row" id="statsRow"></div>
 
@@ -1465,25 +1474,6 @@ textarea { resize: vertical; min-height: 80px; }
           <div id="bgProcessing" style="display:none;margin-top:8px;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;color:var(--gold);text-align:center;padding:6px;">✦ IA procesando...</div>
         </div>
 
-        <!-- Separador fondos manuales -->
-        <div style="padding:0 14px 14px;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-            <div style="flex:1;height:1px;background:var(--border);"></div>
-            <span style="font-family:'Cinzel',serif;font-size:8px;letter-spacing:2px;color:var(--text-muted);">O ELIGE FONDO DIRECTO</span>
-            <div style="flex:1;height:1px;background:var(--border);"></div>
-          </div>
-          <select id="bgToneSelect" style="width:100%;font-size:12px;padding:9px 12px;background:var(--bg);border:1px solid var(--border);color:var(--text);margin-bottom:8px;" onchange="if(rawPhotoData) procesarFoto()">
-            <option value="negro">⬛ Negro premium</option>
-            <option value="carbon">◼ Carbón con destello</option>
-            <option value="noche">🌑 Azul noche</option>
-            <option value="botella">◾ Verde botella</option>
-            <option value="burdeos">🔴 Burdeos oscuro</option>
-            <option value="none">— Sin cambio de fondo</option>
-          </select>
-          <button type="button" onclick="procesarFoto()" style="width:100%;background:linear-gradient(135deg,var(--gold-deep),var(--gold-light));border:none;color:var(--dark);font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:10px;cursor:pointer;">
-            Aplicar fondo + marca de agua
-          </button>
-        </div>
       </div>
       <div class="photo-preview" id="photoPreview">
         <img id="photoPreviewImg" src="" alt="Preview">
@@ -1697,14 +1687,42 @@ const CAT_LABELS = {
   pulseras: 'Pulseras', tobilleras: 'Tobilleras', dijes: 'Dijes'
 };
 
+async function recargarProductos() {
+  showToast('Recargando productos...');
+  await loadProducts();
+  renderTable();
+  if (products.length === 0) {
+    showToast('⚠ No se encontraron productos en la base de datos');
+  } else {
+    showToast('✦ ' + products.length + ' producto' + (products.length !== 1 ? 's' : '') + ' cargado' + (products.length !== 1 ? 's' : ''));
+  }
+}
+
 async function loadProducts() {
   try {
+    const diag    = document.getElementById('diagPanel');
+    const diagMsg = document.getElementById('diagMsg');
+
+    // Cargar primero SIN fotos para que sea rapido
     const { data, error } = await _sb
       .from('catalogo_productos')
-      .select('*')
+      .select('id,name,subtitle,category,category_label,price,description,material,medida,peso,badge,created_at')
       .order('created_at');
-    if (error) throw error;
-    products = (data || []).map(p => ({
+
+    if (error) {
+      if (diag) { diag.style.display = ''; diagMsg.textContent = 'Error Supabase: ' + error.message; }
+      throw error;
+    }
+
+    if (!data || data.length === 0) {
+      if (diag) { diag.style.display = ''; diagMsg.textContent = 'La tabla esta vacia. Agrega productos con "Nuevo producto".'; }
+      products = [];
+      return;
+    }
+
+    if (diag) diag.style.display = 'none';
+
+    products = data.map(p => ({
       id:            p.id,
       name:          p.name,
       subtitle:      p.subtitle      || '',
@@ -1716,59 +1734,58 @@ async function loadProducts() {
       medida:        p.medida        || '',
       peso:          p.peso          || '',
       badge:         p.badge         || null,
-      photo:         p.photo_data    || null,
+      photo:         null,
     }));
+
+    console.log('Productos cargados (sin fotos):', products.length);
+    renderTable();
+
+    // Cargar fotos en segundo plano de a 5
+    const ids = data.map(p => p.id);
+    const BATCH = 5;
+    for (let i = 0; i < ids.length; i += BATCH) {
+      const batch = ids.slice(i, i + BATCH);
+      const { data: fotoData } = await _sb
+        .from('catalogo_productos')
+        .select('id,photo_data')
+        .in('id', batch);
+      if (fotoData) {
+        fotoData.forEach(row => {
+          const p = products.find(x => x.id === row.id);
+          if (p && row.photo_data) {
+            p.photo = row.photo_data;
+            const imgEl = document.querySelector(`td img[alt="${p.name}"]`);
+            if (imgEl) {
+              imgEl.src = row.photo_data;
+            } else {
+              // Buscar placeholder y reemplazar
+              const allRows = document.querySelectorAll('#productTableBody tr');
+              allRows.forEach(tr => {
+                if (tr.innerHTML.includes(String(p.id))) {
+                  const photoCell = tr.querySelector('.td-photo');
+                  if (photoCell) photoCell.innerHTML = `<img src="${row.photo_data}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;">`;
+                }
+              });
+            }
+          }
+        });
+      }
+      await new Promise(r => setTimeout(r, 80));
+    }
   } catch(e) {
     console.error('Error cargando productos:', e);
+    showToast('Error al conectar: ' + e.message);
     products = [];
-    showToast('Error al conectar con Supabase');
   }
 }
 
+
+
 // ─── ELIMINAR DUPLICADOS AUTOMÁTICAMENTE ─────────────────────────────
 async function eliminarDuplicados() {
-  // Agrupar por photo_data — solo los que tienen foto
-  const conFoto = products.filter(p => p.photo);
-  const visto = {};
-  const idsEliminar = [];
-
-  conFoto.forEach(p => {
-    if (visto[p.photo]) {
-      // Ya existe uno con esta imagen — este es duplicado
-      idsEliminar.push(p.id);
-    } else {
-      visto[p.photo] = p.id;
-    }
-  });
-
-  // También agrupar por nombre (sin foto)
-  const vistoNombre = {};
-  products.forEach(p => {
-    const key = p.name.toLowerCase().trim();
-    if (vistoNombre[key]) {
-      if (!idsEliminar.includes(p.id)) idsEliminar.push(p.id);
-    } else {
-      vistoNombre[key] = p.id;
-    }
-  });
-
-  if (idsEliminar.length === 0) return;
-
-  // Eliminar de Supabase
-  const { error } = await _sb
-    .from('catalogo_productos')
-    .delete()
-    .in('id', idsEliminar);
-
-  if (error) {
-    console.error('Error eliminando duplicados:', error);
-    return;
-  }
-
-  // Recargar lista
-  await loadProducts();
-  renderTable();
-  showToast(`✦ ${idsEliminar.length} duplicado${idsEliminar.length > 1 ? 's' : ''} eliminado${idsEliminar.length > 1 ? 's' : ''} automáticamente`);
+  // Desactivado — solo verificar duplicados al guardar, no al cargar
+  // para evitar borrar productos válidos por error
+  return;
 }
 
 // ─── CONTACT + CONFIG STATE ───────────────────────────────────────────
@@ -2350,44 +2367,25 @@ async function enviarMensajeIA(textoDirecto) {
         messages: [
           {
             role: 'system',
-            content: `Eres un experto en fotografía de joyería de lujo y edición de imágenes.
-El usuario te pedirá cambios en una imagen de joya/accesorio.
-Responde SOLO con un JSON sin markdown con exactamente estos campos:
-{
-  "descripcion": "qué vas a hacer en español, máximo 15 palabras",
-  "fondo": "negro|carbon|noche|botella|burdeos|none",
-  "exposicion": número entre -1.0 y 1.0,
-  "contraste": número entre 0.5 y 2.5,
-  "saturacion": número entre 0.0 y 3.0,
-  "calidez": número entre -1.0 y 1.0,
-  "temperatura_color": número entre -1.0 y 1.0,
-  "brillo_centro": número entre -0.5 y 1.0,
-  "brillo_lateral": número entre 0.0 y 1.0,
-  "sombras": número entre -1.0 y 1.0,
-  "vigneta": número entre 0.0 y 1.0,
-  "marca_agua": true
-}
+            content: `Eres un editor de fotos de joyeria. El usuario pide cambios a una imagen.
+RESPONDE SOLO con JSON puro, sin markdown, sin texto extra.
+Formato obligatorio con TODOS estos campos:
+{"descripcion":"texto corto","fondo":"negro","exposicion":0.0,"contraste":1.0,"saturacion":1.0,"calidez":0.0,"temperatura_color":0.0,"brillo_centro":0.0,"brillo_lateral":0.0,"sombras":0.0,"vigneta":0.6,"marca_agua":true}
 
-Ejemplos:
-- "fondo negro profesional" → fondo=negro, vigneta=0.75, brillo_centro=0.3
-- "más brillo" → exposicion=0.4, brillo_centro=0.45
-- "quitar flash / sobreexpuesto" → exposicion=-0.45, contraste=1.4, brillo_centro=-0.3
-- "tono dorado cálido" → calidez=0.5, temperatura_color=0.35, saturacion=1.3
-- "más contraste" → contraste=1.6, sombras=-0.2
-- "look de lujo profesional" → fondo=negro, vigneta=0.8, contraste=1.35, calidez=0.25, brillo_centro=0.35, saturacion=1.2
-- "blanco y negro" → saturacion=0, calidez=0, temperatura_color=0
-- "iluminación lateral dorada" → brillo_lateral=0.65, calidez=0.3, brillo_centro=0.2
-- "más saturación / colores vivos" → saturacion=1.7
-- "fondo azul noche" → fondo=noche, vigneta=0.7
-
-Analiza la imagen y adapta los valores según lo que el usuario pide Y lo que ves en la imagen.`
+Para el campo fondo usa EXACTAMENTE uno de: negro, carbon, noche, botella, burdeos, none
+Si pide fondo oscuro/negro/dark = negro
+Si pide fondo carbon/gris = carbon
+Si pide azul/noche/marino = noche
+Si pide verde/botella = botella
+Si pide rojo/burdeos/vino = burdeos
+Si NO pide cambio de fondo = none`
           },
           {
             role: 'user',
             content: [
               {
                 type: 'image_url',
-                image_url: { url: `data:${mimeType};base64,${base64}`, detail: 'low' }
+                image_url: { url: `data:${mimeType};base64,${base64}`, detail: 'high' }
               },
               {
                 type: 'text',
@@ -2632,17 +2630,15 @@ function handlePhoto(input) {
 }
 
 function procesarFoto() {
+  // Solo aplica marca de agua — el fondo lo maneja ChatGPT
   if (!rawPhotoData) return showToast('Primero sube una foto');
-  const tono = document.getElementById('bgToneSelect').value;
   const proc = document.getElementById('bgProcessing');
-  proc.style.display = 'block';
-  aplicarFondoProfesional(rawPhotoData, tono, (conFondo) => {
-    applyWatermark(conFondo, (result) => {
-      proc.style.display = 'none';
-      photoData = result;
-      document.getElementById('photoPreviewImg').src = result;
-      showToast('✦ Fondo y marca de agua aplicados');
-    });
+  if (proc) proc.style.display = 'block';
+  applyWatermark(rawPhotoData, (result) => {
+    if (proc) proc.style.display = 'none';
+    photoData = result;
+    document.getElementById('photoPreviewImg').src = result;
+    showToast('✦ Marca de agua aplicada');
   });
 }
 
@@ -2754,16 +2750,6 @@ function aplicarFondoProfesional(dataUrl, tono, callback) {
   };
   img.src = dataUrl;
 }
-
-// Preview en tiempo real al cambiar el selector
-document.addEventListener('DOMContentLoaded', () => {
-  const sel = document.getElementById('bgToneSelect');
-  if (sel) {
-    sel.addEventListener('change', () => {
-      if (rawPhotoData) procesarFoto();
-    });
-  }
-});
 
 // Drag & drop
 const dropArea = document.getElementById('photoUploadArea');
