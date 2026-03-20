@@ -1395,6 +1395,28 @@ textarea { resize: vertical; min-height: 80px; }
           <span style="font-size:10px">JPG, PNG · Max 5MB</span>
         </div>
       </div>
+      <!-- Botón cámara -->
+      <button type="button" onclick="abrirCamara()" style="margin-top:10px;width:100%;background:transparent;border:1px solid var(--border-strong);color:var(--gold);font-family:'Cinzel',serif;font-size:8.5px;letter-spacing:2px;text-transform:uppercase;padding:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.2s;" onmouseover="this.style.background='rgba(201,151,58,0.06)'" onmouseout="this.style.background='transparent'">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        Tomar foto con cámara
+      </button>
+      <!-- Input oculto para cámara -->
+      <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this)">
+      <!-- Selector de fondo -->
+      <div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <label style="font-family:'Cinzel',serif;font-size:8px;letter-spacing:2px;color:var(--text-muted);text-transform:uppercase;white-space:nowrap;">Fondo automático:</label>
+        <select id="bgToneSelect" style="flex:1;min-width:120px;font-size:11px;padding:7px 10px;background:var(--bg);border:1px solid var(--border);color:var(--text);">
+          <option value="gold">✦ Dorado lujoso</option>
+          <option value="dark">◆ Oscuro elegante</option>
+          <option value="cream">○ Crema suave</option>
+          <option value="marble">▦ Mármol blanco</option>
+          <option value="none">— Sin cambio</option>
+        </select>
+      </div>
+      <!-- Indicador de procesamiento -->
+      <div id="bgProcessing" style="display:none;margin-top:8px;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;color:var(--gold);text-align:center;">
+        ✦ Aplicando fondo profesional...
+      </div>
       <div class="photo-preview" id="photoPreview">
         <img id="photoPreviewImg" src="" alt="Preview">
         <button class="photo-preview-remove" onclick="removePhoto()">×</button>
@@ -2020,8 +2042,8 @@ function getWatermarkConfig() {
 
 function applyWatermark(dataUrl, callback) {
   const cfg = getWatermarkConfig();
-  if (cfg.enabled === false) { callback(dataUrl); return; }
 
+  // Siempre aplicar marca de agua al subir imagen
   let brand = cfg.text || '';
   if (!brand) {
     brand = (_cfgCache['pm_catalog_info'] || {}).title || 'Pleaseme';
@@ -2101,16 +2123,142 @@ function applyWatermark(dataUrl, callback) {
 }
 
 // ─── PHOTO ───────────────────────────────────────────────────────────
+function abrirCamara() {
+  document.getElementById('cameraInput').click();
+}
+
+// ─── FONDO PROFESIONAL ───────────────────────────────────────────────
+function aplicarFondoProfesional(dataUrl, tono, callback) {
+  if (tono === 'none') { callback(dataUrl); return; }
+
+  const img = new Image();
+  img.onload = function() {
+    const W = img.width;
+    const H = img.height;
+    const canvas = document.createElement('canvas');
+    canvas.width  = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+
+    // Fondos profesionales por tono
+    const fondos = {
+      gold: () => {
+        const grd = ctx.createRadialGradient(W*0.5, H*0.35, 0, W*0.5, H*0.5, W*0.75);
+        grd.addColorStop(0,   '#F5E6B8');
+        grd.addColorStop(0.4, '#E8C96D');
+        grd.addColorStop(0.75,'#C9973A');
+        grd.addColorStop(1,   '#8B6914');
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 0, W, H);
+        // Brillo central
+        const shine = ctx.createRadialGradient(W*0.5, H*0.3, 0, W*0.5, H*0.3, W*0.4);
+        shine.addColorStop(0,   'rgba(255,255,255,0.35)');
+        shine.addColorStop(1,   'rgba(255,255,255,0)');
+        ctx.fillStyle = shine;
+        ctx.fillRect(0, 0, W, H);
+      },
+      dark: () => {
+        const grd = ctx.createRadialGradient(W*0.5, H*0.4, 0, W*0.5, H*0.5, W*0.8);
+        grd.addColorStop(0,   '#2E2719');
+        grd.addColorStop(0.5, '#1A1610');
+        grd.addColorStop(1,   '#0A0804');
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 0, W, H);
+        // Toque dorado suave
+        const glow = ctx.createRadialGradient(W*0.5, H*0.35, 0, W*0.5, H*0.35, W*0.45);
+        glow.addColorStop(0,   'rgba(201,151,58,0.18)');
+        glow.addColorStop(1,   'rgba(201,151,58,0)');
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, W, H);
+      },
+      cream: () => {
+        const grd = ctx.createRadialGradient(W*0.5, H*0.35, 0, W*0.5, H*0.5, W*0.8);
+        grd.addColorStop(0,   '#FFFFFF');
+        grd.addColorStop(0.5, '#F7F4EF');
+        grd.addColorStop(1,   '#E4DDD1');
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 0, W, H);
+        // Sombra perimetral suave
+        const shadow = ctx.createRadialGradient(W*0.5, H*0.5, W*0.3, W*0.5, H*0.5, W*0.75);
+        shadow.addColorStop(0, 'rgba(0,0,0,0)');
+        shadow.addColorStop(1, 'rgba(139,105,20,0.1)');
+        ctx.fillStyle = shadow;
+        ctx.fillRect(0, 0, W, H);
+      },
+      marble: () => {
+        // Base blanca
+        ctx.fillStyle = '#F8F6F2';
+        ctx.fillRect(0, 0, W, H);
+        // Venas de mármol
+        ctx.save();
+        ctx.globalAlpha = 0.07;
+        for (let i = 0; i < 6; i++) {
+          ctx.beginPath();
+          ctx.moveTo(Math.random()*W, 0);
+          ctx.bezierCurveTo(
+            Math.random()*W, H*0.33,
+            Math.random()*W, H*0.66,
+            Math.random()*W, H
+          );
+          ctx.strokeStyle = '#8B6914';
+          ctx.lineWidth = Math.random()*3 + 1;
+          ctx.stroke();
+        }
+        ctx.restore();
+        // Degradado suave
+        const grd = ctx.createLinearGradient(0, 0, W, H);
+        grd.addColorStop(0,   'rgba(245,230,184,0.15)');
+        grd.addColorStop(0.5, 'rgba(255,255,255,0)');
+        grd.addColorStop(1,   'rgba(201,151,58,0.1)');
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 0, W, H);
+      }
+    };
+
+    // Dibujar fondo
+    fondos[tono]();
+
+    // Dibujar imagen encima con mezcla suave
+    // Recorte circular/ovalado centrado para destacar el producto
+    const margen = Math.min(W, H) * 0.05;
+    const rx = W/2 - margen;
+    const ry = H/2 - margen;
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(W/2, H/2, rx, ry, 0, 0, Math.PI*2);
+    ctx.clip();
+    ctx.globalAlpha = 1;
+    ctx.drawImage(img, 0, 0, W, H);
+    ctx.restore();
+
+    // Viñeta perimetral para integrar bordes
+    const vignette = ctx.createRadialGradient(W/2, H/2, Math.min(W,H)*0.35, W/2, H/2, Math.min(W,H)*0.72);
+    vignette.addColorStop(0, 'rgba(0,0,0,0)');
+    vignette.addColorStop(1, 'rgba(0,0,0,0.22)');
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, W, H);
+
+    callback(canvas.toDataURL('image/jpeg', 0.93));
+  };
+  img.src = dataUrl;
+}
+
 function handlePhoto(input) {
   const file = input.files[0];
   if (!file) return;
   if (file.size > 5 * 1024 * 1024) return showToast('La foto no puede superar 5MB');
+  const tono = document.getElementById('bgToneSelect') ? document.getElementById('bgToneSelect').value : 'none';
+  const proc = document.getElementById('bgProcessing');
+  if (proc && tono !== 'none') proc.style.display = 'block';
   const reader = new FileReader();
   reader.onload = e => {
-    applyWatermark(e.target.result, (result) => {
-      photoData = result;
-      document.getElementById('photoPreviewImg').src = result;
-      document.getElementById('photoPreview').style.display = 'block';
+    aplicarFondoProfesional(e.target.result, tono, (conFondo) => {
+      applyWatermark(conFondo, (result) => {
+        if (proc) proc.style.display = 'none';
+        photoData = result;
+        document.getElementById('photoPreviewImg').src = result;
+        document.getElementById('photoPreview').style.display = 'block';
+      });
     });
   };
   reader.readAsDataURL(file);
