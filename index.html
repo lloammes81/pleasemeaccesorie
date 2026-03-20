@@ -380,7 +380,67 @@
 
   @media (max-width: 560px) {
     .modal-inner { grid-template-columns: 1fr; }
+
+    /* ── Bottom-sheet en móvil ── */
+    .modal-overlay {
+      align-items: flex-end;
+      padding: 0;
+    }
+    .modal {
+      width: 100%;
+      max-width: 100%;
+      max-height: 92dvh;
+      overflow-y: auto;
+      border-radius: 20px 20px 0 0;
+      transform: translateY(100%);
+    }
+    .modal-overlay.open .modal {
+      transform: translateY(0);
+    }
+    /* Manija visual */
+    .modal::before {
+      content: '';
+      display: block;
+      width: 40px;
+      height: 4px;
+      background: rgba(201,151,58,0.35);
+      border-radius: 2px;
+      margin: 12px auto 0;
+    }
+    /* Botón × más grande para touch */
+    .modal-close {
+      top: 10px;
+      right: 14px;
+      width: 44px;
+      height: 44px;
+      font-size: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-visual { min-height: 220px; }
+    .modal-content { padding: 20px 20px 24px; }
+    /* Ocultar botón atrás interno en escritorio */
+    .modal-back-row { display: flex; }
   }
+
+  /* Botón atrás dentro del modal — solo visible en móvil */
+  .modal-back-row {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 20px 0;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border: none;
+    background: none;
+    width: 100%;
+  }
+  .modal-back-row:active { color: var(--gold-mid); }
 
   .modal-visual {
     position: relative;
@@ -1491,6 +1551,10 @@
 <!-- MODAL -->
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal" id="modal">
+    <button class="modal-back-row" onclick="closeModal()" aria-label="Volver">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      Volver
+    </button>
     <button class="modal-close" id="modalClose">×</button>
     <div class="modal-inner">
       <div class="modal-visual" id="modalVisual"></div>
@@ -2133,9 +2197,16 @@ function openModal(id) {
     <div class="modal-detail-row"><span class="label">Peso</span><span class="value">${p.peso}</span></div>
   `;
 
+  // Scroll al tope del modal
+  const modalEl = document.getElementById('modal');
+  if (modalEl) modalEl.scrollTop = 0;
+
   updateModalBtn(id);
   document.getElementById('modalOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
+
+  // Soporte botón físico de retroceso (Android)
+  history.pushState({ modal: true }, '');
 }
 
 function addFromModal() {
@@ -2150,11 +2221,44 @@ function closeModal() {
   }
 }
 
+// Botón físico de retroceso del teléfono cierra el modal
+window.addEventListener('popstate', () => {
+  if (document.getElementById('modalOverlay').classList.contains('open')) {
+    closeModal();
+  }
+});
+
 document.getElementById('modalClose').addEventListener('click', closeModal);
 document.getElementById('modalOverlay').addEventListener('click', e => {
   if (e.target === document.getElementById('modalOverlay')) closeModal();
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeCart(); } });
+
+// ─── SWIPE ABAJO PARA CERRAR MODAL (móvil) ─────────────────────────
+(function() {
+  const modal = document.getElementById('modal');
+  let startY = 0, isDragging = false;
+  modal.addEventListener('touchstart', e => {
+    if (modal.scrollTop === 0) { startY = e.touches[0].clientY; isDragging = true; }
+  }, { passive: true });
+  modal.addEventListener('touchmove', e => {
+    if (!isDragging) return;
+    const delta = e.touches[0].clientY - startY;
+    if (delta > 0) modal.style.transform = `translateY(${delta}px)`;
+  }, { passive: true });
+  modal.addEventListener('touchend', e => {
+    if (!isDragging) return;
+    isDragging = false;
+    const delta = e.changedTouches[0].clientY - startY;
+    if (delta > 80) {
+      modal.style.transform = '';
+      closeModal();
+      if (history.state && history.state.modal) history.back();
+    } else {
+      modal.style.transform = '';
+    }
+  }, { passive: true });
+})();
 
 
 // ─── POPUP DESCUENTO MAYORISTA ────────────────────────────────────────
