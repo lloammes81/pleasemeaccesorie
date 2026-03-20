@@ -1456,11 +1456,9 @@ async function changePassword() {
   if (!p1) return showToast('Escribe una contraseña');
   if (p1 !== p2) return showToast('Las contraseñas no coinciden');
   if (p1.length < 6) return showToast('Mínimo 6 caracteres');
-  const { error } = await _sb.from('config').upsert({
-    key: 'admin_password',
-    value: p1,
-    description: 'Contraseña del panel admin'
-  }, { onConflict: 'key' });
+  const { error } = await _sb.from('admin_auth').update({
+    password_hash: p1
+  }).eq('id', 1);
   if (error) return showToast('Error al guardar: ' + error.message);
   adminPassword = p1;
   document.getElementById('c_newpass').value = '';
@@ -1510,21 +1508,17 @@ async function loadProducts() {
 // ─── CONTACT + CONFIG STATE ───────────────────────────────────────────
 let contact = {};
 
-// Carga contacto Y contraseña desde la tabla config de Supabase
+// Carga contacto (config) y contraseña (admin_auth) desde Supabase
 async function loadConfig() {
   try {
-    const { data, error } = await _sb
-      .from('config')
-      .select('key, value')
-      .in('key', ['contact', 'admin_password']);
-    if (error) throw error;
-    (data || []).forEach(row => {
-      if (row.key === 'contact')        contact       = row.value || {};
-      if (row.key === 'admin_password') adminPassword = row.value || DEFAULT_PASS;
-    });
+    const [contactRes, authRes] = await Promise.all([
+      _sb.from('config').select('value').eq('key', 'pm_contact').single(),
+      _sb.from('admin_auth').select('password_hash').eq('id', 1).single()
+    ]);
+    if (contactRes.data) contact       = contactRes.data.value || {};
+    if (authRes.data)    adminPassword = authRes.data.password_hash || DEFAULT_PASS;
   } catch(e) {
     console.error('Error cargando config:', e);
-    // Fallback a localStorage
     try { contact = JSON.parse(localStorage.getItem(CONTACT_KEY)) || {}; } catch {}
     adminPassword = localStorage.getItem(ADMIN_PASS_KEY) || DEFAULT_PASS;
   }
@@ -1544,9 +1538,8 @@ async function saveContact(section) {
     if (el) contact[k] = el.value.trim();
   });
   const { error } = await _sb.from('config').upsert({
-    key: 'contact',
-    value: contact,
-    description: 'Información de contacto'
+    key: 'pm_contact',
+    value: contact
   }, { onConflict: 'key' });
   if (error) return showToast('Error al guardar: ' + error.message);
   showToast('✦ Información guardada');

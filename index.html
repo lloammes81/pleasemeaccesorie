@@ -2374,13 +2374,12 @@ function cerrarBanner() {
 // Cargar productos y contacto desde Supabase, luego renderizar
 (async function initCatalog() {
   // Cargar en paralelo
-  const [prods, configRows] = await Promise.all([
+  const [prods, contactRes] = await Promise.all([
     loadProductsFromSupabase(),
-    _sb.from('config').select('key, value').eq('key', 'contact')
+    _sb.from('config').select('value').eq('key', 'pm_contact').single()
   ]);
   products = prods;
-  const contactRow = (configRows.data || []).find(r => r.key === 'contact');
-  if (contactRow) appContact = contactRow.value || {};
+  if (contactRes.data) appContact = contactRes.data.value || {};
   renderFilters();
   renderGrid();
   renderCartItems();
