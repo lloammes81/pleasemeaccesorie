@@ -1529,14 +1529,16 @@ function getPass() {
 }
 
 function doLogin() {
-  const val = document.getElementById('loginPass').value;
+  const input = document.getElementById('loginPass');
+  const val = input.value;
+  input.value = '';
   if (val === getPass()) {
     document.getElementById('loginScreen').classList.add('hidden');
     sessionStorage.setItem('pm_auth', '1');
     init();
   } else {
     document.getElementById('loginError').textContent = 'Contraseña incorrecta';
-    document.getElementById('loginPass').style.borderColor = 'rgba(192,57,43,0.5)';
+    input.style.borderColor = 'rgba(192,57,43,0.5)';
   }
 }
 
