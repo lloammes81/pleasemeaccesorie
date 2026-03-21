@@ -2091,7 +2091,7 @@ function cartCount() { return cart.reduce((s, i) => s + i.qty, 0); }
 function cartTotal() {
   return cart.reduce((s, item) => {
     const p = products.find(x => x.id === item.id);
-    const num = parseInt(p.price.replace(/[^0-9]/g, ''));
+    const num = parseInt(String(p.price).replace(/[^0-9]/g, ''));
     return s + num * item.qty;
   }, 0);
 }
@@ -2506,7 +2506,7 @@ function cerrarPopup() {
 function cartTotalRaw() {
   return cart.reduce((s, item) => {
     const p = products.find(x => x.id === item.id);
-    return s + parseInt(p.price.replace(/[^0-9]/g, '')) * item.qty;
+    return s + parseInt(String(p.price).replace(/[^0-9]/g, '')) * item.qty;
   }, 0);
 }
 
