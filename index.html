@@ -433,6 +433,17 @@
     .modal-content { padding: 20px 20px 24px; }
     /* Ocultar botón atrás interno en escritorio */
     .modal-back-row { display: flex; }
+    /* Precio y botón en columna para que el botón sea fácil de tocar */
+    .modal-price-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .modal-btn {
+      width: 100%;
+      text-align: center;
+      padding: 16px 20px;
+    }
   }
 
   /* Botón atrás dentro del modal — solo visible en móvil */
