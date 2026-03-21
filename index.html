@@ -2235,7 +2235,9 @@ function sendWhatsApp() {
 
   cart.forEach(item => {
     const p = products.find(x => x.id === item.id);
+    if (!p) return;
     msg += `• *${p.name}* (${p.categoryLabel}) × ${item.qty} — $${p.price} c/u\n`;
+    if (p.photo && p.photo.startsWith('http')) msg += `  📷 ${p.photo}\n`;
   });
   const _raw = cartTotal();
   const ds = getDiscountSettings();
