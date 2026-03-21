@@ -433,17 +433,6 @@
     .modal-content { padding: 20px 20px 24px; }
     /* Ocultar botón atrás interno en escritorio */
     .modal-back-row { display: flex; }
-    /* Precio y botón en columna para que el botón sea fácil de tocar */
-    .modal-price-row {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 14px;
-    }
-    .modal-btn {
-      width: 100%;
-      text-align: center;
-      padding: 16px 20px;
-    }
   }
 
   /* Botón atrás dentro del modal — solo visible en móvil */
@@ -2088,11 +2077,15 @@ let cart = []; // [{id, qty}]
 
 function cartCount() { return cart.reduce((s, i) => s + i.qty, 0); }
 
+function parsePrice(price) {
+  return typeof price === 'number' ? price : parseInt(String(price).replace(/[^0-9]/g, ''));
+}
+
 function cartTotal() {
   return cart.reduce((s, item) => {
     const p = products.find(x => x.id === item.id);
-    const num = parseInt(p.price.replace(/[^0-9]/g, ''));
-    return s + num * item.qty;
+    if (!p) return s;
+    return s + parsePrice(p.price) * item.qty;
   }, 0);
 }
 
@@ -2101,7 +2094,7 @@ function addToCart(id) {
   if (existing) existing.qty++;
   else cart.push({ id, qty: 1 });
   updateCartUI();
-  showToast();
+  showToast('✦ Agregado a tu selección');
   renderGrid();
 }
 
@@ -2185,6 +2178,7 @@ function renderCartItems() {
 
   container.innerHTML = cart.map(item => {
     const p = products.find(x => x.id === item.id);
+    if (!p) return '';
     return `
       <div class="cart-item">
         <div class="cart-item-icon">
@@ -2207,11 +2201,12 @@ function renderCartItems() {
 
 // ─── TOAST ───────────────────────────────────────────────────────────
 let toastTimer;
-function showToast() {
+function showToast(msg) {
   const t = document.getElementById('toastCart');
+  if (msg) t.textContent = msg;
   t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
 }
 
 // ─── CART PANEL ──────────────────────────────────────────────────────
@@ -2506,7 +2501,8 @@ function cerrarPopup() {
 function cartTotalRaw() {
   return cart.reduce((s, item) => {
     const p = products.find(x => x.id === item.id);
-    return s + parseInt(p.price.replace(/[^0-9]/g, '')) * item.qty;
+    if (!p) return s;
+    return s + parsePrice(p.price) * item.qty;
   }, 0);
 }
 
