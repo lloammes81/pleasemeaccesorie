@@ -627,13 +627,15 @@ tr:hover td { background: rgba(201,151,58,0.03); }
 
 @media (max-width: 768px) {
   .drawer {
-    /* Ocupa toda la pantalla en móvil */
+    /* Ocupa toda la pantalla en móvil — z-index por encima del mobileNav (300) */
     width: 100vw;
     height: 100dvh;
     top: 0;
     border-left: none;
     border-top: 1px solid var(--border);
+    z-index: 350;
   }
+  .drawer-overlay { z-index: 340; }
   .drawer-head {
     padding: 16px 18px;
     /* Dar espacio al topbar móvil */
