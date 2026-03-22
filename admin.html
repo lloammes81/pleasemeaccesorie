@@ -1051,6 +1051,10 @@ textarea { resize: vertical; min-height: 80px; }
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.36-3.36L23 10M1 14l5.13 4.36A9 9 0 0020.49 15"/></svg>
           Recargar
         </button>
+        <button class="btn btn-outline" onclick="optimizarFotos()" id="btnOptimizar" title="Recomprimir fotos para liberar espacio" style="gap:6px;">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Optimizar fotos
+        </button>
       </div>
     </div>
 
@@ -1068,6 +1072,13 @@ textarea { resize: vertical; min-height: 80px; }
       <div class="section-header">
         <span class="section-title">Catálogo de prendas</span>
         <span style="font-size:11px;color:var(--text-muted);font-weight:300;" id="productCount"></span>
+      </div>
+
+      <div id="optimizarProgress" style="display:none;margin:12px 0;padding:12px 16px;background:rgba(201,151,58,0.08);border:1px solid rgba(201,151,58,0.2);font-family:'Cinzel',serif;font-size:10px;letter-spacing:1.5px;color:var(--gold);">
+        <div id="optimizarText">Optimizando...</div>
+        <div style="margin-top:8px;height:3px;background:rgba(201,151,58,0.15);border-radius:2px;">
+          <div id="optimizarBar" style="height:100%;background:var(--gold);border-radius:2px;transition:width 0.3s;width:0%;"></div>
+        </div>
       </div>
 
       <div class="table-wrap">
@@ -2170,6 +2181,71 @@ async function uploadPhotoToStorage(base64Data) {
   if (error) throw new Error('No se pudo subir la foto: ' + error.message);
   const { data: { publicUrl } } = _sb.storage.from('product-photos').getPublicUrl(data.path);
   return publicUrl;
+}
+
+// ─── OPTIMIZAR FOTOS EXISTENTES EN SUPABASE ──────────────────────────
+async function optimizarFotos() {
+  const { data: rows, error } = await _sb
+    .from('catalogo_productos')
+    .select('id, photo_data')
+    .not('photo_data', 'is', null);
+
+  if (error) return showToast('Error al cargar productos');
+
+  const conFoto = rows.filter(r => r.photo_data && r.photo_data.startsWith('http'));
+  if (conFoto.length === 0) return showToast('No hay fotos para optimizar');
+
+  const btnOpt  = document.getElementById('btnOptimizar');
+  const progDiv = document.getElementById('optimizarProgress');
+  const progTxt = document.getElementById('optimizarText');
+  const progBar = document.getElementById('optimizarBar');
+  btnOpt.disabled = true;
+  progDiv.style.display = 'block';
+  progBar.style.width = '0%';
+
+  let procesadas = 0, errores = 0;
+
+  for (const row of conFoto) {
+    progTxt.textContent = `Optimizando ${procesadas + 1} de ${conFoto.length}...`;
+    progBar.style.width = Math.round((procesadas / conFoto.length) * 100) + '%';
+
+    try {
+      const resp = await fetch(row.photo_data);
+      const blob = await resp.blob();
+      const base64 = await new Promise(res => {
+        const reader = new FileReader();
+        reader.onload = e => res(e.target.result);
+        reader.readAsDataURL(blob);
+      });
+
+      const comprimida = await new Promise(res => resizeAndCompressPhoto(base64, res));
+      const nuevaUrl   = await uploadPhotoToStorage(comprimida);
+
+      await _sb.from('catalogo_productos')
+        .update({ photo_data: nuevaUrl })
+        .eq('id', row.id);
+
+      try {
+        const oldPath = decodeURIComponent(row.photo_data.split('/product-photos/')[1]);
+        if (oldPath) await _sb.storage.from('product-photos').remove([oldPath]);
+      } catch (_) {}
+
+      procesadas++;
+    } catch (e) {
+      console.warn('Error optimizando foto id=' + row.id, e);
+      errores++;
+      procesadas++;
+    }
+  }
+
+  progBar.style.width = '100%';
+  const ok = procesadas - errores;
+  progTxt.textContent = `✦ ${ok} foto${ok !== 1 ? 's' : ''} optimizada${ok !== 1 ? 's' : ''}${errores ? ' · ' + errores + ' con error' : ''}`;
+  btnOpt.disabled = false;
+  setTimeout(() => { progDiv.style.display = 'none'; }, 5000);
+
+  await loadProducts();
+  renderTable();
 }
 
 async function saveProduct() {
