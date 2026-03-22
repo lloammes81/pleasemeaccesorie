@@ -1566,55 +1566,6 @@ textarea { resize: vertical; min-height: 80px; }
       </button>
       <!-- Input oculto para cámara -->
       <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this)">
-      <!-- Panel IA -->
-      <div id="fotoProcessPanel" style="display:none;margin-top:12px;border:1px solid var(--border);background:var(--bg2);">
-
-        <!-- API Key minimizada -->
-        <div id="apiKeyMini" style="display:none;align-items:center;justify-content:space-between;padding:8px 14px;background:rgba(201,151,58,0.08);border-bottom:1px solid rgba(201,151,58,0.2);">
-          <div style="display:flex;align-items:center;gap:7px;">
-            <svg width="12" height="12" fill="none" stroke="var(--gold)" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-            <span style="font-family:'Cinzel',serif;font-size:8px;letter-spacing:2px;color:var(--gold);">OPENAI KEY GUARDADA</span>
-          </div>
-          <button type="button" onclick="expandirApiKey()" style="background:none;border:none;color:var(--text-muted);font-size:9px;cursor:pointer;text-decoration:underline;">Cambiar</button>
-        </div>
-
-        <!-- API Key expandida -->
-        <div id="apiKeyPanel" style="padding:14px;border-bottom:1px solid var(--border);">
-          <div style="font-family:'Cinzel',serif;font-size:8px;letter-spacing:2px;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px;">API Key de OpenAI (ChatGPT)</div>
-          <div style="display:flex;gap:6px;">
-            <input type="password" id="anthropicKey" placeholder="sk-proj-... (OpenAI API Key)" style="font-size:12px;padding:9px 12px;flex:1;border:1px solid var(--border);background:var(--bg);color:var(--text);">
-            <button type="button" onclick="toggleVerKey()" style="padding:9px 10px;background:transparent;border:1px solid var(--border);color:var(--text-muted);cursor:pointer;">
-              <svg id="eyeIcon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            </button>
-            <button type="button" onclick="guardarApiKey()" style="padding:9px 14px;background:linear-gradient(135deg,var(--gold-deep),var(--gold-light));border:none;color:var(--dark);font-family:'Cinzel',serif;font-size:8px;letter-spacing:1px;cursor:pointer;white-space:nowrap;">Guardar</button>
-          </div>
-          
-          <div id="apiKeyStatus" style="font-size:10px;margin-top:5px;font-family:'Montserrat',sans-serif;"></div>
-          <div style="font-size:9px;color:var(--text-muted);margin-top:4px;">
-            Clave gratis en <a href="https://platform.openai.com/api-keys" target="_blank" style="color:var(--gold);">platform.openai.com</a>
-          </div>
-        </div>
-
-        <!-- CHAT IA -->
-        <div style="padding:14px;">
-          <div style="font-family:'Cinzel',serif;font-size:8px;letter-spacing:2px;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px;">✦ Chat con IA · Editar imagen</div>
-
-          <!-- Mensajes del chat -->
-          <div id="iaChat" style="min-height:80px;max-height:220px;overflow-y:auto;margin-bottom:10px;display:flex;flex-direction:column;gap:8px;"></div>
-
-          <!-- Input del chat -->
-          <div style="display:flex;gap:6px;">
-            <input type="text" id="iaMensaje" placeholder="Escribe lo que quieres cambiar en la imagen..." style="flex:1;font-size:13px;padding:10px 13px;border:1px solid var(--border);background:#fff;color:#111;" onkeydown="if(event.key==='Enter')enviarMensajeIA()">
-            <button type="button" onclick="enviarMensajeIA()" id="btnIA" style="padding:10px 16px;background:linear-gradient(135deg,#1a0a2e,#4a2a9a);border:1px solid rgba(130,80,255,0.4);color:#c8a8ff;font-family:'Cinzel',serif;font-size:8px;letter-spacing:1px;cursor:pointer;white-space:nowrap;">
-              Enviar
-            </button>
-          </div>
-
-          <!-- Procesando -->
-          <div id="bgProcessing" style="display:none;margin-top:8px;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;color:var(--gold);text-align:center;padding:6px;">✦ IA procesando...</div>
-        </div>
-
-      </div>
       <div class="photo-preview" id="photoPreview">
         <img id="photoPreviewImg" src="" alt="Preview">
         <button class="photo-preview-remove" onclick="removePhoto()">×</button>
@@ -2106,13 +2057,8 @@ function openDrawer(id) {
   editingId = id || null;
   photoData    = null;
   rawPhotoData = null;
-  iaImageBase  = null;
-  iaChatHistory = [];
-  const chatEl = document.getElementById('iaChat');
-  if (chatEl) chatEl.innerHTML = '';
   document.getElementById('photoPreview').style.display = 'none';
   document.getElementById('photoInput').value = '';
-  document.getElementById('fotoProcessPanel').style.display = 'none';
 
   if (id) {
     const p = products.find(x => x.id === id);
@@ -2131,7 +2077,6 @@ function openDrawer(id) {
       rawPhotoData = p.photo; // permitir reprocesar imagen existente
       document.getElementById('photoPreviewImg').src = p.photo;
       document.getElementById('photoPreview').style.display      = 'block';
-      document.getElementById('fotoProcessPanel').style.display  = 'block';
     }
   } else {
     document.getElementById('drawerTitle').textContent = 'Nueva prenda';
@@ -2156,6 +2101,63 @@ function closeDrawer() {
 }
 
 function editProduct(id) { openDrawer(id); }
+
+// ─── PHOTO COMPRESSION ───────────────────────────────────────────────
+function resizeAndCompressPhoto(dataUrl, callback) {
+  const MAX_PX = 1200;
+  const img = new Image();
+  img.onload = function() {
+    let W = img.width, H = img.height;
+    if (W > MAX_PX || H > MAX_PX) {
+      if (W >= H) { H = Math.round(H * MAX_PX / W); W = MAX_PX; }
+      else        { W = Math.round(W * MAX_PX / H); H = MAX_PX; }
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    canvas.getContext('2d').drawImage(img, 0, 0, W, H);
+    callback(canvas.toDataURL('image/jpeg', 0.78));
+  };
+  img.src = dataUrl;
+}
+
+function handlePhoto(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) return showToast('Solo se permiten imágenes');
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    resizeAndCompressPhoto(e.target.result, function(compressed) {
+      rawPhotoData = compressed;
+      const wmCfg = getWatermarkConfig();
+      if (wmCfg.active) {
+        applyWatermark(compressed, function(watermarked) {
+          photoData = watermarked;
+          document.getElementById('photoPreviewImg').src = watermarked;
+          document.getElementById('photoPreview').style.display = 'block';
+        });
+      } else {
+        photoData = compressed;
+        document.getElementById('photoPreviewImg').src = compressed;
+        document.getElementById('photoPreview').style.display = 'block';
+      }
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+function removePhoto() {
+  photoData    = null;
+  rawPhotoData = null;
+  document.getElementById('photoPreviewImg').src = '';
+  document.getElementById('photoPreview').style.display = 'none';
+  document.getElementById('photoInput').value = '';
+  const camInput = document.getElementById('cameraInput');
+  if (camInput) camInput.value = '';
+}
+
+function abrirCamara() {
+  document.getElementById('cameraInput').click();
+}
 
 async function uploadPhotoToStorage(base64Data) {
   const res  = await fetch(base64Data);
@@ -2428,567 +2430,7 @@ function applyWatermark(dataUrl, callback) {
     ctx.fillText(brand, W - Math.max(10, W*0.02), H - Math.max(8, H*0.015));
     ctx.restore();
 
-    callback(canvas.toDataURL('image/jpeg', 0.93));
-  };
-  img.src = dataUrl;
-}
-
-// ─── API KEY GEMINI ─────────────────────────────────────────────────
-const OPENAI_KEY_STORAGE = 'pm_openai_key';
-const OPENAI_KEY_SB      = 'pm_openai_apikey';
-
-function mostrarInstruccionesProxy() {}
-
-async function guardarApiKey() {
-  const val = document.getElementById('anthropicKey').value.trim();
-  if (!val) return showToast('Escribe la API Key');
-  if (val.length < 10) return showToast('API Key invalida');
-
-  const st = document.getElementById('apiKeyStatus');
-  if (st) { st.style.color = 'var(--text-muted)'; st.textContent = 'Guardando...'; }
-
-  // Guardar en localStorage inmediatamente
-  localStorage.setItem(OPENAI_KEY_STORAGE, val);
-
-  // Guardar en Supabase — disponible desde cualquier dispositivo
-  const { error } = await _sb.from('config').upsert(
-    { key: OPENAI_KEY_SB, value: { apikey: val } },
-    { onConflict: 'key' }
-  );
-
-  if (error) {
-    if (st) { st.style.color = 'var(--gold)'; st.textContent = 'Guardada solo localmente'; setTimeout(() => { st.textContent = ''; }, 2500); }
-    console.warn('Supabase error guardando apikey:', error.message);
-  } else {
-    if (st) { st.style.color = 'var(--green)'; st.textContent = 'Guardada en la nube ✓'; setTimeout(() => { st.textContent = ''; }, 2500); }
-  }
-
-  minimizerApiKey();
-  showToast('API Key guardada');
-}
-
-function minimizerApiKey() {
-  const panel = document.getElementById('apiKeyPanel');
-  const mini  = document.getElementById('apiKeyMini');
-  if (panel) panel.style.display = 'none';
-  if (mini)  mini.style.display  = 'flex';
-}
-
-function expandirApiKey() {
-  const panel = document.getElementById('apiKeyPanel');
-  const mini  = document.getElementById('apiKeyMini');
-  if (panel) panel.style.display = 'block';
-  if (mini)  mini.style.display  = 'none';
-}
-
-async function cargarApiKey() {
-  const inputKey = document.getElementById('anthropicKey');
-  if (!inputKey) return;
-
-  // 1. Intentar Supabase primero
-  try {
-    const { data, error } = await _sb
-      .from('config')
-      .select('value')
-      .eq('key', OPENAI_KEY_SB)
-      .single();
-
-    if (!error && data?.value?.apikey) {
-      inputKey.value = data.value.apikey;
-      localStorage.setItem(OPENAI_KEY_STORAGE, data.value.apikey);
-      minimizerApiKey();
-      return;
-    }
-  } catch(e) {}
-
-  // 2. Fallback localStorage
-  const saved = localStorage.getItem(OPENAI_KEY_STORAGE);
-  if (saved) {
-    inputKey.value = saved;
-    minimizerApiKey();
-  }
-}
-
-function toggleVerKey() {
-  const input = document.getElementById('anthropicKey');
-  const icon  = document.getElementById('eyeIcon');
-  if (input.type === 'password') {
-    input.type  = 'text';
-    icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
-  } else {
-    input.type  = 'password';
-    icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
-  }
-}
-
-// ─── CHAT IA ─────────────────────────────────────────────────────────
-let iaChatHistory = [];  // historial de conversación
-let iaImageBase   = null; // imagen base actual para ediciones
-
-function agregarMensajeChat(texto, tipo) {
-  const chat = document.getElementById('iaChat');
-  if (!chat) return;
-  const div = document.createElement('div');
-  div.style.cssText = tipo === 'user'
-    ? 'align-self:flex-end;background:rgba(201,151,58,0.15);border:1px solid rgba(201,151,58,0.3);padding:7px 12px;font-size:11px;color:var(--text);max-width:85%;border-radius:12px 12px 2px 12px;'
-    : tipo === 'ia'
-    ? 'align-self:flex-start;background:rgba(130,80,255,0.1);border:1px solid rgba(130,80,255,0.2);padding:7px 12px;font-size:11px;color:var(--text-muted);max-width:90%;border-radius:2px 12px 12px 12px;'
-    : 'align-self:center;font-size:10px;color:var(--text-muted);font-style:italic;';
-  div.textContent = texto;
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
-}
-
-async function enviarMensajeIA(textoDirecto) {
-  if (!rawPhotoData) return showToast('Primero sube una foto');
-
-  const apiKey = localStorage.getItem(OPENAI_KEY_STORAGE) ||
-                 (document.getElementById('anthropicKey') ? document.getElementById('anthropicKey').value.trim() : '');
-  if (!apiKey) return showToast('Guarda tu API Key de OpenAI primero');
-
-  const input   = document.getElementById('iaMensaje');
-  const mensaje = textoDirecto || (input ? input.value.trim() : '');
-  if (!mensaje) return;
-  if (input) input.value = '';
-
-  const btn  = document.getElementById('btnIA');
-  const proc = document.getElementById('bgProcessing');
-
-  agregarMensajeChat(mensaje, 'user');
-  if (btn) btn.disabled = true;
-  if (proc) { proc.style.display = 'block'; proc.textContent = '✦ ChatGPT analizando tu imagen...'; }
-
-  try {
-    const imgSrc   = rawPhotoData;
-    const base64   = imgSrc.split(',')[1];
-    const mimeType = imgSrc.split(';')[0].split(':')[1] || 'image/jpeg';
-
-    // ── ChatGPT analiza la imagen y decide qué hacer por su cuenta ──
-    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type':  'application/json',
-        'Authorization': 'Bearer ' + apiKey
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        max_tokens: 500,
-        messages: [
-          {
-            role: 'system',
-            content: `Eres un fotógrafo profesional especializado en joyería de lujo.
-Analiza la imagen del producto y aplica los cambios que el usuario pide.
-Tú decides los valores técnicos exactos basándote en lo que VES en la imagen.
-
-DEVUELVE SOLO este JSON (sin markdown, sin explicación):
-{
-  "descripcion": "lo que hiciste en español",
-  "fondo": "negro",
-  "exposicion": 0.0,
-  "contraste": 1.0,
-  "saturacion": 1.0,
-  "calidez": 0.0,
-  "temperatura_color": 0.0,
-  "brillo_centro": 0.0,
-  "brillo_lateral": 0.0,
-  "sombras": 0.0,
-  "vigneta": 0.5,
-  "marca_agua": true
-}
-
-GUÍA para el campo "fondo" (usa exactamente estos valores):
-- fondo oscuro / negro / dark / profesional → "negro"
-- carbón / gris oscuro → "carbon"
-- azul noche / marino / navy → "noche"  
-- verde botella / forest → "botella"
-- burdeos / rojo vino → "burdeos"
-- mantener fondo actual / sin cambio → "none"
-
-GUÍA de ajustes típicos en joyería:
-- Si la imagen tiene flash o sobreexposición → exposicion=-0.4, contraste=1.4, brillo_centro=-0.3
-- Si la joya se ve opaca → contraste=1.4, saturacion=1.3, brillo_centro=0.4
-- Si pide look de lujo → fondo=negro, vigneta=0.8, contraste=1.3, calidez=0.2, brillo_centro=0.35
-- Si pide tono dorado/cálido → calidez=0.5, temperatura_color=0.3, saturacion=1.3
-- Si pide más brillo → exposicion=0.35, brillo_centro=0.45
-- Si pide blanco y negro → saturacion=0, calidez=0
-
-Analiza la imagen TÚ MISMO y elige los valores que mejor transformen la foto en una imagen profesional de catálogo de lujo según lo que pide el usuario.`
-          },
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'image_url',
-                image_url: { url: 'data:' + mimeType + ';base64,' + base64, detail: 'high' }
-              },
-              {
-                type: 'text',
-                text: mensaje
-              }
-            ]
-          }
-        ]
-      })
-    });
-
-    const data = await resp.json();
-    if (!resp.ok) throw new Error(data.error?.message || 'Error ' + resp.status);
-
-    const texto = data.choices?.[0]?.message?.content || '{}';
-    console.log('ChatGPT respuesta:', texto);
-
-    let cfg;
-    try {
-      const jsonMatch = texto.match(/\{[\s\S]*?\}/);
-      cfg = JSON.parse(jsonMatch ? jsonMatch[0] : texto);
-    } catch {
-      // Si no devuelve JSON válido, interpretar localmente
-      cfg = interpretarMensajeLocal(mensaje);
-      agregarMensajeChat('(interpretando localmente)', 'error');
-    }
-
-    // Asegurar que fondo tenga valor válido
-    const fondosValidos = ['negro','carbon','noche','botella','burdeos','none'];
-    if (!fondosValidos.includes(cfg.fondo)) cfg.fondo = 'none';
-
-    agregarMensajeChat('✦ ' + (cfg.descripcion || 'Cambios aplicados'), 'ia');
-    if (proc) proc.textContent = '✦ Aplicando cambios...';
-
-    aplicarAjustesIA(rawPhotoData, cfg, (resultado) => {
-      const wm = cfg.marca_agua !== false;
-      const finish = (final) => {
-        photoData   = final;
-        iaImageBase = final;
-        document.getElementById('photoPreviewImg').src = final;
-        if (proc) proc.style.display = 'none';
-        if (btn)  { btn.disabled = false; btn.textContent = 'Enviar'; }
-        iaChatHistory.push({ rol: 'user', texto: mensaje });
-        iaChatHistory.push({ rol: 'ia',   texto: cfg.descripcion });
-        showToast('✦ Imagen actualizada');
-      };
-      if (wm) applyWatermark(resultado, finish);
-      else finish(resultado);
-    });
-
-  } catch(e) {
-    console.error('ChatGPT error:', e);
-    agregarMensajeChat('⚠ ' + e.message, 'error');
-    // Aplicar ajuste local como respaldo
-    const cfg = interpretarMensajeLocal(mensaje);
-    aplicarAjustesIA(rawPhotoData, cfg, (resultado) => {
-      applyWatermark(resultado, (final) => {
-        photoData   = final;
-        iaImageBase = final;
-        document.getElementById('photoPreviewImg').src = final;
-        if (proc) proc.style.display = 'none';
-        if (btn)  { btn.disabled = false; btn.textContent = 'Enviar'; }
-        agregarMensajeChat('✦ Aplicado localmente: ' + (cfg.descripcion || mensaje), 'ia');
-        showToast('✦ Ajuste aplicado');
-      });
-    });
-  }
-}
-
-// ─── COMBINAR IMAGEN SIN FONDO CON FONDO OSCURO ──────────────────────
-function combinargWithDarkBg(pngDataUrl, callback) {
-  const img = new Image();
-  img.onload = () => {
-    const W = img.width, H = img.height;
-    const canvas = document.createElement('canvas');
-    canvas.width = W; canvas.height = H;
-    const ctx = canvas.getContext('2d');
-    // Fondo negro con glow dorado
-    ctx.fillStyle = '#0A0804';
-    ctx.fillRect(0, 0, W, H);
-    const glow = ctx.createRadialGradient(W*0.5, H*0.45, 0, W*0.5, H*0.45, W*0.5);
-    glow.addColorStop(0,   'rgba(201,151,58,0.18)');
-    glow.addColorStop(1,   'rgba(0,0,0,0)');
-    ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
-    // Imagen encima (PNG con transparencia)
-    ctx.drawImage(img, 0, 0, W, H);
-    // Viñeta
-    const vig = ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.3,W/2,H/2,Math.min(W,H)*0.78);
-    vig.addColorStop(0,'rgba(0,0,0,0)'); vig.addColorStop(1,'rgba(0,0,0,0.7)');
-    ctx.fillStyle = vig; ctx.fillRect(0, 0, W, H);
-    callback(canvas.toDataURL('image/jpeg', 0.94));
-  };
-  img.src = pngDataUrl;
-}
-
-// ─── INTERPRETACIÓN LOCAL COMO FALLBACK ──────────────────────────────
-function interpretarMensajeLocal(msg) {
-  const m = msg.toLowerCase();
-  const cfg = { fondo:'none', brillo_centro:0, brillo_lateral:0, calidez:0,
-                contraste:1, saturacion:1, exposicion:0, sombras:0,
-                nitidez:0, vigneta:0.6, temperatura_color:0, marca_agua:true,
-                descripcion: 'Ajuste aplicado' };
-
-  if (m.includes('negro') || m.includes('dark') || m.includes('oscuro'))       { cfg.fondo='negro'; cfg.vigneta=0.75; cfg.descripcion='Fondo negro aplicado'; }
-  if (m.includes('carbon'))                                                      { cfg.fondo='carbon'; cfg.descripcion='Fondo carbón aplicado'; }
-  if (m.includes('azul') || m.includes('noche'))                                { cfg.fondo='noche'; cfg.descripcion='Fondo azul noche aplicado'; }
-  if (m.includes('verde') || m.includes('botella'))                             { cfg.fondo='botella'; cfg.descripcion='Fondo verde botella aplicado'; }
-  if (m.includes('burdeo') || m.includes('rojo'))                               { cfg.fondo='burdeos'; cfg.descripcion='Fondo burdeos aplicado'; }
-  if (m.includes('brillo') || m.includes('ilumina') || m.includes('claro'))    { cfg.brillo_centro=0.45; cfg.exposicion=0.25; cfg.descripcion='Brillo aumentado'; }
-  if (m.includes('oscurec') || m.includes('menos luz'))                         { cfg.exposicion=-0.3; cfg.brillo_centro=-0.2; cfg.descripcion='Imagen oscurecida'; }
-  if (m.includes('contraste'))                                                   { cfg.contraste=1.5; cfg.sombras=-0.15; cfg.descripcion='Contraste aumentado'; }
-  if (m.includes('dorado') || m.includes('calido') || m.includes('cálido'))    { cfg.calidez=0.4; cfg.saturacion=1.2; cfg.temperatura_color=0.3; cfg.descripcion='Tono dorado cálido aplicado'; }
-  if (m.includes('frio') || m.includes('frío') || m.includes('azulado'))       { cfg.calidez=-0.3; cfg.temperatura_color=-0.25; cfg.descripcion='Tono frío aplicado'; }
-  if (m.includes('saturaci') || m.includes('vivo') || m.includes('color'))     { cfg.saturacion=1.5; cfg.descripcion='Saturación aumentada'; }
-  if (m.includes('blanco y negro') || m.includes('grises') || m.includes('byn')){ cfg.saturacion=0; cfg.descripcion='Blanco y negro aplicado'; }
-  if (m.includes('flash') || m.includes('sobreexpues'))                         { cfg.exposicion=-0.35; cfg.contraste=1.3; cfg.brillo_centro=-0.25; cfg.descripcion='Flash corregido'; }
-  if (m.includes('lujo') || m.includes('premium') || m.includes('profesional')) { cfg.fondo='negro'; cfg.vigneta=0.8; cfg.contraste=1.3; cfg.calidez=0.2; cfg.brillo_centro=0.3; cfg.descripcion='Look de lujo aplicado'; }
-  if (m.includes('lateral'))                                                     { cfg.brillo_lateral=0.6; cfg.descripcion='Iluminación lateral aplicada'; }
-  if (m.includes('nitid') || m.includes('enfoc'))                               { cfg.nitidez=0.6; cfg.descripcion='Nitidez aumentada'; }
-  if (m.includes('vigneta') || m.includes('borde') || m.includes('sombra'))    { cfg.vigneta=0.8; cfg.descripcion='Viñeta aplicada'; }
-  if (m.includes('marca') || m.includes('watermark') || m.includes('logo'))    { cfg.marca_agua=true; cfg.descripcion='Marca de agua aplicada'; }
-  return cfg;
-}
-
-// ─── APLICAR AJUSTES DE IA CON CANVAS ────────────────────────────────
-function aplicarAjustesIA(dataUrl, cfg, callback) {
-  const tono = cfg.fondo || 'negro';
-  aplicarFondoProfesional(dataUrl, tono, (conFondo) => {
-    const img = new Image();
-    img.onload = function() {
-      const W = img.width, H = img.height;
-      const canvas = document.createElement('canvas');
-      canvas.width = W; canvas.height = H;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-
-      const imageData = ctx.getImageData(0, 0, W, H);
-      const d = imageData.data;
-
-      const contraste   = cfg.contraste         ?? 1.0;
-      const saturacion  = cfg.saturacion        ?? 1.0;
-      const calidez     = cfg.calidez           ?? 0.0;
-      const exposicion  = cfg.exposicion        ?? 0.0;
-      const sombras     = cfg.sombras           ?? 0.0;
-      const tempColor   = cfg.temperatura_color ?? 0.0;
-
-      for (let i = 0; i < d.length; i += 4) {
-        let r = d[i], g = d[i+1], b = d[i+2];
-
-        // Exposición (brillo global)
-        if (exposicion !== 0) {
-          const exp = exposicion * 60;
-          r = Math.min(255, Math.max(0, r + exp));
-          g = Math.min(255, Math.max(0, g + exp));
-          b = Math.min(255, Math.max(0, b + exp));
-        }
-
-        // Contraste
-        r = Math.min(255, Math.max(0, (r - 128) * contraste + 128));
-        g = Math.min(255, Math.max(0, (g - 128) * contraste + 128));
-        b = Math.min(255, Math.max(0, (b - 128) * contraste + 128));
-
-        // Sombras — recuperar detalles oscuros
-        if (sombras !== 0) {
-          const lum = 0.299*r + 0.587*g + 0.114*b;
-          const shadFactor = sombras * (1 - lum/255);
-          r = Math.min(255, Math.max(0, r + shadFactor * 50));
-          g = Math.min(255, Math.max(0, g + shadFactor * 50));
-          b = Math.min(255, Math.max(0, b + shadFactor * 50));
-        }
-
-        // Calidez + temperatura de color
-        const totalCalor = calidez + tempColor;
-        if (totalCalor > 0) {
-          r = Math.min(255, r + totalCalor * 25);
-          g = Math.min(255, g + totalCalor * 10);
-          b = Math.max(0,   b - totalCalor * 15);
-        } else if (totalCalor < 0) {
-          r = Math.max(0,   r + totalCalor * 20);
-          b = Math.min(255, b - totalCalor * 25);
-        }
-
-        // Saturación
-        const gray = 0.299*r + 0.587*g + 0.114*b;
-        r = Math.min(255, Math.max(0, gray + (r - gray) * saturacion));
-        g = Math.min(255, Math.max(0, gray + (g - gray) * saturacion));
-        b = Math.min(255, Math.max(0, gray + (b - gray) * saturacion));
-
-        d[i] = r; d[i+1] = g; d[i+2] = b;
-      }
-      ctx.putImageData(imageData, 0, 0);
-
-      // Brillo central
-      const brilloCentro = cfg.brillo_centro ?? 0;
-      if (brilloCentro > 0) {
-        const spot = ctx.createRadialGradient(W*0.5, H*0.42, 0, W*0.5, H*0.42, W*0.5);
-        spot.addColorStop(0, `rgba(255,240,200,${brilloCentro * 0.4})`);
-        spot.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = spot; ctx.fillRect(0, 0, W, H);
-      } else if (brilloCentro < 0) {
-        const dark = ctx.createRadialGradient(W*0.5, H*0.42, 0, W*0.5, H*0.42, W*0.5);
-        dark.addColorStop(0, `rgba(0,0,0,${Math.abs(brilloCentro) * 0.4})`);
-        dark.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = dark; ctx.fillRect(0, 0, W, H);
-      }
-
-      // Brillo lateral
-      const brilloLat = cfg.brillo_lateral ?? 0;
-      if (brilloLat > 0) {
-        const side = ctx.createRadialGradient(W*0.18, H*0.28, 0, W*0.18, H*0.28, W*0.45);
-        side.addColorStop(0, `rgba(255,245,210,${brilloLat * 0.3})`);
-        side.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = side; ctx.fillRect(0, 0, W, H);
-      }
-
-      // Viñeta
-      const vig = cfg.vigneta ?? 0.6;
-      if (vig > 0) {
-        const vignette = ctx.createRadialGradient(W/2, H/2, Math.min(W,H)*0.28, W/2, H/2, Math.min(W,H)*0.78);
-        vignette.addColorStop(0, 'rgba(0,0,0,0)');
-        vignette.addColorStop(1, `rgba(0,0,0,${vig})`);
-        ctx.fillStyle = vignette; ctx.fillRect(0, 0, W, H);
-      }
-
-      callback(canvas.toDataURL('image/jpeg', 0.94));
-    };
-    img.src = conFondo;
-  });
-}
-
-function abrirCamara() {
-  document.getElementById('cameraInput').click();
-}
-
-let rawPhotoData = null; // foto original sin procesar
-
-function handlePhoto(input) {
-  const file = input.files[0];
-  if (!file) return;
-  if (file.size > 5 * 1024 * 1024) return showToast('La foto no puede superar 5MB');
-  const reader = new FileReader();
-  reader.onload = e => {
-    rawPhotoData = e.target.result;
-    photoData    = e.target.result; // guardar sin procesar por defecto
-    document.getElementById('photoPreviewImg').src = rawPhotoData;
-    document.getElementById('photoPreview').style.display = 'block';
-    document.getElementById('fotoProcessPanel').style.display = 'block';
-  };
-  reader.readAsDataURL(file);
-}
-
-function procesarFoto() {
-  // Solo aplica marca de agua — el fondo lo maneja ChatGPT
-  if (!rawPhotoData) return showToast('Primero sube una foto');
-  const proc = document.getElementById('bgProcessing');
-  if (proc) proc.style.display = 'block';
-  applyWatermark(rawPhotoData, (result) => {
-    if (proc) proc.style.display = 'none';
-    photoData = result;
-    document.getElementById('photoPreviewImg').src = result;
-    showToast('✦ Marca de agua aplicada');
-  });
-}
-
-function removePhoto() {
-  photoData    = null;
-  rawPhotoData = null;
-  document.getElementById('photoPreviewImg').src = '';
-  document.getElementById('photoPreview').style.display = 'none';
-  document.getElementById('photoInput').value = '';
-  document.getElementById('fotoProcessPanel').style.display = 'none';
-}
-function aplicarFondoProfesional(dataUrl, tono, callback) {
-  if (tono === 'none') { callback(dataUrl); return; }
-
-  const img = new Image();
-  img.onload = function() {
-    const W = img.width;
-    const H = img.height;
-
-    // ── Canvas temporal para leer píxeles originales ──
-    const tmpCanvas = document.createElement('canvas');
-    tmpCanvas.width  = W;
-    tmpCanvas.height = H;
-    const tmpCtx = tmpCanvas.getContext('2d');
-    tmpCtx.drawImage(img, 0, 0, W, H);
-    const imageData = tmpCtx.getImageData(0, 0, W, H);
-    const data = imageData.data;
-
-    // ── Canvas final ──
-    const canvas = document.createElement('canvas');
-    canvas.width  = W;
-    canvas.height = H;
-    const ctx = canvas.getContext('2d');
-
-    // ── Definir colores de fondo por tono ──
-    const bgColors = {
-      negro:   { r:  8,  g:  6,  b:  4 },
-      carbon:  { r: 14, g: 13,  b: 12 },
-      noche:   { r:  8, g: 11, b: 20 },
-      botella: { r:  7, g: 14,  b:  8 },
-      burdeos: { r: 14,  g:  4,  b:  7 },
-    };
-    const bg = bgColors[tono] || bgColors.negro;
-
-    // ── Dibujar fondo sólido oscuro ──
-    ctx.fillStyle = `rgb(${bg.r},${bg.g},${bg.b})`;
-    ctx.fillRect(0, 0, W, H);
-
-    // ── Dibujar la imagen con mezcla: píxeles muy claros (flash/fondo blanco) se vuelven transparentes ──
-    const outData = ctx.getImageData(0, 0, W, H);
-    const out = outData.data;
-
-    for (let i = 0; i < data.length; i += 4) {
-      const r = data[i];
-      const g = data[i+1];
-      const b = data[i+2];
-
-      // Brillo del píxel (0-255)
-      const brightness = (r * 0.299 + g * 0.587 + b * 0.114);
-      // Saturación — píxeles muy grises/blancos tienen baja saturación
-      const max = Math.max(r, g, b);
-      const min = Math.min(r, g, b);
-      const saturation = max === 0 ? 0 : (max - min) / max;
-
-      // Si el píxel es muy claro Y poco saturado → es flash/fondo → mezclar con fondo oscuro
-      // Si el píxel tiene color (joya, piel, etc.) → mantener
-      let alpha;
-      if (brightness > 220 && saturation < 0.15) {
-        // Blanco puro / flash → completamente fondo
-        alpha = 0;
-      } else if (brightness > 180 && saturation < 0.12) {
-        // Casi blanco → transición suave
-        alpha = (230 - brightness) / 50;
-      } else if (brightness > 140 && saturation < 0.08) {
-        // Gris claro neutro → transparencia parcial
-        alpha = 0.5 + (brightness > 160 ? 0 : 0.3);
-      } else {
-        // Píxel con color o oscuro → mantener completamente
-        alpha = 1;
-      }
-
-      alpha = Math.max(0, Math.min(1, alpha));
-
-      // Mezclar píxel original con fondo
-      out[i]   = Math.round(r   * alpha + bg.r * (1 - alpha));
-      out[i+1] = Math.round(g   * alpha + bg.g * (1 - alpha));
-      out[i+2] = Math.round(b   * alpha + bg.b * (1 - alpha));
-      out[i+3] = 255;
-    }
-
-    ctx.putImageData(outData, 0, 0);
-
-    // ── Agregar luz central suave para destacar la prenda ──
-    const glow = ctx.createRadialGradient(W*0.5, H*0.42, 0, W*0.5, H*0.42, W*0.5);
-    glow.addColorStop(0,   'rgba(201,151,58,0.12)');
-    glow.addColorStop(0.6, 'rgba(139,105,20,0.04)');
-    glow.addColorStop(1,   'rgba(0,0,0,0)');
-    ctx.fillStyle = glow;
-    ctx.fillRect(0, 0, W, H);
-
-    // ── Viñeta oscura en bordes ──
-    const vignette = ctx.createRadialGradient(W/2, H/2, Math.min(W,H)*0.28, W/2, H/2, Math.min(W,H)*0.75);
-    vignette.addColorStop(0, 'rgba(0,0,0,0)');
-    vignette.addColorStop(1, `rgba(${bg.r},${bg.g},${bg.b},0.75)`);
-    ctx.fillStyle = vignette;
-    ctx.fillRect(0, 0, W, H);
-
-    callback(canvas.toDataURL('image/jpeg', 0.94));
+    callback(canvas.toDataURL('image/jpeg', 0.78));
   };
   img.src = dataUrl;
 }
@@ -3346,7 +2788,6 @@ async function init() {
   renderInfoTable();
   loadVisitas();
   renderTable();
-  cargarApiKey();
   // Eliminar duplicados automáticamente al iniciar
   await eliminarDuplicados();
   // Reverificar conexión cada 30 s
