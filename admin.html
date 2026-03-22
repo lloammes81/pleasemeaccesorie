@@ -1037,6 +1037,10 @@ textarea { resize: vertical; min-height: 80px; }
           <span class="sb-dot"></span>
           <span id="sbStatusText">Conectando</span>
         </div>
+        <div class="sb-status connecting" id="cdnStatus" title="Estado configuración Cloudinary">
+          <span class="sb-dot"></span>
+          <span id="cdnStatusText">Cloudinary</span>
+        </div>
         <button class="icon-btn" id="reconnectBtn" onclick="manualReconnect()" title="Reconectar" style="display:none">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.36-3.36L23 10M1 14l5.13 4.36A9 9 0 0020.49 15"/></svg>
         </button>
@@ -1972,6 +1976,7 @@ async function saveCloudinaryConfig() {
   const st = document.getElementById('cloudinaryStatus');
   if (st) { st.style.color = 'var(--gold)'; st.textContent = '✦ Cloudinary configurado'; }
   showToast('✦ Cloudinary configurado');
+  checkCloudinaryConfig();
 }
 
 function fillCloudinaryForm() {
@@ -2878,6 +2883,20 @@ async function manualReconnect() {
   await checkSupabaseConnection();
 }
 
+function checkCloudinaryConfig() {
+  const el  = document.getElementById('cdnStatus');
+  const txt = document.getElementById('cdnStatusText');
+  if (!el || !txt) return;
+  const cfg = _cfgCache['pm_cloudinary'] || {};
+  if (cfg.cloud_name && cfg.upload_preset) {
+    el.className    = 'sb-status connected';
+    txt.textContent = 'Cloudinary OK';
+  } else {
+    el.className    = 'sb-status connecting';
+    txt.textContent = 'Sin configurar';
+  }
+}
+
 // ─── THEME TOGGLE ────────────────────────────────────────────────────
 function applyTheme(dark) {
   document.body.classList.toggle('dark-theme', dark);
@@ -2905,6 +2924,7 @@ async function init() {
   await Promise.all([loadProducts(), _loadConfigs(), checkSupabaseConnection()]);
   fillContactForm();
   fillCloudinaryForm();
+  checkCloudinaryConfig();
   loadBanner();
   loadDiscount();
   loadCatalogInfo();
