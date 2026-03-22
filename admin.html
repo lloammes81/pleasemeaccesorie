@@ -2102,6 +2102,63 @@ function closeDrawer() {
 
 function editProduct(id) { openDrawer(id); }
 
+// ─── PHOTO COMPRESSION ───────────────────────────────────────────────
+function resizeAndCompressPhoto(dataUrl, callback) {
+  const MAX_PX = 1200;
+  const img = new Image();
+  img.onload = function() {
+    let W = img.width, H = img.height;
+    if (W > MAX_PX || H > MAX_PX) {
+      if (W >= H) { H = Math.round(H * MAX_PX / W); W = MAX_PX; }
+      else        { W = Math.round(W * MAX_PX / H); H = MAX_PX; }
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    canvas.getContext('2d').drawImage(img, 0, 0, W, H);
+    callback(canvas.toDataURL('image/jpeg', 0.78));
+  };
+  img.src = dataUrl;
+}
+
+function handlePhoto(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) return showToast('Solo se permiten imágenes');
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    resizeAndCompressPhoto(e.target.result, function(compressed) {
+      rawPhotoData = compressed;
+      const wmCfg = getWatermarkConfig();
+      if (wmCfg.active) {
+        applyWatermark(compressed, function(watermarked) {
+          photoData = watermarked;
+          document.getElementById('photoPreviewImg').src = watermarked;
+          document.getElementById('photoPreview').style.display = 'block';
+        });
+      } else {
+        photoData = compressed;
+        document.getElementById('photoPreviewImg').src = compressed;
+        document.getElementById('photoPreview').style.display = 'block';
+      }
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+function removePhoto() {
+  photoData    = null;
+  rawPhotoData = null;
+  document.getElementById('photoPreviewImg').src = '';
+  document.getElementById('photoPreview').style.display = 'none';
+  document.getElementById('photoInput').value = '';
+  const camInput = document.getElementById('cameraInput');
+  if (camInput) camInput.value = '';
+}
+
+function abrirCamara() {
+  document.getElementById('cameraInput').click();
+}
+
 async function uploadPhotoToStorage(base64Data) {
   const res  = await fetch(base64Data);
   const blob = await res.blob();
@@ -2373,7 +2430,7 @@ function applyWatermark(dataUrl, callback) {
     ctx.fillText(brand, W - Math.max(10, W*0.02), H - Math.max(8, H*0.015));
     ctx.restore();
 
-    callback(canvas.toDataURL('image/jpeg', 0.93));
+    callback(canvas.toDataURL('image/jpeg', 0.78));
   };
   img.src = dataUrl;
 }
