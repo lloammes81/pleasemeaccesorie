@@ -1421,8 +1421,29 @@ textarea { resize: vertical; min-height: 80px; }
               <label>Mensaje de bienvenida (catálogo)</label>
               <textarea id="c_wa_msg" rows="3" placeholder="Hola! Me interesa hacer un pedido..."></textarea>
             </div>
+            <div class="field">
+              <label>Mensaje para compartir catálogo</label>
+              <textarea id="c_share_msg" rows="2" placeholder="✨ ¡Mira nuestro catálogo de accesorios en oro laminado!"></textarea>
+            </div>
             <div class="save-row">
               <button class="btn btn-primary" onclick="saveContact('whatsapp')">Guardar</button>
+            </div>
+            <div class="save-row" style="margin-top:10px;gap:8px;flex-wrap:wrap;">
+              <button class="btn" style="background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;border:none;display:flex;align-items:center;gap:6px;" onclick="shareCatalogWhatsApp()">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.989.574 3.842 1.565 5.408L2 22l4.737-1.538A9.954 9.954 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18.182a8.182 8.182 0 01-4.177-1.144l-.299-.177-3.1 1.006 1.033-3.016-.195-.31A8.144 8.144 0 013.818 12C3.818 7.477 7.477 3.818 12 3.818S20.182 7.477 20.182 12 16.523 20.182 12 20.182z"/></svg>
+                Compartir catálogo
+              </button>
+              <a href="index.html" target="_blank" class="btn btn-secondary" style="text-decoration:none;display:flex;align-items:center;gap:6px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                Ver catálogo
+              </a>
+            </div>
+            <div class="field" style="margin-top:12px">
+              <label>Enviar catálogo a número de cliente</label>
+              <div style="display:flex;gap:8px">
+                <input type="text" id="c_send_to" placeholder="573001234567" style="flex:1">
+                <button class="btn btn-primary" onclick="sendCatalogToNumber()">Enviar</button>
+              </div>
             </div>
           </div>
         </div>
@@ -1930,7 +1951,7 @@ function loadContact() { /* cargado por loadConfig() */ }
 
 async function saveContact(section) {
   const fields = {
-    whatsapp:  ['whatsapp', 'wa_msg'],
+    whatsapp:  ['whatsapp', 'wa_msg', 'share_msg'],
     instagram: ['instagram', 'ig_link'],
     email:     ['email', 'web'],
     location:  ['city', 'address', 'hours']
@@ -1948,11 +1969,30 @@ async function saveContact(section) {
 }
 
 function fillContactForm() {
-  const map = ['whatsapp','wa_msg','instagram','ig_link','email','web','city','address','hours'];
+  const map = ['whatsapp','wa_msg','share_msg','instagram','ig_link','email','web','city','address','hours'];
   map.forEach(k => {
     const el = document.getElementById('c_' + k);
     if (el && contact[k] !== undefined) el.value = contact[k];
   });
+}
+
+// ─── COMPARTIR CATÁLOGO ───────────────────────────────────────────────
+function shareCatalogWhatsApp() {
+  const catalogUrl = contact.web || window.location.origin + window.location.pathname.replace('admin.html', 'index.html');
+  const msg = (contact.share_msg && contact.share_msg.trim())
+    ? contact.share_msg.trim() + '\n\n🛍️ ' + catalogUrl
+    : '✨ ¡Te compartimos nuestro catálogo de *Pleaseme Accessories*! Accesorios en oro laminado 💛\n\n🛍️ ' + catalogUrl;
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+}
+
+function sendCatalogToNumber() {
+  const phone = (document.getElementById('c_send_to').value || '').trim().replace(/\D/g, '');
+  if (!phone) return showToast('Ingresa el número del cliente');
+  const catalogUrl = contact.web || window.location.origin + window.location.pathname.replace('admin.html', 'index.html');
+  const msg = (contact.share_msg && contact.share_msg.trim())
+    ? contact.share_msg.trim() + '\n\n🛍️ ' + catalogUrl
+    : '✨ ¡Te compartimos nuestro catálogo de *Pleaseme Accessories*!\n\n🛍️ ' + catalogUrl;
+  window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank');
 }
 
 // ─── NAVIGATION ──────────────────────────────────────────────────────
