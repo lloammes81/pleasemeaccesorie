@@ -2183,67 +2183,42 @@ async function uploadPhotoToStorage(base64Data) {
   return publicUrl;
 }
 
-// ─── OPTIMIZAR FOTOS EXISTENTES EN SUPABASE ──────────────────────────
+// ─── OPTIMIZAR FOTOS EN EL SERVIDOR (EDGE FUNCTION) ──────────────────
 async function optimizarFotos() {
-  const { data: rows, error } = await _sb
-    .from('catalogo_productos')
-    .select('id, photo_data')
-    .not('photo_data', 'is', null);
-
-  if (error) return showToast('Error al cargar productos');
-
-  const conFoto = rows.filter(r => r.photo_data && r.photo_data.startsWith('http'));
-  if (conFoto.length === 0) return showToast('No hay fotos para optimizar');
-
   const btnOpt  = document.getElementById('btnOptimizar');
   const progDiv = document.getElementById('optimizarProgress');
   const progTxt = document.getElementById('optimizarText');
   const progBar = document.getElementById('optimizarBar');
+
   btnOpt.disabled = true;
   progDiv.style.display = 'block';
+  progTxt.textContent = 'Procesando fotos en el servidor...';
   progBar.style.width = '0%';
 
-  let procesadas = 0, errores = 0;
+  // Animación indeterminada mientras espera la respuesta del servidor
+  let pct = 0;
+  const ticker = setInterval(() => {
+    pct = Math.min(pct + 2, 85);
+    progBar.style.width = pct + '%';
+  }, 400);
 
-  for (const row of conFoto) {
-    progTxt.textContent = `Optimizando ${procesadas + 1} de ${conFoto.length}...`;
-    progBar.style.width = Math.round((procesadas / conFoto.length) * 100) + '%';
+  try {
+    const { data, error } = await _sb.functions.invoke('optimize-photos');
+    if (error) throw error;
 
-    try {
-      const resp = await fetch(row.photo_data);
-      const blob = await resp.blob();
-      const base64 = await new Promise(res => {
-        const reader = new FileReader();
-        reader.onload = e => res(e.target.result);
-        reader.readAsDataURL(blob);
-      });
-
-      const comprimida = await new Promise(res => resizeAndCompressPhoto(base64, res));
-      const nuevaUrl   = await uploadPhotoToStorage(comprimida);
-
-      await _sb.from('catalogo_productos')
-        .update({ photo_data: nuevaUrl })
-        .eq('id', row.id);
-
-      try {
-        const oldPath = decodeURIComponent(row.photo_data.split('/product-photos/')[1]);
-        if (oldPath) await _sb.storage.from('product-photos').remove([oldPath]);
-      } catch (_) {}
-
-      procesadas++;
-    } catch (e) {
-      console.warn('Error optimizando foto id=' + row.id, e);
-      errores++;
-      procesadas++;
-    }
+    clearInterval(ticker);
+    progBar.style.width = '100%';
+    const ok = data.ok ?? 0;
+    progTxt.textContent = `✦ ${ok} foto${ok !== 1 ? 's' : ''} optimizada${ok !== 1 ? 's' : ''}${data.errors ? ' · ' + data.errors + ' con error' : ''}`;
+  } catch (e) {
+    clearInterval(ticker);
+    progBar.style.width = '0%';
+    progTxt.textContent = 'Error: ' + (e.message || 'No se pudo conectar con el servidor');
+    showToast('Error al optimizar: ' + (e.message || 'ver consola'));
   }
 
-  progBar.style.width = '100%';
-  const ok = procesadas - errores;
-  progTxt.textContent = `✦ ${ok} foto${ok !== 1 ? 's' : ''} optimizada${ok !== 1 ? 's' : ''}${errores ? ' · ' + errores + ' con error' : ''}`;
   btnOpt.disabled = false;
   setTimeout(() => { progDiv.style.display = 'none'; }, 5000);
-
   await loadProducts();
   renderTable();
 }
