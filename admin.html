@@ -1051,6 +1051,10 @@ textarea { resize: vertical; min-height: 80px; }
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.36-3.36L23 10M1 14l5.13 4.36A9 9 0 0020.49 15"/></svg>
           Recargar
         </button>
+        <button class="btn btn-outline" onclick="optimizarFotos()" id="btnOptimizar" title="Recomprimir fotos para liberar espacio" style="gap:6px;">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Optimizar fotos
+        </button>
       </div>
     </div>
 
@@ -1068,6 +1072,13 @@ textarea { resize: vertical; min-height: 80px; }
       <div class="section-header">
         <span class="section-title">Catálogo de prendas</span>
         <span style="font-size:11px;color:var(--text-muted);font-weight:300;" id="productCount"></span>
+      </div>
+
+      <div id="optimizarProgress" style="display:none;margin:12px 0;padding:12px 16px;background:rgba(201,151,58,0.08);border:1px solid rgba(201,151,58,0.2);font-family:'Cinzel',serif;font-size:10px;letter-spacing:1.5px;color:var(--gold);">
+        <div id="optimizarText">Optimizando...</div>
+        <div style="margin-top:8px;height:3px;background:rgba(201,151,58,0.15);border-radius:2px;">
+          <div id="optimizarBar" style="height:100%;background:var(--gold);border-radius:2px;transition:width 0.3s;width:0%;"></div>
+        </div>
       </div>
 
       <div class="table-wrap">
@@ -1532,6 +1543,35 @@ textarea { resize: vertical; min-height: 80px; }
           </div>
         </div>
 
+        <!-- Cloudinary Storage Card -->
+        <div class="contact-card" style="grid-column: 1/-1">
+          <div class="contact-card-title">
+            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+            </svg>
+            Almacenamiento de fotos (Cloudinary)
+          </div>
+          <div class="contact-form" style="max-width:480px">
+            <div class="field">
+              <label>Cloud Name</label>
+              <input type="text" id="c_cloud_name" placeholder="ej: mi-tienda-123">
+            </div>
+            <div class="field">
+              <label>Upload Preset (sin firma)</label>
+              <input type="text" id="c_upload_preset" placeholder="ej: productos_unsigned">
+              <div style="font-size:9px;color:var(--text-muted);margin-top:4px;">
+                Crea una cuenta gratis en
+                <a href="https://cloudinary.com" target="_blank" style="color:var(--gold);">cloudinary.com</a>
+                · Settings → Upload → Add upload preset → Mode: <b>Unsigned</b>
+              </div>
+            </div>
+            <div id="cloudinaryStatus" style="font-size:10px;margin-bottom:8px;"></div>
+            <div class="save-row">
+              <button class="btn btn-primary" onclick="saveCloudinaryConfig()">Guardar</button>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -1681,7 +1721,7 @@ let _cfgCache = {};
 async function _loadConfigs() {
   try {
     const { data } = await _sb.from('config').select('key,value')
-      .in('key', ['pm_watermark','pm_banner','pm_catalog_info','pm_info_sections','pm_discount']);
+      .in('key', ['pm_watermark','pm_banner','pm_catalog_info','pm_info_sections','pm_discount','pm_cloudinary']);
     if (data) data.forEach(r => { _cfgCache[r.key] = r.value; });
   } catch(e) { console.error('Error cargando configs:', e); }
 }
@@ -1917,6 +1957,33 @@ async function saveContact(section) {
   }, { onConflict: 'key' });
   if (error) return showToast('Error al guardar: ' + error.message);
   showToast('✦ Información guardada');
+}
+
+async function saveCloudinaryConfig() {
+  const cloud_name = (document.getElementById('c_cloud_name').value || '').trim();
+  const upload_preset = (document.getElementById('c_upload_preset').value || '').trim();
+  if (!cloud_name || !upload_preset) return showToast('Completa Cloud Name y Upload Preset');
+  const { error } = await _sb.from('config').upsert(
+    { key: 'pm_cloudinary', value: { cloud_name, upload_preset } },
+    { onConflict: 'key' }
+  );
+  if (error) return showToast('Error al guardar: ' + error.message);
+  _cfgCache['pm_cloudinary'] = { cloud_name, upload_preset };
+  const st = document.getElementById('cloudinaryStatus');
+  if (st) { st.style.color = 'var(--gold)'; st.textContent = '✦ Cloudinary configurado'; }
+  showToast('✦ Cloudinary configurado');
+}
+
+function fillCloudinaryForm() {
+  const cfg = _cfgCache['pm_cloudinary'] || {};
+  const elCN = document.getElementById('c_cloud_name');
+  const elUP = document.getElementById('c_upload_preset');
+  if (elCN && cfg.cloud_name) elCN.value = cfg.cloud_name;
+  if (elUP && cfg.upload_preset) elUP.value = cfg.upload_preset;
+  if (cfg.cloud_name && cfg.upload_preset) {
+    const st = document.getElementById('cloudinaryStatus');
+    if (st) { st.style.color = 'var(--gold)'; st.textContent = '✦ Cloudinary configurado'; }
+  }
 }
 
 function fillContactForm() {
@@ -2172,6 +2239,62 @@ async function uploadPhotoToStorage(base64Data) {
   return publicUrl;
 }
 
+async function uploadPhotoToCloudinary(base64Data) {
+  const cfg = _cfgCache['pm_cloudinary'] || {};
+  if (!cfg.cloud_name || !cfg.upload_preset)
+    throw new Error('Configura Cloudinary en Información de contacto');
+  const form = new FormData();
+  form.append('file', base64Data);
+  form.append('upload_preset', cfg.upload_preset);
+  const resp = await fetch(
+    `https://api.cloudinary.com/v1_1/${cfg.cloud_name}/image/upload`,
+    { method: 'POST', body: form }
+  );
+  const json = await resp.json();
+  if (!json.secure_url) throw new Error('Error Cloudinary: ' + (json.error?.message || 'Error desconocido'));
+  return json.secure_url;
+}
+
+// ─── OPTIMIZAR FOTOS EN EL SERVIDOR (EDGE FUNCTION) ──────────────────
+async function optimizarFotos() {
+  const btnOpt  = document.getElementById('btnOptimizar');
+  const progDiv = document.getElementById('optimizarProgress');
+  const progTxt = document.getElementById('optimizarText');
+  const progBar = document.getElementById('optimizarBar');
+
+  btnOpt.disabled = true;
+  progDiv.style.display = 'block';
+  progTxt.textContent = 'Procesando fotos en el servidor...';
+  progBar.style.width = '0%';
+
+  // Animación indeterminada mientras espera la respuesta del servidor
+  let pct = 0;
+  const ticker = setInterval(() => {
+    pct = Math.min(pct + 2, 85);
+    progBar.style.width = pct + '%';
+  }, 400);
+
+  try {
+    const { data, error } = await _sb.functions.invoke('optimize-photos');
+    if (error) throw error;
+
+    clearInterval(ticker);
+    progBar.style.width = '100%';
+    const ok = data.ok ?? 0;
+    progTxt.textContent = `✦ ${ok} foto${ok !== 1 ? 's' : ''} optimizada${ok !== 1 ? 's' : ''}${data.errors ? ' · ' + data.errors + ' con error' : ''}`;
+  } catch (e) {
+    clearInterval(ticker);
+    progBar.style.width = '0%';
+    progTxt.textContent = 'Error: ' + (e.message || 'No se pudo conectar con el servidor');
+    showToast('Error al optimizar: ' + (e.message || 'ver consola'));
+  }
+
+  btnOpt.disabled = false;
+  setTimeout(() => { progDiv.style.display = 'none'; }, 5000);
+  await loadProducts();
+  renderTable();
+}
+
 async function saveProduct() {
   const name     = document.getElementById('f_name').value.trim();
   const category = document.getElementById('f_category').value;
@@ -2185,7 +2308,7 @@ async function saveProduct() {
   if (photoData) {
     if (photoData.startsWith('data:')) {
       try {
-        finalPhotoUrl = await uploadPhotoToStorage(photoData);
+        finalPhotoUrl = await uploadPhotoToCloudinary(photoData);
       } catch (e) {
         return showToast(e.message);
       }
@@ -2781,6 +2904,7 @@ function toggleTheme() {
 async function init() {
   await Promise.all([loadProducts(), _loadConfigs(), checkSupabaseConnection()]);
   fillContactForm();
+  fillCloudinaryForm();
   loadBanner();
   loadDiscount();
   loadCatalogInfo();
