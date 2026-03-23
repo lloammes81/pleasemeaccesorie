@@ -1578,6 +1578,7 @@ textarea { resize: vertical; min-height: 80px; }
             </div>
             <div id="cloudinaryStatus" style="font-size:10px;margin-bottom:8px;"></div>
             <div class="save-row">
+              <button class="btn" onclick="testCloudinaryConnection()" style="border:1px solid var(--gold);color:var(--gold);background:transparent;">Verificar conexión</button>
               <button class="btn btn-primary" onclick="saveCloudinaryConfig()">Guardar</button>
             </div>
           </div>
@@ -1618,6 +1619,7 @@ textarea { resize: vertical; min-height: 80px; }
       <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this)">
       <div class="photo-preview" id="photoPreview">
         <img id="photoPreviewImg" src="" alt="Preview">
+        <span id="photoSize" style="position:absolute;bottom:6px;left:8px;font-size:11px;color:#fff;background:rgba(0,0,0,.55);padding:2px 6px;border-radius:4px;"></span>
         <button class="photo-preview-remove" onclick="removePhoto()">×</button>
       </div>
     </div>
@@ -1969,6 +1971,34 @@ async function saveContact(section) {
   showToast('✦ Información guardada');
 }
 
+async function testCloudinaryConnection() {
+  const cloud_name = (document.getElementById('c_cloud_name').value || '').trim();
+  const upload_preset = (document.getElementById('c_upload_preset').value || '').trim();
+  if (!cloud_name || !upload_preset) return showToast('Completa Cloud Name y Upload Preset');
+
+  const st = document.getElementById('cloudinaryStatus');
+  if (st) { st.style.color = 'var(--text-muted)'; st.textContent = 'Verificando...'; }
+
+  const testImg = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+  const form = new FormData();
+  form.append('file', testImg);
+  form.append('upload_preset', upload_preset);
+  try {
+    const resp = await fetch(`https://api.cloudinary.com/v1_1/${cloud_name}/image/upload`, { method: 'POST', body: form });
+    const json = await resp.json();
+    if (!json.secure_url) {
+      const msg = json.error?.message || 'Credenciales inválidas';
+      if (st) { st.style.color = 'crimson'; st.textContent = '✗ ' + msg; }
+      return showToast('Cloudinary: ' + msg);
+    }
+  } catch(e) {
+    if (st) { st.style.color = 'crimson'; st.textContent = '✗ Sin conexión'; }
+    return showToast('No se pudo conectar a Cloudinary');
+  }
+  if (st) { st.style.color = 'limegreen'; st.textContent = '✓ Conexión exitosa (aún no guardado)'; }
+  showToast('✓ Cloudinary conectado correctamente');
+}
+
 async function saveCloudinaryConfig() {
   const cloud_name = (document.getElementById('c_cloud_name').value || '').trim();
   const upload_preset = (document.getElementById('c_upload_preset').value || '').trim();
@@ -2204,7 +2234,7 @@ function editProduct(id) { openDrawer(id); }
 
 // ─── PHOTO COMPRESSION ───────────────────────────────────────────────
 function resizeAndCompressPhoto(dataUrl, callback) {
-  const MAX_PX = 1200;
+  const MAX_PX = 800;
   const img = new Image();
   img.onload = function() {
     let W = img.width, H = img.height;
@@ -2215,7 +2245,7 @@ function resizeAndCompressPhoto(dataUrl, callback) {
     const canvas = document.createElement('canvas');
     canvas.width = W; canvas.height = H;
     canvas.getContext('2d').drawImage(img, 0, 0, W, H);
-    callback(canvas.toDataURL('image/jpeg', 0.78));
+    callback(canvas.toDataURL('image/jpeg', 0.65));
   };
   img.src = dataUrl;
 }
@@ -2228,6 +2258,9 @@ function handlePhoto(input) {
   reader.onload = function(e) {
     resizeAndCompressPhoto(e.target.result, function(compressed) {
       rawPhotoData = compressed;
+      const kb = Math.round(compressed.length * 0.75 / 1024);
+      const sizeEl = document.getElementById('photoSize');
+      if (sizeEl) sizeEl.textContent = `~${kb} KB`;
       const wmCfg = getWatermarkConfig();
       if (wmCfg.active) {
         applyWatermark(compressed, function(watermarked) {
