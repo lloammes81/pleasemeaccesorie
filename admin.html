@@ -1619,6 +1619,7 @@ textarea { resize: vertical; min-height: 80px; }
       <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this)">
       <div class="photo-preview" id="photoPreview">
         <img id="photoPreviewImg" src="" alt="Preview">
+        <span id="photoSize" style="position:absolute;bottom:6px;left:8px;font-size:11px;color:#fff;background:rgba(0,0,0,.55);padding:2px 6px;border-radius:4px;"></span>
         <button class="photo-preview-remove" onclick="removePhoto()">×</button>
       </div>
     </div>
@@ -2233,7 +2234,7 @@ function editProduct(id) { openDrawer(id); }
 
 // ─── PHOTO COMPRESSION ───────────────────────────────────────────────
 function resizeAndCompressPhoto(dataUrl, callback) {
-  const MAX_PX = 1200;
+  const MAX_PX = 800;
   const img = new Image();
   img.onload = function() {
     let W = img.width, H = img.height;
@@ -2244,7 +2245,7 @@ function resizeAndCompressPhoto(dataUrl, callback) {
     const canvas = document.createElement('canvas');
     canvas.width = W; canvas.height = H;
     canvas.getContext('2d').drawImage(img, 0, 0, W, H);
-    callback(canvas.toDataURL('image/jpeg', 0.78));
+    callback(canvas.toDataURL('image/jpeg', 0.65));
   };
   img.src = dataUrl;
 }
@@ -2257,6 +2258,9 @@ function handlePhoto(input) {
   reader.onload = function(e) {
     resizeAndCompressPhoto(e.target.result, function(compressed) {
       rawPhotoData = compressed;
+      const kb = Math.round(compressed.length * 0.75 / 1024);
+      const sizeEl = document.getElementById('photoSize');
+      if (sizeEl) sizeEl.textContent = `~${kb} KB`;
       const wmCfg = getWatermarkConfig();
       if (wmCfg.active) {
         applyWatermark(compressed, function(watermarked) {
