@@ -1015,7 +1015,7 @@ textarea { resize: vertical; min-height: 80px; }
   margin-bottom: 32px;
 }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4"></script>
 </head>
 <body>
 
@@ -2323,49 +2323,47 @@ function closeDrawer() {
 function editProduct(id) { openDrawer(id); }
 
 // ─── PHOTO COMPRESSION ───────────────────────────────────────────────
-function resizeAndCompressPhoto(dataUrl, callback) {
-  const MAX_PX = 800;
-  const img = new Image();
-  img.onload = function() {
-    let W = img.width, H = img.height;
-    if (W > MAX_PX || H > MAX_PX) {
-      if (W >= H) { H = Math.round(H * MAX_PX / W); W = MAX_PX; }
-      else        { W = Math.round(W * MAX_PX / H); H = MAX_PX; }
-    }
-    const canvas = document.createElement('canvas');
-    canvas.width = W; canvas.height = H;
-    canvas.getContext('2d').drawImage(img, 0, 0, W, H);
-    callback(canvas.toDataURL('image/jpeg', 0.65));
-  };
-  img.src = dataUrl;
+function resizeAndCompressPhoto(dataUrl) {
+  return new Promise((resolve) => {
+    const MAX_PX = 800;
+    const img = new Image();
+    img.addEventListener('load', () => {
+      let W = img.width, H = img.height;
+      if (W > MAX_PX || H > MAX_PX) {
+        if (W >= H) { H = Math.round(H * MAX_PX / W); W = MAX_PX; }
+        else        { W = Math.round(W * MAX_PX / H); H = MAX_PX; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = W; canvas.height = H;
+      canvas.getContext('2d').drawImage(img, 0, 0, W, H);
+      resolve(canvas.toDataURL('image/jpeg', 0.65));
+    });
+    img.src = dataUrl;
+  });
 }
 
-function handlePhoto(input) {
+async function handlePhoto(input) {
   const file = input.files && input.files[0];
   if (!file) return;
   if (!file.type.startsWith('image/')) return showToast('Solo se permiten imágenes');
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    resizeAndCompressPhoto(e.target.result, function(compressed) {
-      rawPhotoData = compressed;
-      const kb = Math.round(compressed.length * 0.75 / 1024);
-      const sizeEl = document.getElementById('photoSize');
-      if (sizeEl) sizeEl.textContent = `~${kb} KB`;
-      const wmCfg = getWatermarkConfig();
-      if (wmCfg.active) {
-        applyWatermark(compressed, function(watermarked) {
-          photoData = watermarked;
-          document.getElementById('photoPreviewImg').src = watermarked;
-          document.getElementById('photoPreview').style.display = 'block';
-        });
-      } else {
-        photoData = compressed;
-        document.getElementById('photoPreviewImg').src = compressed;
-        document.getElementById('photoPreview').style.display = 'block';
-      }
-    });
-  };
-  reader.readAsDataURL(file);
+  const dataUrl = await new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.addEventListener('load', (e) => resolve(e.target.result));
+    reader.readAsDataURL(file);
+  });
+  const compressed = await resizeAndCompressPhoto(dataUrl);
+  rawPhotoData = compressed;
+  const kb = Math.round(compressed.length * 0.75 / 1024);
+  const sizeEl = document.getElementById('photoSize');
+  if (sizeEl) sizeEl.textContent = `~${kb} KB`;
+  const wmCfg = getWatermarkConfig();
+  if (wmCfg.active) {
+    photoData = await applyWatermark(compressed);
+  } else {
+    photoData = compressed;
+  }
+  document.getElementById('photoPreviewImg').src = photoData;
+  document.getElementById('photoPreview').style.display = 'block';
 }
 
 function removePhoto() {
@@ -2464,7 +2462,8 @@ async function saveProduct() {
   if (photoData) {
     if (photoData.startsWith('data:')) {
       try {
-        finalPhotoUrl = await uploadPhotoToCloudinary(photoData);
+        const optimized = await resizeAndCompressPhoto(photoData);
+        finalPhotoUrl = await uploadPhotoToCloudinary(optimized);
         showToast('✦ Foto subida a Cloudinary');
       } catch (e) {
         return showToast(e.message);
@@ -2600,14 +2599,15 @@ function getWatermarkConfig() {
   return _cfgCache['pm_watermark'] || {};
 }
 
-function applyWatermark(dataUrl, callback) {
+function applyWatermark(dataUrl) {
+  return new Promise((resolve) => {
   const cfg      = getWatermarkConfig();
   const position = cfg.position || 'bottom-right';
   const opacity  = (cfg.opacity !== undefined) ? parseFloat(cfg.opacity) : 0.65;
   let   brand    = cfg.text || (_cfgCache['pm_catalog_info'] || {}).title || 'Pleaseme';
 
   const img = new Image();
-  img.onload = function() {
+  img.addEventListener('load', () => {
     const W   = img.width;
     const H   = img.height;
     const canvas = document.createElement('canvas');
@@ -2710,9 +2710,10 @@ function applyWatermark(dataUrl, callback) {
     ctx.fillText(brand, W - Math.max(10, W*0.02), H - Math.max(8, H*0.015));
     ctx.restore();
 
-    callback(canvas.toDataURL('image/jpeg', 0.78));
-  };
+    resolve(canvas.toDataURL('image/jpeg', 0.78));
+  });
   img.src = dataUrl;
+  });
 }
 
 // Drag & drop
