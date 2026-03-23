@@ -2088,14 +2088,14 @@ function parsePrice(price) {
 
 function cartTotal() {
   return cart.reduce((s, item) => {
-    const p = products.find(x => x.id === item.id);
+    const p = products.find(x => x.id == item.id);
     if (!p) return s;
     return s + parsePrice(p.price) * item.qty;
   }, 0);
 }
 
 function addToCart(id) {
-  const existing = cart.find(i => i.id === id);
+  const existing = cart.find(i => i.id == id);
   if (existing) existing.qty++;
   else cart.push({ id, qty: 1 });
   updateCartUI();
@@ -2104,13 +2104,13 @@ function addToCart(id) {
 }
 
 function removeFromCart(id) {
-  cart = cart.filter(i => i.id !== id);
+  cart = cart.filter(i => i.id != id);
   updateCartUI();
   renderGrid();
 }
 
 function changeQty(id, delta) {
-  const item = cart.find(i => i.id === id);
+  const item = cart.find(i => i.id == id);
   if (!item) return;
   item.qty += delta;
   if (item.qty <= 0) removeFromCart(id);
@@ -2182,7 +2182,7 @@ function renderCartItems() {
   }
 
   container.innerHTML = cart.map(item => {
-    const p = products.find(x => x.id === item.id);
+    const p = products.find(x => x.id == item.id);
     if (!p) return '';
     return `
       <div class="cart-item">
@@ -2195,11 +2195,11 @@ function renderCartItems() {
           <p class="cart-item-price">$${p.price}</p>
         </div>
         <div class="cart-item-controls">
-          <button class="qty-btn" onclick="changeQty(${p.id}, -1)">−</button>
+          <button class="qty-btn" onclick="changeQty('${p.id}', -1)">−</button>
           <span class="qty-num">${item.qty}</span>
-          <button class="qty-btn" onclick="changeQty(${p.id}, 1)">+</button>
+          <button class="qty-btn" onclick="changeQty('${p.id}', 1)">+</button>
         </div>
-        <button class="cart-remove" onclick="removeFromCart(${p.id})" title="Quitar">×</button>
+        <button class="cart-remove" onclick="removeFromCart('${p.id}')" title="Quitar">×</button>
       </div>`;
   }).join('');
 }
