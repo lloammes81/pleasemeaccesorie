@@ -2,6 +2,9 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Pleaseme Catálogo</title>
 
@@ -2026,6 +2029,7 @@ let currentModalId = null;
 
 // ─── CART STATE ──────────────────────────────────────────────────────
 let cart = []; // [{id, qty}]
+function saveCart() { localStorage.setItem('pm_cart', JSON.stringify(cart)); }
 
 function cartCount() { return cart.reduce((s, i) => s + i.qty, 0); }
 
@@ -2046,6 +2050,7 @@ function addToCart(id) {
   if (existing) existing.qty++;
   else cart.push({ id, qty: 1 });
   updateCartUI();
+  saveCart();
   showToast('✦ Agregado a tu selección');
   renderGrid();
 }
@@ -2053,6 +2058,7 @@ function addToCart(id) {
 function removeFromCart(id) {
   cart = cart.filter(i => i.id !== id);
   updateCartUI();
+  saveCart();
   renderGrid();
 }
 
@@ -2061,7 +2067,7 @@ function changeQty(id, delta) {
   if (!item) return;
   item.qty += delta;
   if (item.qty <= 0) removeFromCart(id);
-  else updateCartUI();
+  else { updateCartUI(); saveCart(); }
 }
 
 function getDiscountSettings() {
@@ -2515,6 +2521,9 @@ function cerrarBanner() {
       _sb.from('config').select('key,value').in('key', ['pm_banner','pm_catalog_info','pm_info_sections','pm_discount'])
     ]);
     products = Array.isArray(prods) && prods.length > 0 ? prods : defaultProducts;
+    // Restaurar carrito guardado, descartando IDs que ya no existen
+    const _saved = localStorage.getItem('pm_cart');
+    if (_saved) { try { const _p = JSON.parse(_saved); cart = _p.filter(i => products.some(p => String(p.id) === String(i.id))); } catch(e) { cart = []; } }
     if (contactRes.data) appContact = contactRes.data.value || {};
 
   // Poblar cache de configs
