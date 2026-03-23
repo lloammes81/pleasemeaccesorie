@@ -1012,6 +1012,10 @@ textarea { resize: vertical; min-height: 80px; }
         <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
         Información
       </button>
+      <button class="nav-item" onclick="goTo('config')" id="nav-config">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        Configuración
+      </button>
       <div class="nav-section-label" style="margin-top:8px">Catálogo</div>
       <button class="nav-item" onclick="volverAlCatalogo()">
         <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/><line x1="9" y1="12" x2="21" y2="12"/></svg>
@@ -1547,26 +1551,29 @@ textarea { resize: vertical; min-height: 80px; }
           </div>
         </div>
 
-        <!-- Cloudinary Storage Card -->
+      </div>
+    </div>
+
+    <!-- PAGE: CONFIGURACIÓN -->
+    <div class="page" id="page-config">
+      <div class="contact-grid">
         <div class="contact-card" style="grid-column: 1/-1">
           <div class="contact-card-title">
             <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
               <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
             </svg>
-            Almacenamiento de fotos (Cloudinary)
+            Almacenamiento de fotos · Cloudinary
           </div>
           <div class="contact-form" style="max-width:480px">
             <div class="field">
               <label>Cloud Name</label>
-              <input type="text" id="c_cloud_name" placeholder="ej: mi-tienda-123">
+              <input type="text" id="c_cloud_name" placeholder="ej: dz8tcymir">
             </div>
             <div class="field">
               <label>Upload Preset (sin firma)</label>
-              <input type="text" id="c_upload_preset" placeholder="ej: productos_unsigned">
+              <input type="text" id="c_upload_preset" placeholder="ej: htdts02t">
               <div style="font-size:9px;color:var(--text-muted);margin-top:4px;">
-                Crea una cuenta gratis en
-                <a href="https://cloudinary.com" target="_blank" style="color:var(--gold);">cloudinary.com</a>
-                · Settings → Upload → Add upload preset → Mode: <b>Unsigned</b>
+                cloudinary.com → Settings → Upload → Add upload preset → Mode: <b>Unsigned</b>
               </div>
             </div>
             <div id="cloudinaryStatus" style="font-size:10px;margin-bottom:8px;"></div>
@@ -1575,7 +1582,6 @@ textarea { resize: vertical; min-height: 80px; }
             </div>
           </div>
         </div>
-
       </div>
     </div>
 
@@ -1967,15 +1973,36 @@ async function saveCloudinaryConfig() {
   const cloud_name = (document.getElementById('c_cloud_name').value || '').trim();
   const upload_preset = (document.getElementById('c_upload_preset').value || '').trim();
   if (!cloud_name || !upload_preset) return showToast('Completa Cloud Name y Upload Preset');
+
+  const st = document.getElementById('cloudinaryStatus');
+  if (st) { st.style.color = 'var(--text-muted)'; st.textContent = 'Verificando...'; }
+
+  // Test real contra Cloudinary antes de guardar
+  const testImg = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+  const form = new FormData();
+  form.append('file', testImg);
+  form.append('upload_preset', upload_preset);
+  try {
+    const resp = await fetch(`https://api.cloudinary.com/v1_1/${cloud_name}/image/upload`, { method: 'POST', body: form });
+    const json = await resp.json();
+    if (!json.secure_url) {
+      const msg = json.error?.message || 'Credenciales inválidas';
+      if (st) { st.style.color = 'crimson'; st.textContent = '✗ ' + msg; }
+      return showToast('Cloudinary: ' + msg);
+    }
+  } catch(e) {
+    if (st) { st.style.color = 'crimson'; st.textContent = '✗ Sin conexión'; }
+    return showToast('No se pudo conectar a Cloudinary');
+  }
+
   const { error } = await _sb.from('config').upsert(
     { key: 'pm_cloudinary', value: { cloud_name, upload_preset } },
     { onConflict: 'key' }
   );
   if (error) return showToast('Error al guardar: ' + error.message);
   _cfgCache['pm_cloudinary'] = { cloud_name, upload_preset };
-  const st = document.getElementById('cloudinaryStatus');
-  if (st) { st.style.color = 'var(--gold)'; st.textContent = '✦ Cloudinary configurado'; }
-  showToast('✦ Cloudinary configurado');
+  if (st) { st.style.color = 'var(--gold)'; st.textContent = '✦ Cloudinary conectado y guardado'; }
+  showToast('✦ Cloudinary conectado y guardado');
   checkCloudinaryConfig();
 }
 
@@ -2025,13 +2052,14 @@ function goTo(page) {
   document.getElementById('page-' + page).classList.add('active');
   document.getElementById('nav-' + page).classList.add('active');
 
-  const titles = { productos: 'Productos', contacto: 'Información de contacto', banner: 'Banner de anuncio', visitas: 'Visitas al catálogo', info: 'Información del catálogo' };
+  const titles = { productos: 'Productos', contacto: 'Información de contacto', banner: 'Banner de anuncio', visitas: 'Visitas al catálogo', info: 'Información del catálogo', config: 'Configuración · API Keys' };
   document.getElementById('topbarTitle').textContent = titles[page] || '';
 
   const topAction = document.getElementById('topbarAction');
   if (page === 'banner') { loadBanner(); loadDiscount(); }
   if (page === 'visitas') loadVisitas();
   if (page === 'info') { loadCatalogInfo(); renderInfoTable(); loadWatermarkConfig(); }
+  if (page === 'config') fillCloudinaryForm();
   if (page === 'productos') {
     topAction.style.display = '';
   } else {
@@ -2247,7 +2275,7 @@ async function uploadPhotoToStorage(base64Data) {
 async function uploadPhotoToCloudinary(base64Data) {
   const cfg = _cfgCache['pm_cloudinary'] || {};
   if (!cfg.cloud_name || !cfg.upload_preset)
-    throw new Error('Configura Cloudinary en Información de contacto');
+    throw new Error('Configura Cloudinary en Configuración');
   const form = new FormData();
   form.append('file', base64Data);
   form.append('upload_preset', cfg.upload_preset);
@@ -2314,6 +2342,7 @@ async function saveProduct() {
     if (photoData.startsWith('data:')) {
       try {
         finalPhotoUrl = await uploadPhotoToCloudinary(photoData);
+        showToast('✦ Foto subida a Cloudinary');
       } catch (e) {
         return showToast(e.message);
       }
