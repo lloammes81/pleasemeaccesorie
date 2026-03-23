@@ -2307,8 +2307,10 @@ async function uploadPhotoToCloudinary(base64Data) {
   const cfg = _cfgCache['pm_cloudinary'] || {};
   if (!cfg.cloud_name || !cfg.upload_preset)
     throw new Error('Configura Cloudinary en Configuración');
+  const res  = await fetch(base64Data);
+  const blob = await res.blob();
   const form = new FormData();
-  form.append('file', base64Data);
+  form.append('file', blob, 'photo.jpg');
   form.append('upload_preset', cfg.upload_preset);
   const resp = await fetch(
     `https://api.cloudinary.com/v1_1/${cfg.cloud_name}/image/upload`,
@@ -2372,8 +2374,7 @@ async function saveProduct() {
   if (photoData) {
     if (photoData.startsWith('data:')) {
       try {
-        const optimized = await resizeAndCompressPhoto(photoData);
-        finalPhotoUrl = await uploadPhotoToCloudinary(optimized);
+        finalPhotoUrl = await uploadPhotoToCloudinary(photoData);
         showToast('✦ Foto subida a Cloudinary');
       } catch (e) {
         return showToast(e.message);
