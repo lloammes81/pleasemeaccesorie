@@ -1043,8 +1043,8 @@ textarea { resize: vertical; min-height: 80px; }
     <div class="login-logo">Pleaseme</div>
     <div class="login-sub">Panel Administrativo</div>
     <label class="login-label">Contraseña</label>
-    <input class="login-input" type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
-    <button class="login-btn" onclick="doLogin()">Ingresar</button>
+    <input class="login-input" type="password" id="loginPass" placeholder="••••••••" autocomplete="off">
+    <button class="login-btn" id="loginBtn" onclick="doLogin()" disabled>Cargando...</button>
     <div class="login-error" id="loginError"></div>
   </div>
 </div>
@@ -1526,7 +1526,7 @@ textarea { resize: vertical; min-height: 80px; }
                 <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.989.574 3.842 1.565 5.408L2 22l4.737-1.538A9.954 9.954 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18.182a8.182 8.182 0 01-4.177-1.144l-.299-.177-3.1 1.006 1.033-3.016-.195-.31A8.144 8.144 0 013.818 12C3.818 7.477 7.477 3.818 12 3.818S20.182 7.477 20.182 12 16.523 20.182 12 20.182z"/></svg>
                 Compartir catálogo
               </button>
-              <a href="index.html" target="_blank" class="btn btn-secondary" style="text-decoration:none;display:flex;align-items:center;gap:6px;">
+              <a href="#" onclick="volverAlCatalogo();return false;" class="btn btn-secondary" style="text-decoration:none;display:flex;align-items:center;gap:6px;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                 Ver catálogo
               </a>
@@ -3127,6 +3127,10 @@ async function init() {
 // Cargar config (contraseña + contacto) antes de mostrar el login
 (async function() {
   await loadConfig();
+  document.getElementById('loginPass').value = '';
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = false;
+  btn.textContent = 'Ingresar';
   if (sessionStorage.getItem('pm_auth') === '1') {
     document.getElementById('loginScreen').classList.add('hidden');
     init();
