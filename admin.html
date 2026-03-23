@@ -1578,6 +1578,7 @@ textarea { resize: vertical; min-height: 80px; }
             </div>
             <div id="cloudinaryStatus" style="font-size:10px;margin-bottom:8px;"></div>
             <div class="save-row">
+              <button class="btn" onclick="testCloudinaryConnection()" style="border:1px solid var(--gold);color:var(--gold);background:transparent;">Verificar conexión</button>
               <button class="btn btn-primary" onclick="saveCloudinaryConfig()">Guardar</button>
             </div>
           </div>
@@ -1967,6 +1968,34 @@ async function saveContact(section) {
   }, { onConflict: 'key' });
   if (error) return showToast('Error al guardar: ' + error.message);
   showToast('✦ Información guardada');
+}
+
+async function testCloudinaryConnection() {
+  const cloud_name = (document.getElementById('c_cloud_name').value || '').trim();
+  const upload_preset = (document.getElementById('c_upload_preset').value || '').trim();
+  if (!cloud_name || !upload_preset) return showToast('Completa Cloud Name y Upload Preset');
+
+  const st = document.getElementById('cloudinaryStatus');
+  if (st) { st.style.color = 'var(--text-muted)'; st.textContent = 'Verificando...'; }
+
+  const testImg = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+  const form = new FormData();
+  form.append('file', testImg);
+  form.append('upload_preset', upload_preset);
+  try {
+    const resp = await fetch(`https://api.cloudinary.com/v1_1/${cloud_name}/image/upload`, { method: 'POST', body: form });
+    const json = await resp.json();
+    if (!json.secure_url) {
+      const msg = json.error?.message || 'Credenciales inválidas';
+      if (st) { st.style.color = 'crimson'; st.textContent = '✗ ' + msg; }
+      return showToast('Cloudinary: ' + msg);
+    }
+  } catch(e) {
+    if (st) { st.style.color = 'crimson'; st.textContent = '✗ Sin conexión'; }
+    return showToast('No se pudo conectar a Cloudinary');
+  }
+  if (st) { st.style.color = 'limegreen'; st.textContent = '✓ Conexión exitosa (aún no guardado)'; }
+  showToast('✓ Cloudinary conectado correctamente');
 }
 
 async function saveCloudinaryConfig() {
