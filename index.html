@@ -1798,7 +1798,7 @@ const CAT_ICON_MAP = {
 };
 
 function productIconHTML(p) {
-  if (p.photo) return `<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:4px;" alt="${p.name}">`;
+  if (p.photo) return `<img src="${p.photo}" loading="lazy" style="width:100%;height:100%;object-fit:cover;border-radius:4px;" alt="${p.name}">`;
   const icon = p.icon && svgs[p.icon] ? p.icon : (CAT_ICON_MAP[p.category] || 'anillo');
   const c1 = (p.colors && p.colors[0]) || '#C9973A';
   const c2 = (p.colors && p.colors[1]) || '#F5E6B8';
@@ -1984,10 +1984,9 @@ const categories = [
 // ─── LOAD PRODUCTS FROM SUPABASE ─────────────────────────────────────
 async function loadProductsFromSupabase() {
   try {
-    // Cargar sin fotos primero — carga instantánea
     const { data, error } = await _sb
       .from('catalogo_productos')
-      .select('id,name,subtitle,category,category_label,price,description,material,medida,peso,badge,active,created_at')
+      .select('id,name,subtitle,category,category_label,price,description,material,medida,peso,badge,active,created_at,photo_data')
       .eq('active', true)
       .order('created_at');
     if (error) throw error;
@@ -2004,7 +2003,7 @@ async function loadProductsFromSupabase() {
         medida:        p.medida        || '',
         peso:          p.peso          || '',
         badge:         p.badge         || null,
-        photo:         null, // se carga después
+        photo:         p.photo_data    || null,
       }));
     }
     return [];
@@ -2014,57 +2013,6 @@ async function loadProductsFromSupabase() {
   }
 }
 
-// Carga fotos en segundo plano y actualiza las tarjetas
-async function cargarFotosCatalogo() {
-  if (!products || products.length === 0) return;
-  const ids = products.map(p => p.id);
-  const BATCH = 4;
-  for (let i = 0; i < ids.length; i += BATCH) {
-    const batch = ids.slice(i, i + BATCH);
-    try {
-      const { data } = await _sb
-        .from('catalogo_productos')
-        .select('id,photo_data')
-        .in('id', batch);
-      if (data) {
-        data.forEach(row => {
-          if (!row.photo_data) return;
-          const p = products.find(x => x.id === row.id);
-          if (!p) return;
-          p.photo = row.photo_data;
-          // Actualizar la tarjeta en el DOM sin re-renderizar todo
-          const card = document.querySelector(`[data-product-id="${p.id}"]`);
-          if (card) {
-            const visual = card.querySelector('.card-visual');
-            if (visual) {
-              // Reemplazar el ícono SVG con la foto real
-              const icon = visual.querySelector('.jewelry-icon');
-              if (icon) {
-                icon.innerHTML = `<img src="${p.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:4px;" alt="${p.name}">`;
-              }
-              // Activar el click para lightbox
-              visual.style.cursor = 'zoom-in';
-              visual.onclick = (e) => { e.stopPropagation(); openLightbox(p.photo); };
-              // Agregar botón de retroceso
-              if (!visual.querySelector('#lightboxBackBtn')) {
-                const backBtn = document.createElement('button');
-                backBtn.title = 'Volver';
-                backBtn.innerHTML = `<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>`;
-                backBtn.style.cssText = 'position:absolute;top:12px;left:12px;width:38px;height:38px;background:rgba(10,8,4,0.75);border:1px solid rgba(201,151,58,0.6);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#E8C96D;z-index:10;backdrop-filter:blur(6px);';
-                backBtn.onmouseenter = () => { backBtn.style.background = 'rgba(201,151,58,0.28)'; };
-                backBtn.onmouseleave = () => { backBtn.style.background = 'rgba(10,8,4,0.75)'; };
-                backBtn.onclick = (e) => { e.stopPropagation(); closeModal(); };
-                visual.style.position = 'relative';
-                visual.appendChild(backBtn);
-              }
-            }
-          }
-        });
-      }
-    } catch(e) { console.warn('Error cargando foto batch:', e); }
-    await new Promise(r => setTimeout(r, 100));
-  }
-}
 
 let products = [];
 let appContact = {};
@@ -2624,8 +2572,6 @@ function cerrarBanner() {
   renderGrid();
   renderCartItems();
   loadContactInfo();
-  // Cargar fotos en segundo plano
-  cargarFotosCatalogo();
   } catch(e) {
     console.error('Error iniciando catálogo:', e);
     products = [];
