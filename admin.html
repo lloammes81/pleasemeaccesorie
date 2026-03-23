@@ -2,6 +2,10 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<script>(function(){var V='20260323-1';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin — Pleaseme Accessories</title>
 <link rel="icon" type="image/png" href="pleaseme.png">
@@ -2397,8 +2401,10 @@ async function uploadPhotoToCloudinary(base64Data) {
   const cfg = _cfgCache['pm_cloudinary'] || {};
   if (!cfg.cloud_name || !cfg.upload_preset)
     throw new Error('Configura Cloudinary en Configuración');
+  const res  = await fetch(base64Data);
+  const blob = await res.blob();
   const form = new FormData();
-  form.append('file', base64Data);
+  form.append('file', blob, 'photo.jpg');
   form.append('upload_preset', cfg.upload_preset);
   const resp = await fetch(
     `https://api.cloudinary.com/v1_1/${cfg.cloud_name}/image/upload`,
@@ -2462,8 +2468,7 @@ async function saveProduct() {
   if (photoData) {
     if (photoData.startsWith('data:')) {
       try {
-        const optimized = await resizeAndCompressPhoto(photoData);
-        finalPhotoUrl = await uploadPhotoToCloudinary(optimized);
+        finalPhotoUrl = await uploadPhotoToCloudinary(photoData);
         showToast('✦ Foto subida a Cloudinary');
       } catch (e) {
         return showToast(e.message);
@@ -3147,13 +3152,9 @@ document.addEventListener('keydown', e => {
   <button class="mob-nav-btn mob-center" onclick="openDrawer()" title="Nuevo producto">
     <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
   </button>
-  <button class="mob-nav-btn" id="mob-nav-banner" onclick="mobGoTo('banner')">
-    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 3h18v4H3z"/><path d="M3 10h18v4H3z"/><path d="M3 17h18v4H3z"/></svg>
-    Banner
-  </button>
-  <button class="mob-nav-btn" id="mob-nav-visitas" onclick="mobGoTo('visitas')">
-    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-    Visitas
+  <button class="mob-nav-btn" onclick="volverAlCatalogo()" title="Ver catálogo">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Catálogo
   </button>
 </nav>
 
