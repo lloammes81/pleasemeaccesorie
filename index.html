@@ -1800,12 +1800,26 @@ const CAT_ICON_MAP = {
   pulseras: 'pulsera', tobilleras: 'tobillera', dijes: 'dije'
 };
 
-function productIconHTML(p) {
-  if (p.photo) return `<img src="${p.photo}" loading="lazy" style="width:100%;height:100%;object-fit:cover;border-radius:4px;" alt="${p.name}">`;
+function productIconHTML(p, w, eager) {
+  if (p.photo) {
+    const src = optimizePhotoUrl(p.photo, w || 400);
+    const load = eager ? 'eager' : 'lazy';
+    const fp   = eager ? ' fetchpriority="high"' : '';
+    return `<img src="${src}" loading="${load}" decoding="async"${fp} onload="this.style.opacity=1" style="width:100%;height:100%;object-fit:cover;border-radius:4px;opacity:0;transition:opacity .35s ease" alt="${p.name}">`;
+  }
   const icon = p.icon && svgs[p.icon] ? p.icon : (CAT_ICON_MAP[p.category] || 'anillo');
   const c1 = (p.colors && p.colors[0]) || '#C9973A';
   const c2 = (p.colors && p.colors[1]) || '#F5E6B8';
   return svgs[icon](c1, c2);
+}
+
+function optimizePhotoUrl(url, width) {
+  if (!url) return url;
+  // Cloudinary: inyectar f_auto,q_auto,w_{width} para servir formato óptimo y tamaño correcto
+  if (url.includes('cloudinary.com')) {
+    return url.replace('/upload/', `/upload/f_auto,q_auto,w_${width},c_limit/`);
+  }
+  return url;
 }
 
 function productBg(p) {
@@ -2263,7 +2277,7 @@ function renderGrid() {
       <div class="card-visual" ${p.photo ? `onclick="event.stopPropagation(); openLightbox('${p.photo}')" style="cursor:zoom-in"` : ''}>
         <div class="card-bg" style="background:${productBg(p)}"></div>
         <div class="jewelry-icon">
-          ${productIconHTML(p)}
+          ${productIconHTML(p, 400, i < 3)}
         </div>
         <div class="card-shimmer"></div>
       </div>
@@ -2308,7 +2322,7 @@ function openModal(id) {
   mv.innerHTML = `
     <div style="position:absolute;inset:0;background:${productBg(p)}"></div>
     <div style="position:relative;z-index:1;filter:drop-shadow(0 12px 32px rgba(201,151,58,0.45))${p.photo ? ';width:100%;height:100%' : ''}">
-      ${productIconHTML(p)}
+      ${productIconHTML(p, 800, true)}
     </div>
   `;
   if (p.photo) {
