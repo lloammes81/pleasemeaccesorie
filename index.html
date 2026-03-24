@@ -376,6 +376,35 @@
     box-shadow: 0 4px 16px rgba(201,151,58,0.3);
   }
 
+  .card-cart-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid var(--border-gold);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .card-cart-btn:hover {
+    border-color: var(--gold-mid);
+    color: var(--gold-light);
+    background: rgba(201,151,58,0.1);
+    transform: translateY(-1px);
+  }
+
+  .card-cart-btn.in-cart {
+    border-color: var(--gold-mid);
+    color: var(--gold-light);
+    background: rgba(201,151,58,0.12);
+  }
+
+  .card-cart-btn svg { width: 16px; height: 16px; }
+
   /* ─── MODAL ─── */
   .modal-overlay {
     position: fixed;
@@ -2465,7 +2494,15 @@ function renderGrid() {
         <p class="card-desc">${p.desc}</p>
         <div class="card-footer">
           <div class="card-price"><span>$</span>${p.price}</div>
-          <button class="card-cta" onclick="event.stopPropagation(); openModal('${p.id}')">Ver detalle</button>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button class="card-cta" onclick="event.stopPropagation(); openModal('${p.id}')">Ver detalle</button>
+            <button class="card-cart-btn ${inCart ? 'in-cart' : ''}" title="${inCart ? 'En tu selección' : 'Agregar al carrito'}" onclick="event.stopPropagation(); addToCart('${p.id}')">
+              ${inCart
+                ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
+                : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>`
+              }
+            </button>
+          </div>
         </div>
       </div>
     </div>`;
