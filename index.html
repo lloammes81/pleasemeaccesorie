@@ -691,10 +691,47 @@
     to   { opacity: 1; transform: translateY(0); }
   }
 
+  @keyframes cardReveal {
+    0%   { opacity: 0; transform: scale(0.45) translateZ(-120px); filter: blur(8px); }
+    55%  { opacity: 1; filter: blur(0px); }
+    80%  { transform: scale(1.04) translateZ(0); }
+    100% { transform: scale(1) translateZ(0); }
+  }
+
+  .catalog-grid {
+    perspective: 900px;
+  }
+
   .card-enter {
     opacity: 0;
-    transform: translateY(20px);
+    transform: scale(0.45) translateZ(-120px);
+    animation: cardReveal 0.55s cubic-bezier(0.34, 1.4, 0.64, 1) forwards;
+  }
+
+  /* ─── SECTION HEADERS ─── */
+  .catalog-section-header {
+    grid-column: 1 / -1;
+    padding: 28px 4px 12px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    opacity: 0;
     animation: fadeUp 0.5s ease forwards;
+  }
+
+  .catalog-section-title {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--gold-deep, #C9973A);
+    white-space: nowrap;
+  }
+
+  .catalog-section-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(201,151,58,0.4), transparent);
   }
 
   /* Hidden state */
@@ -2143,7 +2180,7 @@ function getWhatsAppNumber() {
   return appContact.whatsapp || '573001234567';
 }
 
-let activeCategory = "aretes";
+let activeCategory = null; // null = vista de todas las secciones
 let currentModalId = null;
 
 // ─── CART STATE ──────────────────────────────────────────────────────
@@ -2455,55 +2492,82 @@ function setFilter(key) {
 }
 
 function goBackToAll() {
-  setFilter('aretes');
+  activeCategory = null;
+  renderFilters();
+  renderGrid();
   const filtersWrap = document.getElementById('filtersWrap');
   if (filtersWrap) filtersWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ─── RENDER CARD HTML ────────────────────────────────────────────────
+function cardHTML(p, globalIndex) {
+  const inCart = cart.some(c => c.id == p.id);
+  return `
+  <div class="product-card card-enter ${inCart ? 'in-cart' : ''}" data-product-id="${p.id}" style="animation-delay:${globalIndex * 0.07}s" onclick="openModal('${p.id}')">
+    <div class="card-visual" ${p.photo ? `onclick="event.stopPropagation(); openLightbox('${p.photo}')" style="cursor:zoom-in"` : ''}>
+      <div class="card-bg" style="background:${productBg(p)}"></div>
+      <div class="jewelry-icon">
+        ${productIconHTML(p)}
+      </div>
+      <div class="card-shimmer"></div>
+    </div>
+    <div class="card-info">
+      ${p.badge ? `<div class="card-badge">${p.badge}</div>` : ''}
+      <p class="card-category">${p.categoryLabel}</p>
+      <h3 class="card-name">${p.name}</h3>
+      <p class="card-desc">${p.desc}</p>
+      <div class="card-footer">
+        <div class="card-price"><span>$</span>${p.price}</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="card-cta" onclick="event.stopPropagation(); openModal('${p.id}')">Ver detalle</button>
+          <button class="card-cart-btn ${inCart ? 'in-cart' : ''}" title="${inCart ? 'En tu selección' : 'Agregar al carrito'}" onclick="event.stopPropagation(); addToCart('${p.id}')">
+            ${inCart
+              ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
+              : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>`
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>`;
 }
 
 // ─── RENDER GRID ─────────────────────────────────────────────────────
 function renderGrid() {
   const grid = document.getElementById('catalogGrid');
   const empty = document.getElementById('emptyState');
-  const filtered = products.filter(p => p.category === activeCategory);
 
+  // Vista de todas las secciones agrupadas por categoría
+  if (!activeCategory) {
+    empty.classList.remove('visible');
+    let globalIdx = 0;
+    const orderedCats = categories.filter(c => products.some(p => p.category === c.key));
+    if (orderedCats.length === 0) {
+      grid.innerHTML = '';
+      empty.classList.add('visible');
+      return;
+    }
+    grid.innerHTML = orderedCats.map((cat, ci) => {
+      const catProducts = products.filter(p => p.category === cat.key);
+      const header = `<div class="catalog-section-header" style="animation-delay:${ci * 0.1}s">
+        <span class="catalog-section-title">${cat.label}</span>
+        <div class="catalog-section-line"></div>
+      </div>`;
+      const cards = catProducts.map(p => cardHTML(p, globalIdx++)).join('');
+      return header + cards;
+    }).join('');
+    return;
+  }
+
+  // Vista filtrada por categoría (con animación emerge desde atrás)
+  const filtered = products.filter(p => p.category === activeCategory);
   if (filtered.length === 0) {
     grid.innerHTML = '';
     empty.classList.add('visible');
     return;
   }
-
   empty.classList.remove('visible');
-  grid.innerHTML = filtered.map((p, i) => {
-    const inCart = cart.some(c => c.id == p.id);
-    return `
-    <div class="product-card card-enter ${inCart ? 'in-cart' : ''}" data-product-id="${p.id}" style="animation-delay:${i * 0.08}s" onclick="openModal('${p.id}')">
-      <div class="card-visual" ${p.photo ? `onclick="event.stopPropagation(); openLightbox('${p.photo}')" style="cursor:zoom-in"` : ''}>
-        <div class="card-bg" style="background:${productBg(p)}"></div>
-        <div class="jewelry-icon">
-          ${productIconHTML(p)}
-        </div>
-        <div class="card-shimmer"></div>
-      </div>
-      <div class="card-info">
-        ${p.badge ? `<div class="card-badge">${p.badge}</div>` : ''}
-        <p class="card-category">${p.categoryLabel}</p>
-        <h3 class="card-name">${p.name}</h3>
-        <p class="card-desc">${p.desc}</p>
-        <div class="card-footer">
-          <div class="card-price"><span>$</span>${p.price}</div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <button class="card-cta" onclick="event.stopPropagation(); openModal('${p.id}')">Ver detalle</button>
-            <button class="card-cart-btn ${inCart ? 'in-cart' : ''}" title="${inCart ? 'En tu selección' : 'Agregar al carrito'}" onclick="event.stopPropagation(); addToCart('${p.id}')">
-              ${inCart
-                ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
-                : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>`
-              }
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
+  grid.innerHTML = filtered.map((p, i) => cardHTML(p, i)).join('');
 }
 
 // ─── MODAL ───────────────────────────────────────────────────────────
