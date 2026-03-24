@@ -133,48 +133,91 @@
   /* ─── FILTERS ─── */
   .filters-wrap {
     display: flex;
-    justify-content: center;
-    gap: 10px;
-    flex-wrap: wrap;
-    padding: 20px 20px 40px;
+    justify-content: flex-start;
+    gap: 14px;
+    flex-wrap: nowrap;
+    padding: 24px 20px 40px;
     opacity: 0;
     animation: fadeUp 0.8s ease 1s forwards;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
+  .filters-wrap::-webkit-scrollbar { display: none; }
 
-  .filter-btn {
-    font-family: 'Cinzel', serif;
-    font-size: 9.5px;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    padding: 10px 22px;
-    border: 1px solid var(--border-gold);
-    background: transparent;
-    color: var(--text-muted);
+  .filter-card {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
     cursor: pointer;
     transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
+    padding: 0 4px;
   }
 
-  .filter-btn::before {
+  .filter-card-img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border-gold);
+    background: rgba(20,16,12,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    position: relative;
+  }
+
+  .filter-card-img svg {
+    width: 52px;
+    height: 52px;
+  }
+
+  .filter-card-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .filter-card-img::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, rgba(201,151,58,0.08), rgba(232,201,109,0.08));
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(201,151,58,0.12), rgba(232,201,109,0.08));
     opacity: 0;
     transition: opacity 0.3s;
   }
 
-  .filter-btn:hover::before,
-  .filter-btn.active::before { opacity: 1; }
+  .filter-card:hover .filter-card-img::before,
+  .filter-card.active .filter-card-img::before { opacity: 1; }
 
-  .filter-btn.active {
+  .filter-card.active .filter-card-img {
     border-color: var(--gold-mid);
+    box-shadow: 0 0 18px rgba(201,151,58,0.35);
+  }
+
+  .filter-card:hover .filter-card-img {
+    border-color: rgba(201,151,58,0.6);
+  }
+
+  .filter-card-label {
+    font-family: 'Cinzel', serif;
+    font-size: 8.5px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    transition: color 0.3s;
+    white-space: nowrap;
+  }
+
+  .filter-card.active .filter-card-label {
     color: var(--gold-light);
   }
 
-  .filter-btn:hover {
-    border-color: rgba(201,151,58,0.5);
+  .filter-card:hover .filter-card-label {
     color: var(--gold-pale);
   }
 
@@ -332,6 +375,35 @@
     transform: translateY(-1px);
     box-shadow: 0 4px 16px rgba(201,151,58,0.3);
   }
+
+  .card-cart-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid var(--border-gold);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .card-cart-btn:hover {
+    border-color: var(--gold-mid);
+    color: var(--gold-light);
+    background: rgba(201,151,58,0.1);
+    transform: translateY(-1px);
+  }
+
+  .card-cart-btn.in-cart {
+    border-color: var(--gold-mid);
+    color: var(--gold-light);
+    background: rgba(201,151,58,0.12);
+  }
+
+  .card-cart-btn svg { width: 16px; height: 16px; }
 
   /* ─── MODAL ─── */
   .modal-overlay {
@@ -1555,8 +1627,6 @@
 
 <!-- FOOTER -->
 <footer>
-  <img src="pleaseme.png" alt="Pleaseme Accessories" class="footer-logo-img">
-  <div class="footer-logo" id="footerLogo">Pleaseme Accessories</div>
   <p class="footer-text" id="footerTagline">Cada pieza, una historia · Oro laminado de alta calidad</p>
   <div id="footerContactInfo" style="margin-top:18px;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;color:var(--text-muted);display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;"></div>
   <button onclick="shareWhatsAppCatalog()" style="margin-top:20px;display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;border:none;padding:11px 22px;border-radius:30px;cursor:pointer;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;box-shadow:0 4px 16px rgba(37,211,102,0.35);transition:transform 0.2s,box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.04)';this.style.boxShadow='0 6px 20px rgba(37,211,102,0.5)'" onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 4px 16px rgba(37,211,102,0.35)'">
@@ -2088,14 +2158,14 @@ function parsePrice(price) {
 
 function cartTotal() {
   return cart.reduce((s, item) => {
-    const p = products.find(x => x.id === item.id);
+    const p = products.find(x => x.id == item.id);
     if (!p) return s;
     return s + parsePrice(p.price) * item.qty;
   }, 0);
 }
 
 function addToCart(id) {
-  const existing = cart.find(i => i.id === id);
+  const existing = cart.find(i => i.id == id);
   if (existing) existing.qty++;
   else cart.push({ id, qty: 1 });
   updateCartUI();
@@ -2104,13 +2174,13 @@ function addToCart(id) {
 }
 
 function removeFromCart(id) {
-  cart = cart.filter(i => i.id !== id);
+  cart = cart.filter(i => i.id != id);
   updateCartUI();
   renderGrid();
 }
 
 function changeQty(id, delta) {
-  const item = cart.find(i => i.id === id);
+  const item = cart.find(i => i.id == id);
   if (!item) return;
   item.qty += delta;
   if (item.qty <= 0) removeFromCart(id);
@@ -2182,7 +2252,7 @@ function renderCartItems() {
   }
 
   container.innerHTML = cart.map(item => {
-    const p = products.find(x => x.id === item.id);
+    const p = products.find(x => x.id == item.id);
     if (!p) return '';
     return `
       <div class="cart-item">
@@ -2195,11 +2265,11 @@ function renderCartItems() {
           <p class="cart-item-price">$${p.price}</p>
         </div>
         <div class="cart-item-controls">
-          <button class="qty-btn" onclick="changeQty(${p.id}, -1)">−</button>
+          <button class="qty-btn" onclick="changeQty('${p.id}', -1)">−</button>
           <span class="qty-num">${item.qty}</span>
-          <button class="qty-btn" onclick="changeQty(${p.id}, 1)">+</button>
+          <button class="qty-btn" onclick="changeQty('${p.id}', 1)">+</button>
         </div>
-        <button class="cart-remove" onclick="removeFromCart(${p.id})" title="Quitar">×</button>
+        <button class="cart-remove" onclick="removeFromCart('${p.id}')" title="Quitar">×</button>
       </div>`;
   }).join('');
 }
@@ -2271,15 +2341,112 @@ function shareWhatsAppCatalog() {
   window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }
 
+// ─── CATEGORY VISUAL MAP ─────────────────────────────────────────────
+const CAT_FILTER_SVG = {
+  todos: (c1, c2) => `<svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="fg_todos" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/></linearGradient></defs>
+    <circle cx="17" cy="17" r="8" stroke="url(#fg_todos)" stroke-width="2.2" fill="rgba(201,151,58,0.08)"/>
+    <circle cx="35" cy="17" r="8" stroke="url(#fg_todos)" stroke-width="2.2" fill="rgba(201,151,58,0.08)"/>
+    <circle cx="17" cy="35" r="8" stroke="url(#fg_todos)" stroke-width="2.2" fill="rgba(201,151,58,0.08)"/>
+    <circle cx="35" cy="35" r="8" stroke="url(#fg_todos)" stroke-width="2.2" fill="rgba(201,151,58,0.08)"/>
+  </svg>`,
+  aretes: (c1, c2) => `<svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="fg_aretes" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/></linearGradient></defs>
+    <circle cx="18" cy="10" r="4" stroke="url(#fg_aretes)" stroke-width="2" fill="none"/>
+    <path d="M18 14 Q18 22 18 25" stroke="url(#fg_aretes)" stroke-width="1.8" fill="none"/>
+    <ellipse cx="18" cy="35" rx="7" ry="10" stroke="url(#fg_aretes)" stroke-width="2" fill="rgba(201,151,58,0.1)"/>
+    <circle cx="18" cy="47" r="2.5" fill="${c2}"/>
+    <circle cx="34" cy="10" r="4" stroke="url(#fg_aretes)" stroke-width="2" fill="none"/>
+    <path d="M34 14 Q34 22 34 25" stroke="url(#fg_aretes)" stroke-width="1.8" fill="none"/>
+    <ellipse cx="34" cy="35" rx="7" ry="10" stroke="url(#fg_aretes)" stroke-width="2" fill="rgba(201,151,58,0.1)"/>
+    <circle cx="34" cy="47" r="2.5" fill="${c2}"/>
+  </svg>`,
+  anillos: (c1, c2) => `<svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="fg_anillos" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${c1}"/><stop offset="50%" stop-color="${c2}"/><stop offset="100%" stop-color="${c1}"/></linearGradient></defs>
+    <ellipse cx="26" cy="32" rx="16" ry="7" stroke="url(#fg_anillos)" stroke-width="3" fill="none"/>
+    <ellipse cx="26" cy="24" rx="16" ry="7" stroke="url(#fg_anillos)" stroke-width="3" fill="none"/>
+    <line x1="10" y1="24" x2="10" y2="32" stroke="url(#fg_anillos)" stroke-width="3"/>
+    <line x1="42" y1="24" x2="42" y2="32" stroke="url(#fg_anillos)" stroke-width="3"/>
+    <polygon points="26,8 29,15 37,15 31,20 33,28 26,23 19,28 21,20 15,15 23,15" fill="${c2}" opacity="0.9"/>
+  </svg>`,
+  dijes: (c1, c2) => `<svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="fg_dijes" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/></linearGradient></defs>
+    <path d="M20 9 Q26 4 32 9" stroke="url(#fg_dijes)" stroke-width="2" fill="none"/>
+    <line x1="26" y1="9" x2="26" y2="17" stroke="url(#fg_dijes)" stroke-width="2"/>
+    <path d="M26 18 L32 26 L36 36 L26 44 L16 36 L20 26 Z" stroke="url(#fg_dijes)" stroke-width="2" fill="rgba(201,151,58,0.12)"/>
+    <circle cx="26" cy="31" r="4" fill="${c2}" opacity="0.9"/>
+  </svg>`,
+  collares: (c1, c2) => `<svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="fg_collares" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/></linearGradient></defs>
+    <path d="M8 14 Q26 36 44 14" stroke="url(#fg_collares)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <circle cx="13" cy="18" r="2" fill="${c2}" opacity="0.8"/>
+    <circle cx="20" cy="26" r="2" fill="${c2}" opacity="0.8"/>
+    <circle cx="26" cy="30" r="3" fill="${c1}"/>
+    <circle cx="32" cy="26" r="2" fill="${c2}" opacity="0.8"/>
+    <circle cx="39" cy="18" r="2" fill="${c2}" opacity="0.8"/>
+    <path d="M24 33 L26 42 L28 33" stroke="url(#fg_collares)" stroke-width="1.5" fill="none"/>
+    <polygon points="26,44 29,48 26,50 23,48" fill="${c2}"/>
+  </svg>`,
+  pulseras: (c1, c2) => `<svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="fg_pulseras" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/></linearGradient></defs>
+    <path d="M10 26 Q26 8 42 26 Q26 44 10 26Z" stroke="url(#fg_pulseras)" stroke-width="3" fill="none"/>
+    <circle cx="26" cy="9" r="3.5" fill="${c2}"/>
+    <circle cx="10" cy="26" r="2.5" fill="${c1}" opacity="0.7"/>
+    <circle cx="42" cy="26" r="2.5" fill="${c1}" opacity="0.7"/>
+    <circle cx="26" cy="43" r="3.5" fill="${c2}"/>
+  </svg>`,
+  tobilleras: (c1, c2) => `<svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="fg_tobilleras" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="${c1}"/><stop offset="50%" stop-color="${c2}"/><stop offset="100%" stop-color="${c1}"/></linearGradient></defs>
+    <path d="M6 22 Q26 8 46 22" stroke="url(#fg_tobilleras)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <circle cx="10" cy="18" r="2" fill="${c2}" opacity="0.7"/>
+    <circle cx="19" cy="12" r="2" fill="${c2}" opacity="0.8"/>
+    <circle cx="26" cy="10" r="3" fill="${c1}"/>
+    <circle cx="33" cy="12" r="2" fill="${c2}" opacity="0.8"/>
+    <circle cx="42" cy="18" r="2" fill="${c2}" opacity="0.7"/>
+    <line x1="26" y1="13" x2="26" y2="26" stroke="url(#fg_tobilleras)" stroke-width="1.5"/>
+    <path d="M20 26 Q26 34 32 26" stroke="url(#fg_tobilleras)" stroke-width="1.5" fill="none"/>
+    <circle cx="26" cy="36" r="2.5" fill="${c2}"/>
+  </svg>`,
+  sets: (c1, c2) => `<svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="fg_sets" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/></linearGradient></defs>
+    <ellipse cx="26" cy="30" rx="12" ry="5" stroke="url(#fg_sets)" stroke-width="2.2" fill="none"/>
+    <ellipse cx="26" cy="24" rx="12" ry="5" stroke="url(#fg_sets)" stroke-width="2.2" fill="none"/>
+    <line x1="14" y1="24" x2="14" y2="30" stroke="url(#fg_sets)" stroke-width="2.2"/>
+    <line x1="38" y1="24" x2="38" y2="30" stroke="url(#fg_sets)" stroke-width="2.2"/>
+    <circle cx="26" cy="12" r="3" fill="${c2}" opacity="0.9"/>
+    <circle cx="38" cy="18" r="2" fill="${c2}" opacity="0.7"/>
+    <circle cx="14" cy="18" r="2" fill="${c2}" opacity="0.7"/>
+  </svg>`,
+  coleccion: (c1, c2) => `<svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="fg_col" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/></linearGradient></defs>
+    <polygon points="26,6 30,18 43,18 33,26 37,38 26,30 15,38 19,26 9,18 22,18" stroke="url(#fg_col)" stroke-width="1.5" fill="rgba(201,151,58,0.1)"/>
+    <circle cx="26" cy="26" r="5" fill="${c2}" opacity="0.85"/>
+  </svg>`,
+  temporada: (c1, c2) => `<svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="fg_temp" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/></linearGradient></defs>
+    <circle cx="26" cy="26" r="14" stroke="url(#fg_temp)" stroke-width="2" fill="none"/>
+    <path d="M26 12 L26 8" stroke="url(#fg_temp)" stroke-width="2" stroke-linecap="round"/>
+    <path d="M26 44 L26 40" stroke="url(#fg_temp)" stroke-width="2" stroke-linecap="round"/>
+    <path d="M12 26 L8 26" stroke="url(#fg_temp)" stroke-width="2" stroke-linecap="round"/>
+    <path d="M44 26 L40 26" stroke="url(#fg_temp)" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="26" cy="26" r="4" fill="${c2}" opacity="0.9"/>
+    <path d="M26 22 L26 26 L30 28" stroke="rgba(20,16,12,0.7)" stroke-width="1.5" stroke-linecap="round"/>
+  </svg>`
+};
+
 // ─── RENDER FILTERS ──────────────────────────────────────────────────
 function renderFilters() {
+  const c1 = '#C9973A', c2 = '#E8C96D';
   const wrap = document.getElementById('filtersWrap');
-  wrap.innerHTML = categories.map(c => `
-    <button class="filter-btn ${c.key === activeCategory ? 'active' : ''}"
-            onclick="setFilter('${c.key}')">
-      ${c.label}
-    </button>
-  `).join('');
+  wrap.innerHTML = categories.map(c => {
+    const svgFn = CAT_FILTER_SVG[c.key] || CAT_FILTER_SVG['todos'];
+    return `
+    <div class="filter-card ${c.key === activeCategory ? 'active' : ''}"
+         onclick="setFilter('${c.key}')">
+      <div class="filter-card-img">${svgFn(c1, c2)}</div>
+      <span class="filter-card-label">${c.label}</span>
+    </div>`;
+  }).join('');
 }
 
 function setFilter(key) {
@@ -2310,7 +2477,7 @@ function renderGrid() {
 
   empty.classList.remove('visible');
   grid.innerHTML = filtered.map((p, i) => {
-    const inCart = cart.some(c => c.id === p.id);
+    const inCart = cart.some(c => c.id == p.id);
     return `
     <div class="product-card card-enter ${inCart ? 'in-cart' : ''}" data-product-id="${p.id}" style="animation-delay:${i * 0.08}s" onclick="openModal('${p.id}')">
       <div class="card-visual" ${p.photo ? `onclick="event.stopPropagation(); openLightbox('${p.photo}')" style="cursor:zoom-in"` : ''}>
@@ -2327,7 +2494,15 @@ function renderGrid() {
         <p class="card-desc">${p.desc}</p>
         <div class="card-footer">
           <div class="card-price"><span>$</span>${p.price}</div>
-          <button class="card-cta" onclick="event.stopPropagation(); openModal('${p.id}')">Ver detalle</button>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button class="card-cta" onclick="event.stopPropagation(); openModal('${p.id}')">Ver detalle</button>
+            <button class="card-cart-btn ${inCart ? 'in-cart' : ''}" title="${inCart ? 'En tu selección' : 'Agregar al carrito'}" onclick="event.stopPropagation(); addToCart('${p.id}')">
+              ${inCart
+                ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
+                : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>`
+              }
+            </button>
+          </div>
         </div>
       </div>
     </div>`;
