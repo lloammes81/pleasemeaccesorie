@@ -2039,7 +2039,6 @@ const defaultProducts = [
 
 // ─── CATEGORIES ──────────────────────────────────────────────────────
 const categories = [
-  { key: "todos",      label: "Todos"      },
   { key: "aretes",     label: "Aretes"     },
   { key: "anillos",    label: "Anillos"    },
   { key: "dijes",      label: "Dijes"      },
@@ -2144,7 +2143,7 @@ function getWhatsAppNumber() {
   return appContact.whatsapp || '573001234567';
 }
 
-let activeCategory = "todos";
+let activeCategory = "aretes";
 let currentModalId = null;
 
 // ─── CART STATE ──────────────────────────────────────────────────────
@@ -2456,7 +2455,7 @@ function setFilter(key) {
 }
 
 function goBackToAll() {
-  setFilter('todos');
+  setFilter('aretes');
   const filtersWrap = document.getElementById('filtersWrap');
   if (filtersWrap) filtersWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -2465,9 +2464,7 @@ function goBackToAll() {
 function renderGrid() {
   const grid = document.getElementById('catalogGrid');
   const empty = document.getElementById('emptyState');
-  const filtered = activeCategory === 'todos'
-    ? products
-    : products.filter(p => p.category === activeCategory);
+  const filtered = products.filter(p => p.category === activeCategory);
 
   if (filtered.length === 0) {
     grid.innerHTML = '';
