@@ -2477,7 +2477,7 @@ function renderGrid() {
 
   empty.classList.remove('visible');
   grid.innerHTML = filtered.map((p, i) => {
-    const inCart = cart.some(c => c.id === p.id);
+    const inCart = cart.some(c => c.id == p.id);
     return `
     <div class="product-card card-enter ${inCart ? 'in-cart' : ''}" data-product-id="${p.id}" style="animation-delay:${i * 0.08}s" onclick="openModal('${p.id}')">
       <div class="card-visual" ${p.photo ? `onclick="event.stopPropagation(); openLightbox('${p.photo}')" style="cursor:zoom-in"` : ''}>
