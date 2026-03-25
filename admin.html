@@ -1765,9 +1765,9 @@ textarea { resize: vertical; min-height: 80px; }
   </div>
   <div class="drawer-footer">
     <button class="btn btn-outline" onclick="closeDrawer()">Cancelar</button>
-    <button class="btn btn-primary" onclick="saveProduct()" style="flex:1">
+    <button class="btn btn-primary" id="drawerSaveBtn" onclick="saveProduct()" style="flex:1">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-      Guardar prenda
+      <span id="drawerSaveTxt">Guardar prenda</span>
     </button>
   </div>
 </div>
@@ -2284,6 +2284,8 @@ function openDrawer(id) {
   document.getElementById('photoPreview').style.display = 'none';
   document.getElementById('photoInput').value = '';
 
+  document.getElementById('drawerSaveTxt').textContent = id ? 'Actualizar prenda' : 'Guardar prenda';
+
   if (id) {
     const p = products.find(x => x.id === id);
     document.getElementById('drawerTitle').textContent = 'Editar prenda';
@@ -2464,18 +2466,35 @@ async function saveProduct() {
   if (!category) return showToast('Selecciona una categoría');
   if (!price)    return showToast('El precio es requerido');
 
+  const btn = document.getElementById('drawerSaveBtn');
+  if (btn) { btn.disabled = true; btn.querySelector('#drawerSaveTxt').textContent = 'Procesando...'; }
+
   let finalPhotoUrl = null;
   if (photoData) {
     if (photoData.startsWith('data:')) {
+      // Comprimir siempre antes de guardar (nueva o existente)
+      const beforeKB = Math.round(photoData.length * 0.75 / 1024);
+      const compressed = await resizeAndCompressPhoto(photoData);
+      const afterKB  = Math.round(compressed.length * 0.75 / 1024);
+      showToast(`✦ Foto comprimida: ${beforeKB}KB → ${afterKB}KB`);
+
+      const wmCfg = getWatermarkConfig();
+      const withWm = wmCfg.active ? await applyWatermark(compressed) : compressed;
+
       try {
-        finalPhotoUrl = await uploadPhotoToCloudinary(photoData);
-        showToast('✦ Foto subida a Cloudinary');
+        finalPhotoUrl = await uploadPhotoToCloudinary(withWm);
       } catch (e) {
-        return showToast(e.message);
+        // Si falla Cloudinary, guarda base64 directo en Supabase
+        finalPhotoUrl = withWm;
       }
     } else {
-      finalPhotoUrl = photoData; // ya es URL (foto existente)
+      finalPhotoUrl = photoData; // ya es URL externa
     }
+  }
+
+  if (btn) {
+    btn.disabled = false;
+    btn.querySelector('#drawerSaveTxt').textContent = editingId ? 'Actualizar prenda' : 'Guardar prenda';
   }
 
   const data = {
