@@ -774,7 +774,7 @@
     max-width: 100vw;
     background: var(--bg-card2);
     border-left: 1px solid var(--border-gold);
-    z-index: 600;
+    z-index: 1100;
     display: flex;
     flex-direction: column;
     transform: translateX(100%);
@@ -789,7 +789,7 @@
     inset: 0;
     background: rgba(0,0,0,0.7);
     backdrop-filter: blur(6px);
-    z-index: 599;
+    z-index: 1099;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.4s;
@@ -1847,7 +1847,7 @@
   .cat-product:hover { border-color: rgba(201,151,58,0.5); transform: translateY(-2px); }
 
   .cat-product-img {
-    width: 100%; height: 160px;
+    width: 100%; height: 140px;
     overflow: hidden; position: relative;
     background: radial-gradient(ellipse at center, #2a220f 0%, #0f0e0b 100%);
     flex-shrink: 0; cursor: pointer;
@@ -3262,6 +3262,105 @@ renderInfoSections();
     };
     setTimeout(() => bc.postMessage('ping'), 200);
   } catch(e) {}
+})();
+
+// ─── DRAGGABLE CART FAB ───────────────────────────────────────────────
+(function() {
+  const fab = document.getElementById('cartFab');
+  if (!fab) return;
+
+  // Restore saved position
+  try {
+    const saved = JSON.parse(localStorage.getItem('pm_fab_pos') || 'null');
+    if (saved) {
+      fab.style.right  = 'auto';
+      fab.style.bottom = 'auto';
+      fab.style.left   = saved.x + 'px';
+      fab.style.top    = saved.y + 'px';
+    }
+  } catch(e) {}
+
+  let dragging = false, startX, startY, origLeft, origTop;
+
+  function getPos() {
+    const r = fab.getBoundingClientRect();
+    return { x: r.left, y: r.top };
+  }
+
+  function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
+
+  function startDrag(cx, cy) {
+    dragging = false; // will become true on move
+    const p  = getPos();
+    origLeft = p.x;
+    origTop  = p.y;
+    startX   = cx;
+    startY   = cy;
+  }
+
+  function moveDrag(cx, cy) {
+    const dx = cx - startX;
+    const dy = cy - startY;
+    if (!dragging && Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
+    if (!dragging) {
+      dragging = true;
+      fab.style.transition = 'none'; // disable animation while dragging
+    }
+    fab.style.right  = 'auto';
+    fab.style.bottom = 'auto';
+    const newLeft = clamp(origLeft + dx, 0, window.innerWidth  - fab.offsetWidth);
+    const newTop  = clamp(origTop  + dy, 0, window.innerHeight - fab.offsetHeight);
+    fab.style.left = newLeft + 'px';
+    fab.style.top  = newTop  + 'px';
+  }
+
+  function endDrag() {
+    if (!dragging) return;
+    dragging = false;
+    fab.style.transition = ''; // restore transition
+    try {
+      localStorage.setItem('pm_fab_pos', JSON.stringify({
+        x: parseFloat(fab.style.left),
+        y: parseFloat(fab.style.top)
+      }));
+    } catch(e) {}
+  }
+
+  // Touch events
+  fab.addEventListener('touchstart', function(e) {
+    const t = e.touches[0];
+    startDrag(t.clientX, t.clientY);
+  }, { passive: true });
+
+  fab.addEventListener('touchmove', function(e) {
+    const t = e.touches[0];
+    moveDrag(t.clientX, t.clientY);
+    if (dragging) e.preventDefault();
+  }, { passive: false });
+
+  fab.addEventListener('touchend', function(e) {
+    if (dragging) { endDrag(); e.preventDefault(); }
+  });
+
+  // Mouse events
+  fab.addEventListener('mousedown', function(e) {
+    if (e.button !== 0) return;
+    startDrag(e.clientX, e.clientY);
+    const onMove = function(e) { moveDrag(e.clientX, e.clientY); };
+    const onUp   = function(e) {
+      endDrag();
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup',   onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup',   onUp);
+    e.preventDefault();
+  });
+
+  // Prevent click when drag occurred
+  fab.addEventListener('click', function(e) {
+    if (dragging) { e.stopImmediatePropagation(); dragging = false; }
+  }, true);
 })();
 
 </script>
