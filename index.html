@@ -379,7 +379,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 280px;
+    min-height: 380px;
     overflow: hidden;
   }
 
@@ -941,6 +941,115 @@
   }
 
   .cart-remove:hover { color: #e07070; }
+
+  /* ─── CLEAR CART BTN ─── */
+  .cart-clear-btn {
+    font-family: 'Cinzel', serif;
+    font-size: 7.5px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    background: none;
+    border: 1px solid rgba(220,80,80,0.35);
+    color: rgba(220,100,100,0.7);
+    padding: 4px 10px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s;
+    display: none;
+  }
+  .cart-clear-btn.visible { display: block; }
+  .cart-clear-btn:hover { border-color: #e07070; color: #e07070; background: rgba(220,80,80,0.08); }
+
+  /* ─── CART ITEM CLICKABLE ─── */
+  .cart-item-left {
+    display: flex; align-items: center; gap: 14px;
+    flex: 1; min-width: 0; cursor: pointer;
+    padding: 2px 0;
+  }
+  .cart-item-left:hover .cart-item-name { color: var(--gold-light); }
+
+  /* ─── CART DETAIL VIEW ─── */
+  .cart-detail {
+    position: absolute;
+    inset: 0;
+    background: var(--bg-card2);
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.35s cubic-bezier(0.77,0,0.18,1);
+    overflow: hidden;
+  }
+  .cart-detail.open { transform: translateX(0); }
+
+  .cart-detail-head {
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid var(--border-gold);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .cart-detail-back {
+    background: none; border: none;
+    color: var(--gold-mid); cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'Cinzel', serif; font-size: 8px;
+    letter-spacing: 2px; text-transform: uppercase;
+    padding: 0; transition: color 0.2s;
+  }
+  .cart-detail-back:hover { color: var(--gold-light); }
+
+  .cart-detail-img {
+    width: 100%; height: 260px; flex-shrink: 0;
+    background: radial-gradient(ellipse at center, #2a220f 0%, #0f0e0b 100%);
+    display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .cart-detail-img img {
+    width: 100%; height: 100%; object-fit: contain; display: block;
+  }
+
+  .cart-detail-body {
+    flex: 1; overflow-y: auto; padding: 22px 22px 28px;
+  }
+  .cart-detail-cat {
+    font-family: 'Cinzel', serif; font-size: 8px;
+    letter-spacing: 3px; color: var(--gold-mid);
+    text-transform: uppercase; margin-bottom: 8px;
+  }
+  .cart-detail-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 26px; font-weight: 300;
+    color: var(--text-cream); line-height: 1.1; margin-bottom: 5px;
+  }
+  .cart-detail-subtitle {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic; font-size: 14px;
+    color: var(--gold-mid); margin-bottom: 14px;
+  }
+  .cart-detail-divider {
+    height: 1px;
+    background: linear-gradient(90deg, var(--gold-mid), transparent);
+    margin-bottom: 14px;
+  }
+  .cart-detail-desc {
+    font-size: 12px; color: var(--text-muted);
+    line-height: 1.7; margin-bottom: 18px;
+  }
+  .cart-detail-rows { margin-bottom: 20px; }
+  .cart-detail-row {
+    display: flex; justify-content: space-between;
+    padding: 7px 0; border-bottom: 1px solid rgba(201,151,58,0.1);
+    font-size: 11px;
+  }
+  .cart-detail-row .lbl { color: var(--text-muted); letter-spacing: 1px; }
+  .cart-detail-row .val { color: var(--text-cream); }
+  .cart-detail-price {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 30px; color: var(--gold-light);
+  }
+  .cart-detail-price .currency { font-size: 16px; margin-right: 2px; }
 
   /* ─── CART FOOTER ─── */
   .cart-footer {
@@ -2016,8 +2125,30 @@
 
 <!-- CART PANEL -->
 <div class="cart-panel" id="cartPanel">
+
+  <!-- Vista detalle de producto -->
+  <div class="cart-detail" id="cartDetail">
+    <div class="cart-detail-head">
+      <button class="cart-detail-back" onclick="hideCartDetail()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Volver al carrito
+      </button>
+    </div>
+    <div class="cart-detail-img" id="cartDetailImg"></div>
+    <div class="cart-detail-body">
+      <p class="cart-detail-cat" id="cartDetailCat"></p>
+      <h2 class="cart-detail-name" id="cartDetailName"></h2>
+      <p class="cart-detail-subtitle" id="cartDetailSubtitle"></p>
+      <div class="cart-detail-divider"></div>
+      <p class="cart-detail-desc" id="cartDetailDesc"></p>
+      <div class="cart-detail-rows" id="cartDetailRows"></div>
+      <div class="cart-detail-price" id="cartDetailPrice"></div>
+    </div>
+  </div>
+
   <div class="cart-header">
     <span class="cart-title">Mi Selección</span>
+    <button class="cart-clear-btn" id="cartClearBtn" onclick="clearCart()">Limpiar</button>
     <button class="cart-close-btn" onclick="closeCart()">×</button>
   </div>
   <div class="cart-items" id="cartItems"></div>
@@ -2552,6 +2683,8 @@ function updateCartUI() {
   }
 
   document.getElementById('whatsappBtn').disabled = count === 0;
+  const clearBtn = document.getElementById('cartClearBtn');
+  if (clearBtn) clearBtn.classList.toggle('visible', count > 0);
   renderCartItems();
   checkPopup();
   // Update modal button if open
@@ -2576,15 +2709,18 @@ function renderCartItems() {
 
   container.innerHTML = cart.map(item => {
     const p = products.find(x => String(x.id) === String(item.id));
+    const thumb = p.photo
+      ? `<img src="${p.photo}" alt="${p.name}" style="width:100%;height:100%;object-fit:contain;display:block;">`
+      : productIconHTML(p);
     return `
       <div class="cart-item">
-        <div class="cart-item-icon">
-          ${productIconHTML(p)}
-        </div>
-        <div class="cart-item-info">
-          <p class="cart-item-cat">${p.categoryLabel}</p>
-          <p class="cart-item-name">${p.name}</p>
-          <p class="cart-item-price">$${p.price}</p>
+        <div class="cart-item-left" onclick="showCartDetail('${p.id}')">
+          <div class="cart-item-icon">${thumb}</div>
+          <div class="cart-item-info">
+            <p class="cart-item-cat">${p.categoryLabel}</p>
+            <p class="cart-item-name">${p.name}</p>
+            <p class="cart-item-price">$${p.price}</p>
+          </div>
         </div>
         <div class="cart-item-controls">
           <button class="qty-btn" onclick="changeQty('${p.id}', -1)">−</button>
@@ -2594,6 +2730,37 @@ function renderCartItems() {
         <button class="cart-remove" onclick="removeFromCart('${p.id}')" title="Quitar">×</button>
       </div>`;
   }).join('');
+}
+
+// ─── CART DETAIL ──────────────────────────────────────────────────────
+function showCartDetail(id) {
+  const p = products.find(x => String(x.id) === String(id));
+  if (!p) return;
+  document.getElementById('cartDetailImg').innerHTML = p.photo
+    ? `<img src="${p.photo}" alt="${p.name}">`
+    : `<div style="filter:drop-shadow(0 8px 24px rgba(201,151,58,0.4))">${productIconHTML(p)}</div>`;
+  document.getElementById('cartDetailCat').textContent = p.categoryLabel;
+  document.getElementById('cartDetailName').textContent = p.name;
+  document.getElementById('cartDetailSubtitle').textContent = p.subtitle || '';
+  document.getElementById('cartDetailDesc').textContent = p.desc || '';
+  document.getElementById('cartDetailRows').innerHTML = `
+    <div class="cart-detail-row"><span class="lbl">Material</span><span class="val">${p.material || '—'}</span></div>
+    <div class="cart-detail-row"><span class="lbl">Medida</span><span class="val">${p.medida || '—'}</span></div>
+    <div class="cart-detail-row"><span class="lbl">Peso</span><span class="val">${p.peso || '—'}</span></div>`;
+  document.getElementById('cartDetailPrice').innerHTML = `<span class="currency">$</span>${p.price}`;
+  document.getElementById('cartDetail').classList.add('open');
+}
+
+function hideCartDetail() {
+  document.getElementById('cartDetail').classList.remove('open');
+}
+
+// ─── CLEAR CART ───────────────────────────────────────────────────────
+function clearCart() {
+  if (cart.length === 0) return;
+  cart = [];
+  updateCartUI();
+  renderGrid();
 }
 
 // ─── CATEGORY PANEL ──────────────────────────────────────────────────
@@ -2725,9 +2892,13 @@ function sendWhatsApp() {
     ? waContact.wa_msg.trim() + '\n\n'
     : '✨ *Hola Pleaseme!* Quiero hacer un pedido:\n\n';
 
-  cart.forEach(item => {
+  cart.forEach((item, idx) => {
     const p = products.find(x => String(x.id) === String(item.id));
-    msg += `• *${p.name}* (${p.categoryLabel}) × ${item.qty} — $${p.price} c/u\n`;
+    msg += `\n${idx + 1}. *${p.name}* (${p.categoryLabel})\n`;
+    msg += `   Cantidad: ${item.qty}  ·  Precio: $${p.price} c/u\n`;
+    if (p.photo && p.photo.startsWith('http')) {
+      msg += `   📸 ${p.photo}\n`;
+    }
   });
   const _raw = cartTotal();
   const ds = getDiscountSettings();
@@ -3057,6 +3228,14 @@ function closeModal() {
   if (!document.getElementById('cartPanel').classList.contains('open')) {
     document.body.style.overflow = '';
   }
+  // Bloquear catOverlay temporalmente para evitar "ghost tap" en móvil:
+  // el navegador dispara un click tardío (~300ms) en el mismo punto de toque,
+  // que sin este bloqueo caería sobre el catOverlay y cerraría el panel.
+  const catOverlay = document.getElementById('catOverlay');
+  if (catOverlay) {
+    catOverlay.style.pointerEvents = 'none';
+    setTimeout(() => { catOverlay.style.pointerEvents = ''; }, 450);
+  }
 }
 
 document.getElementById('modalClose').addEventListener('click', closeModal);
@@ -3064,6 +3243,40 @@ document.getElementById('modalOverlay').addEventListener('click', e => {
   if (e.target === document.getElementById('modalOverlay')) closeModal();
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeCart(); } });
+
+// ─── SWIPE PARA CERRAR MODAL ──────────────────────────────────────────
+(function() {
+  const modal = document.getElementById('modal');
+  let _sy = 0, _sx = 0, _dragging = false;
+
+  modal.addEventListener('touchstart', e => {
+    _sy = e.touches[0].clientY;
+    _sx = e.touches[0].clientX;
+    _dragging = true;
+    modal.style.transition = 'none';
+  }, { passive: true });
+
+  modal.addEventListener('touchmove', e => {
+    if (!_dragging) return;
+    const dy = e.touches[0].clientY - _sy;
+    const dx = Math.abs(e.touches[0].clientX - _sx);
+    if (Math.abs(dy) > dx) {
+      modal.style.transform = `translateY(${dy * 0.4}px)`;
+    }
+  }, { passive: true });
+
+  modal.addEventListener('touchend', e => {
+    if (!_dragging) return;
+    _dragging = false;
+    const dy = e.changedTouches[0].clientY - _sy;
+    const dx = Math.abs(e.changedTouches[0].clientX - _sx);
+    modal.style.transition = '';
+    modal.style.transform = '';
+    if (Math.abs(dy) > 80 && Math.abs(dy) > dx) {
+      closeModal();
+    }
+  }, { passive: true });
+})();
 
 
 // ─── POPUP DESCUENTO MAYORISTA ────────────────────────────────────────
