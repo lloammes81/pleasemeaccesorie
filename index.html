@@ -618,19 +618,8 @@
     to { transform: rotate(360deg); }
   }
 
-  /* ─── PAGE LOADER (pantalla completa) ─── */
-  #pageLoader {
-    position: fixed; inset: 0;
-    background: var(--bg-dark);
-    z-index: 9998;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 24px;
-    transition: opacity 0.9s ease, visibility 0.9s ease;
-  }
-  #pageLoader.hidden {
-    opacity: 0; visibility: hidden; pointer-events: none;
-  }
+  /* ─── PAGE LOADER (desactivado) ─── */
+  #pageLoader { display: none !important; }
 
   .pl-diamonds {
     display: flex; gap: 14px; align-items: center; margin-bottom: 8px;
@@ -2744,20 +2733,12 @@ let products = [];
 fetchProductsFromSupabase()
   .then(data => {
     products = data.filter(p => p.active !== false);
-    setTimeout(() => document.getElementById('pageLoader').classList.add('hidden'), 100);
     renderFilters();
     renderGrid();
     loadPhotosLazy();
   })
   .catch(err => {
     console.error('Error cargando productos:', err);
-    const loader = document.getElementById('pageLoader');
-    loader.innerHTML = `
-      <div class="pl-diamonds"><div class="pl-diamond" style="background:#c0392b"></div></div>
-      <p style="font-family:monospace;font-size:11px;color:#e74c3c;text-align:center;padding:0 20px;max-width:360px;word-break:break-all;">
-        ${err.message}
-      </p>
-      <button onclick="location.reload()" style="font-family:'Cinzel',serif;font-size:8px;letter-spacing:2px;padding:10px 20px;background:transparent;border:1px solid rgba(201,151,58,0.4);color:rgba(201,151,58,0.7);cursor:pointer;text-transform:uppercase;">Recargar</button>`;
   });
 
 // ─── WHATSAPP NUMBER ─────────────────────────────────────────────────
@@ -2985,6 +2966,7 @@ async function openCategoryPanel(category) {
   document.getElementById('catOverlay').classList.add('open');
   document.getElementById('catPanel').classList.add('open');
   document.body.style.overflow = 'hidden';
+  mostrarWelcome();
 
   // Mostrar tarjetas inmediatamente (con íconos si no hay foto aún)
   document.getElementById('catPanelBody').innerHTML = catProducts.length
@@ -3056,68 +3038,111 @@ function closeCart() {
 }
 
 // ─── WHATSAPP ────────────────────────────────────────────────────────
-function sendWhatsApp() {
-  if (cart.length === 0) return;
+function buildOrderMsg() {
   const note = document.getElementById('cartNote').value.trim();
-
   let waContact = {};
   try { waContact = JSON.parse(localStorage.getItem('pm_contact') || '{}'); } catch(e) {}
   let msg = (waContact.wa_msg && waContact.wa_msg.trim())
-    ? waContact.wa_msg.trim() + '\n\n'
-    : '✨ *Hola Pleaseme!* Quiero hacer un pedido:\n\n';
+    ? waContact.wa_msg.trim() + '
 
+'
+    : '✨ *Hola Pleaseme!* Quiero hacer un pedido:
+
+';
   cart.forEach((item, idx) => {
     const p = products.find(x => String(x.id) === String(item.id));
-    msg += `\n${idx + 1}. *${p.name}* (${p.categoryLabel})\n`;
-    msg += `   Cantidad: ${item.qty}  ·  Precio: $${p.price} c/u\n`;
-    if (p.photo && p.photo.startsWith('http')) {
-      msg += `   📸 ${p.photo}\n`;
-    }
+    msg += `
+${idx + 1}. *${p.name}* (${p.categoryLabel})
+`;
+    msg += `   Cantidad: ${item.qty}  ·  Precio: $${p.price} c/u
+`;
   });
   const _raw = cartTotal();
   const ds = getDiscountSettings();
   const _disc = _raw >= ds.min;
   const _final = _disc ? Math.round(_raw * (1 - ds.pct / 100)) : _raw;
   if (_disc) {
-    msg += `\n💰 *Subtotal:* $${_raw.toLocaleString('es-CO')}`;
-    msg += `\n🎉 *Descuento mayorista ${ds.pct}%:* -$${(_raw - _final).toLocaleString('es-CO')}`;
-    msg += `\n✅ *Total con descuento:* $${_final.toLocaleString('es-CO')}`;
+    msg += `
+💰 *Subtotal:* $${_raw.toLocaleString('es-CO')}`;
+    msg += `
+🎉 *Descuento mayorista ${ds.pct}%:* -$${(_raw - _final).toLocaleString('es-CO')}`;
+    msg += `
+✅ *Total con descuento:* $${_final.toLocaleString('es-CO')}`;
   } else {
-    msg += `\n💰 *Total estimado:* $${_final.toLocaleString('es-CO')}`;
+    msg += `
+💰 *Total estimado:* $${_final.toLocaleString('es-CO')}`;
   }
-  if (note) msg += `\n\n📝 *Nota:* ${note}`;
-  msg += '\n\n_Catálogo Oro Laminado 14k — Pleaseme Accessories_';
+  if (note) msg += `
 
-  const url = `https://wa.me/${getWhatsAppNumber()}?text=${encodeURIComponent(msg)}`;
-  window.open(url, '_blank');
+📝 *Nota:* ${note}`;
+  msg += '
 
-  // Mostrar modal y generar imagen del pedido
-  setTimeout(() => {
-    // Resetear modal
-    document.getElementById('tyImgWrap').innerHTML =
-      '<p class="ty-order-loading" id="tyImgLoading">Generando resumen visual…</p>';
-    document.getElementById('tyShareBtn').classList.remove('visible');
-    document.getElementById('tyOverlay').classList.add('open');
-    document.body.style.overflow = 'hidden';
-    // Generar imagen del pedido en segundo plano
-    buildOrderCanvas().then(canvas => {
-      const wrap = document.getElementById('tyImgWrap');
-      if (!wrap) return;
-      const imgEl = document.createElement('img');
-      imgEl.src = canvas.toDataURL('image/jpeg', 0.88);
-      imgEl.style.cssText = 'width:100%;display:block;';
-      wrap.innerHTML = '';
-      wrap.appendChild(imgEl);
-      // Guardar para compartir
-      window._orderCanvas = canvas;
-      document.getElementById('tyShareBtn').classList.add('visible');
-    }).catch(() => {
-      const wrap = document.getElementById('tyImgWrap');
-      if (wrap) wrap.innerHTML = '';
-    });
-  }, 600);
+_Catálogo Oro Laminado 14k — Pleaseme Accessories_';
+  return msg;
 }
 
+function limpiarCarritoPostPedido() {
+  cart = [];
+  updateCartUI();
+  renderGrid();
+  closeCart();
+}
+
+function mostrarModalGracias(canvas) {
+  const wrap = document.getElementById('tyImgWrap');
+  if (canvas && wrap) {
+    const imgEl = document.createElement('img');
+    imgEl.src = canvas.toDataURL('image/jpeg', 0.88);
+    imgEl.style.cssText = 'width:100%;display:block;';
+    wrap.innerHTML = '';
+    wrap.appendChild(imgEl);
+  } else if (wrap) {
+    wrap.innerHTML = '';
+  }
+  // Ocultar botón compartir (ya se envió automáticamente)
+  const sb = document.getElementById('tyShareBtn');
+  if (sb) sb.classList.remove('visible');
+  document.getElementById('tyOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+async function sendWhatsApp() {
+  if (cart.length === 0) return;
+
+  const btn = document.getElementById('whatsappBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Preparando...'; }
+
+  const msg = buildOrderMsg();
+  let canvas = null;
+  try { canvas = await buildOrderCanvas(); } catch(e) {}
+
+  // Restaurar botón
+  if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> Enviar por WhatsApp'; }
+
+  // ── Intentar Web Share con imagen (móvil moderno) ──
+  if (canvas) {
+    try {
+      const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.88));
+      const file = new File([blob], 'pedido-pleaseme.jpg', { type: 'image/jpeg' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], text: msg, title: 'Pedido Pleaseme Accessories' });
+        // Éxito: limpiar carrito y mostrar gracias
+        limpiarCarritoPostPedido();
+        mostrarModalGracias(canvas);
+        return;
+      }
+    } catch(e) {
+      if (e.name === 'AbortError') return; // usuario canceló
+      // Otro error: continuar con fallback
+    }
+  }
+
+  // ── Fallback: abrir WhatsApp con texto ──
+  const url = `https://wa.me/${getWhatsAppNumber()}?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+  limpiarCarritoPostPedido();
+  setTimeout(() => mostrarModalGracias(canvas), 700);
+}
 function closeTyModal() {
   document.getElementById('tyOverlay').classList.remove('open');
   document.body.style.overflow = '';
@@ -3803,17 +3828,26 @@ loadContactInfo();
 })();
 
 // ─── WELCOME POPUP ────────────────────────────────────────────────────
-let _welcomeClosed = false;
-function cerrarWelcome() {
-  if (_welcomeClosed) return;
-  _welcomeClosed = true;
+let _welcomeTimer = null;
+function mostrarWelcome() {
   const overlay = document.getElementById('welcomeOverlay');
   if (!overlay) return;
-  overlay.style.animation = 'wPopOut 0.4s ease forwards';
-  setTimeout(() => { if (overlay.parentNode) overlay.remove(); }, 420);
+  overlay.style.display = 'flex';
+  overlay.style.animation = '';
+  void overlay.offsetWidth; // fuerza reflow para reiniciar animación
+  overlay.style.animation = 'wPopBg 0.5s ease forwards';
+  const box = overlay.querySelector('#welcomeBox');
+  if (box) { box.style.animation = ''; void box.offsetWidth; box.style.animation = 'wPopBox 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.15s both'; }
+  clearTimeout(_welcomeTimer);
+  _welcomeTimer = setTimeout(cerrarWelcome, 10000);
 }
-// Auto-close after 10s
-setTimeout(cerrarWelcome, 10000);
+function cerrarWelcome() {
+  clearTimeout(_welcomeTimer);
+  const overlay = document.getElementById('welcomeOverlay');
+  if (!overlay || overlay.style.display === 'none') return;
+  overlay.style.animation = 'wPopOut 0.4s ease forwards';
+  setTimeout(() => { overlay.style.display = 'none'; overlay.style.animation = ''; }, 420);
+}
 
 // ─── CATALOG INFO (title, subtitle, tagline) ──────────────────────────
 function loadCatalogInfo() {
@@ -3982,7 +4016,7 @@ renderInfoSections();
 
 
 <!-- WELCOME POPUP -->
-<div id="welcomeOverlay">
+<div id="welcomeOverlay" style="display:none">
   <div id="welcomeBox">
     <span class="wp-sparkle-l">✦</span>
     <span class="wp-crown">👑</span>
