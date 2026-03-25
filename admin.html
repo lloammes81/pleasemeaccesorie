@@ -858,7 +858,6 @@ textarea { resize: vertical; min-height: 80px; }
     border-left: none;
     border-radius: 0;
     transform: translateY(110%);
-    overflow: hidden;
   }
   .drawer.open { transform: translateY(0); }
   .drawer-head {
@@ -866,26 +865,20 @@ textarea { resize: vertical; min-height: 80px; }
     flex-shrink: 0;
     background: var(--surface);
     border-bottom: 1px solid var(--border);
-    z-index: 2;
   }
-  /* El body deja espacio al fondo para los botones fijos */
   .drawer-body {
-    padding: 16px 18px 90px;
+    padding: 16px 18px 100px;
     gap: 16px;
   }
-  /* Footer anclado absolutamente al fondo del drawer */
   .drawer-footer {
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
+    flex-shrink: 0;
     padding: 12px 16px;
     border-top: 1px solid var(--border);
     background: var(--surface);
-    display: none;
     gap: 10px;
-    z-index: 10;
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+    display: none;
   }
-  .drawer.open .drawer-footer {
+  .drawer-footer.mob-visible {
     display: flex;
   }
 }
@@ -983,6 +976,51 @@ textarea { resize: vertical; min-height: 80px; }
   padding: 0 4px;
   box-shadow: 0 -4px 24px rgba(0,0,0,0.4);
 }
+
+/* ─── MENÚ EMERGENTE ACCIONES DRAWER (MÓVIL) ─── */
+#drawerActionSheet {
+  display: none;
+  position: fixed;
+  bottom: 68px; left: 0; right: 0;
+  z-index: 500;
+  padding: 10px 14px 12px;
+  background: var(--dark2);
+  border-top: 1px solid rgba(201,151,58,0.35);
+  box-shadow: 0 -6px 28px rgba(0,0,0,0.55);
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+  animation: slideUpSheet 0.28s cubic-bezier(0.34,1.4,0.64,1);
+}
+@keyframes slideUpSheet {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+#drawerActionSheet.open { display: flex; }
+.das-btn {
+  flex: 1;
+  padding: 11px 6px;
+  border-radius: 6px;
+  border: none;
+  font-family: 'Cinzel', serif;
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  transition: opacity 0.2s, transform 0.15s;
+}
+.das-btn:active { transform: scale(0.95); opacity: 0.8; }
+.das-btn svg { width: 20px; height: 20px; }
+.das-btn-save    { background: linear-gradient(135deg, var(--gold-deep), var(--gold-light)); color: #1a1508; }
+.das-btn-update  { background: rgba(201,151,58,0.15); color: var(--gold-light); border: 1px solid rgba(201,151,58,0.4); }
+.das-btn-delete  { background: rgba(200,60,60,0.12); color: #e07070; border: 1px solid rgba(200,60,60,0.3); }
+.das-btn-cancel  { background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); }
+
+
 
 .mob-nav-btn {
   display: flex;
@@ -1612,6 +1650,14 @@ textarea { resize: vertical; min-height: 80px; }
               <label>Link de perfil</label>
               <input type="text" id="c_ig_link" placeholder="https://instagram.com/pleaseme">
             </div>
+            <div class="field">
+              <label>Link Facebook</label>
+              <input type="text" id="c_fb_link" placeholder="https://facebook.com/pleaseme">
+            </div>
+            <div class="field">
+              <label>Link TikTok</label>
+              <input type="text" id="c_tiktok_link" placeholder="https://tiktok.com/@pleaseme">
+            </div>
             <div class="save-row">
               <button class="btn btn-primary" onclick="saveContact('instagram')">Guardar</button>
             </div>
@@ -2086,7 +2132,7 @@ function loadContact() { /* cargado por loadConfig() */ }
 async function saveContact(section) {
   const fields = {
     whatsapp:  ['whatsapp', 'wa_msg', 'share_msg'],
-    instagram: ['instagram', 'ig_link'],
+    instagram: ['instagram', 'ig_link', 'fb_link', 'tiktok_link'],
     email:     ['email', 'web'],
     location:  ['city', 'address', 'hours']
   };
@@ -2180,7 +2226,7 @@ function fillCloudinaryForm() {
 }
 
 function fillContactForm() {
-  const map = ['whatsapp','wa_msg','share_msg','instagram','ig_link','email','web','city','address','hours'];
+  const map = ['whatsapp','wa_msg','share_msg','instagram','ig_link','fb_link','tiktok_link','email','web','city','address','hours'];
   map.forEach(k => {
     const el = document.getElementById('c_' + k);
     if (el && contact[k] !== undefined) el.value = contact[k];
@@ -2383,6 +2429,21 @@ function openDrawer(id) {
   document.getElementById('drawerOverlay').classList.add('open');
   document.getElementById('drawer').classList.add('open');
   document.body.style.overflow = 'hidden';
+  // Mostrar botones en móvil
+  const df = document.querySelector('.drawer-footer');
+  if (df && window.innerWidth <= 768) df.classList.add('mob-visible');
+  // Menú emergente de acciones (móvil)
+  if (window.innerWidth <= 768) {
+    const das = document.getElementById('drawerActionSheet');
+    if (das) {
+      das.classList.add('open');
+      // nuevo producto: mostrar guardar, ocultar actualizar/eliminar
+      // editar: mostrar actualizar + eliminar, ocultar guardar
+      document.getElementById('dasGuardar').style.display   = id ? 'none' : '';
+      document.getElementById('dasActualizar').style.display = id ? '' : 'none';
+      document.getElementById('dasEliminar').style.display   = id ? '' : 'none';
+    }
+  }
 }
 
 function closeDrawer() {
@@ -2390,9 +2451,21 @@ function closeDrawer() {
   document.getElementById('drawer').classList.remove('open');
   document.body.style.overflow = '';
   editingId = null;
+  // Ocultar botones en móvil
+  const df = document.querySelector('.drawer-footer');
+  if (df) df.classList.remove('mob-visible');
+  // Ocultar menú emergente
+  const das = document.getElementById('drawerActionSheet');
+  if (das) das.classList.remove('open');
 }
 
 function editProduct(id) { openDrawer(id); }
+
+function dasDelete() {
+  if (!editingId) return;
+  closeDrawer();
+  deleteProduct(editingId);
+}
 
 // ─── PHOTO COMPRESSION ───────────────────────────────────────────────
 function resizeAndCompressPhoto(dataUrl) {
@@ -3233,6 +3306,26 @@ document.addEventListener('keydown', e => {
 });
 </script>
 <!-- ═══ MOBILE BOTTOM NAV ═══ -->
+<!-- MENÚ EMERGENTE ACCIONES -->
+<div id="drawerActionSheet">
+  <button class="das-btn das-btn-save" id="dasGuardar" onclick="saveProduct()">
+    <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+    Guardar
+  </button>
+  <button class="das-btn das-btn-update" id="dasActualizar" onclick="saveProduct()" style="display:none">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+    Actualizar
+  </button>
+  <button class="das-btn das-btn-delete" id="dasEliminar" onclick="dasDelete()" style="display:none">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+    Eliminar
+  </button>
+  <button class="das-btn das-btn-cancel" onclick="closeDrawer()">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    Cancelar
+  </button>
+</div>
+
 <nav id="mobileNav">
   <button class="mob-nav-btn active" id="mob-nav-productos" onclick="mobGoTo('productos')">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
