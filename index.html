@@ -1051,6 +1051,80 @@
   }
   .cart-detail-price .currency { font-size: 16px; margin-right: 2px; }
 
+  /* ─── THANK YOU MODAL ─── */
+  .ty-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.88);
+    backdrop-filter: blur(14px);
+    z-index: 2000;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+  .ty-overlay.open { opacity: 1; pointer-events: all; }
+
+  .ty-box {
+    background: var(--bg-card2);
+    border: 1px solid var(--border-gold);
+    max-width: 360px; width: 100%;
+    padding: 40px 32px 36px;
+    text-align: center;
+    position: relative;
+    transform: translateY(24px) scale(0.96);
+    transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .ty-overlay.open .ty-box { transform: translateY(0) scale(1); }
+
+  .ty-icon {
+    font-size: 44px; margin-bottom: 18px;
+    animation: ty-bounce 0.6s 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  @keyframes ty-bounce {
+    from { transform: scale(0.4); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+  }
+  .ty-title {
+    font-family: 'Cinzel', serif;
+    font-size: 11px; letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold-light);
+    margin-bottom: 14px;
+  }
+  .ty-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px; font-weight: 300;
+    color: var(--text-cream);
+    line-height: 1.2; margin-bottom: 18px;
+  }
+  .ty-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-mid), transparent);
+    margin-bottom: 18px;
+  }
+  .ty-msg {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 16px; font-style: italic;
+    color: var(--text-muted); line-height: 1.6;
+    margin-bottom: 28px;
+  }
+  .ty-msg strong { color: var(--gold-light); font-style: normal; }
+  .ty-close-btn {
+    font-family: 'Cinzel', serif;
+    font-size: 9px; letter-spacing: 2.5px;
+    text-transform: uppercase;
+    background: transparent;
+    border: 1px solid var(--border-gold);
+    color: var(--gold-mid);
+    padding: 12px 28px; cursor: pointer;
+    transition: all 0.25s; width: 100%;
+  }
+  .ty-close-btn:hover {
+    background: rgba(201,151,58,0.1);
+    color: var(--gold-light);
+    border-color: var(--gold-mid);
+  }
+
   /* ─── CART FOOTER ─── */
   .cart-footer {
     padding: 20px 22px 28px;
@@ -2192,6 +2266,24 @@
   <div class="cat-panel-body" id="catPanelBody"></div>
 </div>
 
+<!-- THANK YOU MODAL -->
+<div class="ty-overlay" id="tyOverlay">
+  <div class="ty-box">
+    <div class="ty-icon">✨</div>
+    <p class="ty-title">Pleaseme Accessories</p>
+    <h2 class="ty-name">¡Gracias por tu pedido!</h2>
+    <div class="ty-divider"></div>
+    <p class="ty-msg">
+      Gracias por elegirnos 💛<br>
+      Tu pedido ha sido enviado con éxito.<br><br>
+      <strong>En breve serás contactado</strong><br>
+      por nuestro equipo para confirmar<br>
+      los detalles de tu compra.
+    </p>
+    <button class="ty-close-btn" onclick="closeTyModal()">Continuar explorando</button>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast-cart" id="toastCart">✦ Agregado a tu selección</div>
 
@@ -2593,6 +2685,10 @@ fetchProductsFromSupabase()
 // ─── WHATSAPP NUMBER ─────────────────────────────────────────────────
 // Viene del admin; si no está configurado se usa el valor por defecto
 function getWhatsAppNumber() {
+  try {
+    const c = JSON.parse(localStorage.getItem('pm_contact') || '{}');
+    if (c.whatsapp && c.whatsapp.trim()) return c.whatsapp.trim().replace(/\D/g, '');
+  } catch(e) {}
   return localStorage.getItem('pm_whatsapp') || '573001234567';
 }
 
@@ -2916,6 +3012,17 @@ function sendWhatsApp() {
 
   const url = `https://wa.me/${getWhatsAppNumber()}?text=${encodeURIComponent(msg)}`;
   window.open(url, '_blank');
+
+  // Mostrar modal de agradecimiento tras abrir WhatsApp
+  setTimeout(() => {
+    document.getElementById('tyOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }, 600);
+}
+
+function closeTyModal() {
+  document.getElementById('tyOverlay').classList.remove('open');
+  document.body.style.overflow = '';
 }
 
 // ─── RENDER FILTERS ──────────────────────────────────────────────────
@@ -3394,9 +3501,8 @@ function cerrarBanner() {
 renderCartItems();
 
 // ─── CONTACT INFO IN FOOTER ───────────────────────────────────────────
-function loadContactInfo() {
+function applyContactInfo(c) {
   try {
-    const c  = JSON.parse(localStorage.getItem('pm_contact') || '{}');
     const el = document.getElementById('footerContactInfo');
     if (!el) return;
     const parts = [];
@@ -3408,6 +3514,31 @@ function loadContactInfo() {
     if (c.city)  parts.push(`<span>${c.city}</span>`);
     if (c.hours) parts.push(`<span>${c.hours}</span>`);
     el.innerHTML = parts.join('<span style="margin:0 6px;opacity:0.35;">·</span>');
+  } catch(e) {}
+}
+
+async function loadContactInfo() {
+  // 1. Mostrar desde localStorage de inmediato
+  try {
+    const local = JSON.parse(localStorage.getItem('pm_contact') || '{}');
+    applyContactInfo(local);
+  } catch(e) {}
+
+  // 2. Sincronizar desde Supabase (así cualquier cliente recibe el número actualizado)
+  try {
+    const r = await fetch(
+      SB_URL + `/rest/v1/config?select=value&key=eq.pm_contact`,
+      { headers: SB_H }
+    );
+    if (!r.ok) return;
+    const rows = await r.json();
+    if (!rows || !rows[0]) return;
+    const remote = typeof rows[0].value === 'string'
+      ? JSON.parse(rows[0].value)
+      : rows[0].value;
+    // Guardar en localStorage para próximas visitas
+    localStorage.setItem('pm_contact', JSON.stringify(remote));
+    applyContactInfo(remote);
   } catch(e) {}
 }
 loadContactInfo();
