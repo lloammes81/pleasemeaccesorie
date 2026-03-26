@@ -2078,7 +2078,7 @@
   .cat-product:hover { border-color: rgba(201,151,58,0.5); transform: translateY(-2px); }
 
   .cat-product-img {
-    width: 100%; height: 110px;
+    width: 100%; height: 200px;
     overflow: hidden; position: relative;
     background: radial-gradient(ellipse at center, #2a220f 0%, #0f0e0b 100%);
     flex-shrink: 0; cursor: pointer;
@@ -2681,9 +2681,9 @@ const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const SB_H  = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' };
 
 async function fetchProductsFromSupabase() {
-  // 1. Traer info sin fotos (rápido, sin timeout)
+  // Traer info sin fotos (rápido) — las fotos se cargan en lote al abrir categoría
   const r = await fetch(
-    SB_URL + '/rest/v1/catalogo_productos?select=id,name,subtitle,category,category_label,price,description,material,medida,peso,badge,photo_url,stock,active&order=created_at.desc',
+    SB_URL + '/rest/v1/catalogo_productos?select=id,name,subtitle,category,category_label,price,description,material,medida,peso,badge,active&order=created_at.desc',
     { headers: SB_H }
   );
   if (!r.ok) throw new Error('HTTP ' + r.status + ': ' + await r.text());
@@ -2700,8 +2700,7 @@ async function fetchProductsFromSupabase() {
     medida:        p.medida         || '',
     peso:          p.peso           || '',
     badge:         p.badge          || null,
-    photo:         p.photo_url      || null,
-    stock:         p.stock          || 0,
+    photo:         null,
     active:        p.active,
   }));
 }
@@ -2730,6 +2729,9 @@ async function loadPhotosLazy() {
 
 let products = [];
 
+// Mostrar categorías de inmediato (vacías) para que la página no salga en blanco
+renderGrid();
+
 fetchProductsFromSupabase()
   .then(data => {
     products = data.filter(p => p.active !== false);
@@ -2739,6 +2741,13 @@ fetchProductsFromSupabase()
   })
   .catch(err => {
     console.error('Error cargando productos:', err);
+    const grid = document.getElementById('catalogGrid');
+    if (grid) grid.innerHTML = `
+      <div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:rgba(201,151,58,0.7);">
+        <p style="font-family:'Cinzel',serif;font-size:11px;letter-spacing:3px;margin-bottom:12px;">ERROR AL CARGAR CATÁLOGO</p>
+        <p style="font-family:monospace;font-size:10px;color:#e74c3c;max-width:320px;margin:0 auto 20px;word-break:break-all;">${err.message}</p>
+        <button onclick="location.reload()" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;padding:10px 24px;background:transparent;border:1px solid rgba(201,151,58,0.5);color:rgba(201,151,58,0.8);cursor:pointer;text-transform:uppercase;border-radius:2px;">Reintentar</button>
+      </div>`;
   });
 
 // ─── WHATSAPP NUMBER ─────────────────────────────────────────────────
@@ -2966,7 +2975,6 @@ async function openCategoryPanel(category) {
   document.getElementById('catOverlay').classList.add('open');
   document.getElementById('catPanel').classList.add('open');
   document.body.style.overflow = 'hidden';
-  mostrarWelcome();
 
   // Mostrar tarjetas inmediatamente (con íconos si no hay foto aún)
   document.getElementById('catPanelBody').innerHTML = catProducts.length
@@ -2981,13 +2989,13 @@ async function openCategoryPanel(category) {
     const ids  = lote.map(p => p.id).join(',');
     try {
       const r = await fetch(
-        SB_URL + `/rest/v1/catalogo_productos?select=id,photo_data,photo_url&id=in.(${ids})`,
+        SB_URL + `/rest/v1/catalogo_productos?select=id,photo_data&id=in.(${ids})`,
         { headers: SB_H }
       );
       if (!r.ok) continue;
       const rows = await r.json();
       (rows || []).forEach(row => {
-        const foto = row.photo_url || row.photo_data;
+        const foto = row.photo_data;
         if (!foto) return;
         const p = catProducts.find(x => String(x.id) === String(row.id));
         if (!p) return;
@@ -3043,41 +3051,26 @@ function buildOrderMsg() {
   let waContact = {};
   try { waContact = JSON.parse(localStorage.getItem('pm_contact') || '{}'); } catch(e) {}
   let msg = (waContact.wa_msg && waContact.wa_msg.trim())
-    ? waContact.wa_msg.trim() + '
-
-'
-    : '✨ *Hola Pleaseme!* Quiero hacer un pedido:
-
-';
+    ? waContact.wa_msg.trim() + '\n\n'
+    : '✨ *Hola Pleaseme!* Quiero hacer un pedido:\n\n';
   cart.forEach((item, idx) => {
     const p = products.find(x => String(x.id) === String(item.id));
-    msg += `
-${idx + 1}. *${p.name}* (${p.categoryLabel})
-`;
-    msg += `   Cantidad: ${item.qty}  ·  Precio: $${p.price} c/u
-`;
+    msg += `${idx + 1}. *${p.name}* (${p.categoryLabel})\n`;
+    msg += `   Cantidad: ${item.qty}  ·  Precio: $${p.price} c/u\n`;
   });
   const _raw = cartTotal();
   const ds = getDiscountSettings();
   const _disc = _raw >= ds.min;
   const _final = _disc ? Math.round(_raw * (1 - ds.pct / 100)) : _raw;
   if (_disc) {
-    msg += `
-💰 *Subtotal:* $${_raw.toLocaleString('es-CO')}`;
-    msg += `
-🎉 *Descuento mayorista ${ds.pct}%:* -$${(_raw - _final).toLocaleString('es-CO')}`;
-    msg += `
-✅ *Total con descuento:* $${_final.toLocaleString('es-CO')}`;
+    msg += `\n💰 *Subtotal:* $${_raw.toLocaleString('es-CO')}`;
+    msg += `\n🎉 *Descuento mayorista ${ds.pct}%:* -$${(_raw - _final).toLocaleString('es-CO')}`;
+    msg += `\n✅ *Total con descuento:* $${_final.toLocaleString('es-CO')}`;
   } else {
-    msg += `
-💰 *Total estimado:* $${_final.toLocaleString('es-CO')}`;
+    msg += `\n💰 *Total estimado:* $${_final.toLocaleString('es-CO')}`;
   }
-  if (note) msg += `
-
-📝 *Nota:* ${note}`;
-  msg += '
-
-_Catálogo Oro Laminado 14k — Pleaseme Accessories_';
+  if (note) msg += `\n\n📝 *Nota:* ${note}`;
+  msg += '\n\n_Catálogo Oro Laminado 14k — Pleaseme Accessories_';
   return msg;
 }
 
@@ -3839,7 +3832,7 @@ function mostrarWelcome() {
   const box = overlay.querySelector('#welcomeBox');
   if (box) { box.style.animation = ''; void box.offsetWidth; box.style.animation = 'wPopBox 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.15s both'; }
   clearTimeout(_welcomeTimer);
-  _welcomeTimer = setTimeout(cerrarWelcome, 10000);
+  _welcomeTimer = setTimeout(cerrarWelcome, 4000);
 }
 function cerrarWelcome() {
   clearTimeout(_welcomeTimer);
@@ -4016,7 +4009,7 @@ renderInfoSections();
 
 
 <!-- WELCOME POPUP -->
-<div id="welcomeOverlay" style="display:none">
+<div id="welcomeOverlay">
   <div id="welcomeBox">
     <span class="wp-sparkle-l">✦</span>
     <span class="wp-crown">👑</span>
