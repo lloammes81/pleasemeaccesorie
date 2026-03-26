@@ -2123,6 +2123,8 @@ async function loadConfig() {
 function loadContact() { /* cargado por loadConfig() */ }
 
 async function saveContact(section) {
+  // Asegurarse de tener los datos más recientes de la BD antes de guardar
+  if (!contact || Object.keys(contact).length === 0) await loadConfig();
   const fields = {
     whatsapp:  ['whatsapp', 'wa_msg', 'share_msg'],
     instagram: ['instagram', 'ig_link', 'fb_link', 'tiktok_link'],
@@ -2131,7 +2133,8 @@ async function saveContact(section) {
   };
   (fields[section] || []).forEach(k => {
     const el = document.getElementById('c_' + k);
-    if (el) contact[k] = el.value.trim();
+    // Solo sobreescribir si el campo tiene valor o si el campo existe y fue editado
+    if (el && el.value.trim() !== '') contact[k] = el.value.trim();
   });
   const { error } = await _sb.from('config').upsert({
     key: 'pm_contact',
