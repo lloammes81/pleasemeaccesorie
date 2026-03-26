@@ -2074,19 +2074,12 @@ async function loadProducts() {
           const p = products.find(x => x.id === row.id);
           if (p && row.photo_data) {
             p.photo = row.photo_data;
-            const imgEl = document.querySelector(`td img[alt="${p.name}"]`);
-            if (imgEl) {
-              imgEl.src = row.photo_data;
-            } else {
-              // Buscar placeholder y reemplazar
-              const allRows = document.querySelectorAll('#productTableBody tr');
-              allRows.forEach(tr => {
-                if (tr.innerHTML.includes(String(p.id))) {
-                  const photoCell = tr.querySelector('.td-photo');
-                  if (photoCell) photoCell.innerHTML = `<img src="${row.photo_data}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;">`;
-                }
-              });
-            }
+            // Actualizar tabla desktop
+            const photoCell = document.querySelector(`#productTableBody tr[data-id="${p.id}"] .td-photo`);
+            if (photoCell) photoCell.innerHTML = `<img src="${row.photo_data}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;">`;
+            // Actualizar vista móvil
+            const mobImg = document.querySelector(`#mobProductsList [data-id="${p.id}"] img`);
+            if (mobImg) mobImg.src = row.photo_data;
           }
         });
       }
@@ -2330,7 +2323,7 @@ function renderTable() {
   empty.style.display = 'none';
 
   tbody.innerHTML = products.map(p => `
-    <tr>
+    <tr data-id="${p.id}">
       <td>
         <div class="td-photo">
           ${p.photo
@@ -2368,7 +2361,7 @@ function renderMobileQuickView() {
     return;
   }
   list.innerHTML = products.map(p => `
-    <div class="mob-product-item" style="flex-wrap:wrap;gap:10px;padding:12px 0;">
+    <div class="mob-product-item" data-id="${p.id}" style="flex-wrap:wrap;gap:10px;padding:12px 0;">
       <div style="display:flex;align-items:center;gap:12px;width:100%;">
         ${p.photo
           ? `<img src="${p.photo}" alt="${p.name}" style="width:64px;height:64px;object-fit:cover;border-radius:8px;flex-shrink:0;border:1px solid var(--border);">`

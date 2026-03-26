@@ -3818,6 +3818,42 @@ async function loadContactInfo() {
 }
 loadContactInfo();
 
+// ─── SYNC pm_discount y pm_banner desde Supabase ─────────────────────
+(async function syncRemoteSettings() {
+  try {
+    const r = await fetch(SB_URL + '/rest/v1/config?select=key,value&key=in.(pm_discount,pm_banner)', { headers: SB_H });
+    if (!r.ok) return;
+    const rows = await r.json();
+    if (!rows) return;
+    rows.forEach(row => {
+      const val = typeof row.value === 'string' ? JSON.parse(row.value) : row.value;
+      localStorage.setItem(row.key, JSON.stringify(val));
+    });
+    // Refrescar descuento en UI
+    const ds = getDiscountSettings();
+    const pctEl = document.querySelector('.wp-pct');
+    const dscEl = document.querySelector('.wp-desc');
+    if (pctEl) pctEl.textContent = ds.pct + '%';
+    if (dscEl) dscEl.innerHTML = `En pedidos que superen los <strong>$${ds.min.toLocaleString('es-CO')}</strong><br>se aplica automáticamente el <strong>descuento mayorista del ${ds.pct}%</strong><br>directo en tu carrito de selección.`;
+    // Refrescar banner
+    const bannerData = rows.find(r => r.key === 'pm_banner');
+    if (bannerData) {
+      const d = typeof bannerData.value === 'string' ? JSON.parse(bannerData.value) : bannerData.value;
+      const banner = document.getElementById('announcementBanner');
+      if (banner) {
+        if (!d.active) { banner.classList.add('hidden'); }
+        else {
+          banner.classList.remove('hidden');
+          if (d.text) {
+            const sep = '<span class="banner-sep">✦</span>';
+            document.getElementById('bannerText').innerHTML = d.text + sep + 'Oro laminado 14k · Calidad garantizada' + sep + 'Pedidos superiores a $10,000 obtienen el 35% de descuento mayorista' + sep + d.text + sep + 'Oro laminado 14k · Calidad garantizada';
+          }
+        }
+      }
+    }
+  } catch(e) {}
+})();
+
 // ─── WELCOME POPUP — dynamic discount text ────────────────────────────
 (function() {
   const ds    = getDiscountSettings();
@@ -3853,14 +3889,28 @@ function cerrarWelcome() {
 }
 
 // ─── CATALOG INFO (title, subtitle, tagline) ──────────────────────────
-function loadCatalogInfo() {
+function applyCatalogInfo(c) {
   try {
-    const c = JSON.parse(localStorage.getItem('pm_catalog_info') || '{}');
     if (c.eyebrow !== undefined)  document.getElementById('headerEyebrow').textContent = c.eyebrow  || 'Catálogo';
     if (c.title !== undefined)    document.getElementById('headerLogo').textContent    = c.title    || 'Pleaseme';
     if (c.subtitle !== undefined) document.getElementById('headerSub').textContent     = c.subtitle || 'Accessories · Oro Laminado';
     if (c.footerLogo !== undefined)  document.getElementById('footerLogo').textContent    = c.footerLogo  || 'Pleaseme Accessories';
     if (c.footerText !== undefined)  document.getElementById('footerTagline').textContent = c.footerText  || 'Cada pieza, una historia · Oro laminado de alta calidad';
+  } catch(e) {}
+}
+async function loadCatalogInfo() {
+  try {
+    const local = JSON.parse(localStorage.getItem('pm_catalog_info') || '{}');
+    applyCatalogInfo(local);
+  } catch(e) {}
+  try {
+    const r = await fetch(SB_URL + '/rest/v1/config?select=value&key=eq.pm_catalog_info', { headers: SB_H });
+    if (!r.ok) return;
+    const rows = await r.json();
+    if (!rows || !rows[0]) return;
+    const remote = typeof rows[0].value === 'string' ? JSON.parse(rows[0].value) : rows[0].value;
+    localStorage.setItem('pm_catalog_info', JSON.stringify(remote));
+    applyCatalogInfo(remote);
   } catch(e) {}
 }
 loadCatalogInfo();
