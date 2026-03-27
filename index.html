@@ -2061,6 +2061,81 @@
   }
   .cat-panel-back:hover { color: var(--gold-light); }
 
+  /* ─── BURBUJA DE CARGA FOTOS ─── */
+  #catLoadingBubble {
+    position: fixed;
+    bottom: 30px; left: 50%; transform: translateX(-50%);
+    z-index: 10000;
+    background: rgba(12,9,4,0.96);
+    border: 1px solid rgba(201,151,58,0.45);
+    border-radius: 32px;
+    padding: 12px 20px;
+    display: none;
+    flex-direction: column;
+    align-items: center; gap: 8px;
+    backdrop-filter: blur(14px);
+    box-shadow: 0 6px 28px rgba(0,0,0,0.65), 0 0 0 1px rgba(201,151,58,0.1);
+    animation: fadeUp 0.3s ease;
+    min-width: 220px;
+  }
+  #catLoadingBubble.visible { display: flex; }
+  .cat-loading-top {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+  }
+  .cat-loading-spinner {
+    width: 13px; height: 13px;
+    border: 2px solid rgba(201,151,58,0.25);
+    border-top-color: #C9973A;
+    border-radius: 50%;
+    flex-shrink: 0;
+    animation: spin 0.75s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .cat-loading-text {
+    font-family: 'Cinzel', serif;
+    font-size: 8px; letter-spacing: 2px;
+    color: var(--gold-light,#D4A843); text-transform: uppercase;
+    flex: 1;
+  }
+  .cat-loading-pct {
+    font-family: 'Cinzel', serif;
+    font-size: 8px; color: rgba(201,151,58,0.6);
+  }
+  .cat-loading-bar-track {
+    width: 100%; height: 3px;
+    background: rgba(201,151,58,0.15);
+    border-radius: 2px; overflow: hidden;
+  }
+  .cat-loading-bar-fill {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, #8B6914, #C9973A, #E8C060);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  /* ─── BOTÓN FLOTANTE RETROCEDER ─── */
+  #catBackFab {
+    position: fixed;
+    top: 80px; left: 16px;
+    z-index: 10000;
+    background: rgba(15,11,6,0.92);
+    border: 1px solid rgba(201,151,58,0.4);
+    border-radius: 50px;
+    padding: 10px 18px;
+    display: none;
+    align-items: center; gap: 8px;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    font-family: 'Cinzel', serif;
+    font-size: 9px; letter-spacing: 2px;
+    color: var(--gold-light); text-transform: uppercase;
+    transition: all 0.2s;
+    animation: fadeUp 0.3s ease;
+  }
+  #catBackFab.visible { display: flex; }
+  #catBackFab:active { transform: scale(0.96); }
+
   .cat-panel-close {
     background: none; border: none; color: var(--text-muted);
     font-size: 26px; cursor: pointer; line-height: 1; padding: 0;
@@ -2338,6 +2413,24 @@
   </div>
   <div class="cat-panel-body" id="catPanelBody"></div>
 </div>
+
+<!-- Burbuja de carga fotos -->
+<div id="catLoadingBubble">
+  <div class="cat-loading-top">
+    <div class="cat-loading-spinner"></div>
+    <span class="cat-loading-text" id="catLoadingText">Cargando fotos...</span>
+    <span class="cat-loading-pct" id="catLoadingPct">0%</span>
+  </div>
+  <div class="cat-loading-bar-track">
+    <div class="cat-loading-bar-fill" id="catLoadingBarFill"></div>
+  </div>
+</div>
+
+<!-- Botón flotante retroceder -->
+<button id="catBackFab" onclick="closeCategoryPanel()">
+  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+  Volver
+</button>
 
 <!-- THANK YOU MODAL -->
 <div class="ty-overlay" id="tyOverlay">
@@ -3011,29 +3104,55 @@ async function openCategoryPanel(category) {
     ? catProducts.map(p => catProductHTML(p)).join('')
     : '<p style="color:var(--text-muted);text-align:center;padding:40px 0;font-family:Cinzel,serif;font-size:10px;letter-spacing:3px;">Sin productos en esta categoría</p>';
 
-  // Cargar fotos en lotes de 8 — una sola petición por lote
+  // Mostrar botón volver siempre
+  const backFab = document.getElementById('catBackFab');
+  if (backFab) backFab.classList.add('visible');
+
+  // Cargar fotos en lotes de 8
   const sinFoto = catProducts.filter(p => !p.photo);
-  const BATCH = 8;
-  for (let i = 0; i < sinFoto.length; i += BATCH) {
-    const lote = sinFoto.slice(i, i + BATCH);
-    const ids  = lote.map(p => p.id).join(',');
-    try {
-      const r = await fetch(
-        SB_URL + `/rest/v1/catalogo_productos?select=id,photo_data&id=in.(${ids})`,
-        { headers: SB_H }
-      );
-      if (!r.ok) continue;
-      const rows = await r.json();
-      (rows || []).forEach(row => {
-        const foto = row.photo_data;
-        if (!foto) return;
-        const p = catProducts.find(x => String(x.id) === String(row.id));
-        if (!p) return;
-        p.photo = foto;
-        const imgEl = document.querySelector(`#catPanelBody [data-pid="${p.id}"] .cat-product-img`);
-        if (imgEl) imgEl.innerHTML = `<img src="${foto}" alt="${p.name}" style="width:100%;height:100%;object-fit:contain;object-position:center center;padding:8px;box-sizing:border-box;display:block;">`;
-      });
-    } catch(e) {}
+  const bubble   = document.getElementById('catLoadingBubble');
+  const bubbleTxt = document.getElementById('catLoadingText');
+  const bubblePct = document.getElementById('catLoadingPct');
+  const bubbleBar = document.getElementById('catLoadingBarFill');
+
+  if (sinFoto.length > 0) {
+    if (bubble) bubble.classList.add('visible');
+    if (bubbleBar) bubbleBar.style.width = '0%';
+    if (bubblePct) bubblePct.textContent = '0%';
+    if (bubbleTxt) bubbleTxt.textContent = 'Cargando fotos...';
+
+    const BATCH = 8;
+    let cargadas = 0;
+    for (let i = 0; i < sinFoto.length; i += BATCH) {
+      const lote = sinFoto.slice(i, i + BATCH);
+      const ids  = lote.map(p => p.id).join(',');
+      try {
+        const r = await fetch(
+          SB_URL + `/rest/v1/catalogo_productos?select=id,photo_data&id=in.(${ids})`,
+          { headers: SB_H }
+        );
+        if (!r.ok) continue;
+        const rows = await r.json();
+        (rows || []).forEach(row => {
+          const foto = row.photo_data;
+          if (!foto) return;
+          const p = catProducts.find(x => String(x.id) === String(row.id));
+          if (!p) return;
+          p.photo = foto;
+          cargadas++;
+          const imgEl = document.querySelector(`#catPanelBody [data-pid="${p.id}"] .cat-product-img`);
+          if (imgEl) imgEl.innerHTML = `<img src="${foto}" alt="${p.name}" style="width:100%;height:100%;object-fit:contain;object-position:center center;padding:8px;box-sizing:border-box;display:block;">`;
+        });
+      } catch(e) {}
+      const pct = Math.round(Math.min(i + BATCH, sinFoto.length) / sinFoto.length * 100);
+      if (bubbleBar) bubbleBar.style.width = pct + '%';
+      if (bubblePct) bubblePct.textContent = pct + '%';
+      if (bubbleTxt) bubbleTxt.textContent = `${Math.min(i + BATCH, sinFoto.length)} de ${sinFoto.length} fotos`;
+    }
+    if (bubbleBar) bubbleBar.style.width = '100%';
+    if (bubblePct) bubblePct.textContent = '100%';
+    if (bubbleTxt) bubbleTxt.textContent = '✦ Fotos listas';
+    setTimeout(() => { if (bubble) bubble.classList.remove('visible'); }, 1800);
   }
 }
 
@@ -3042,6 +3161,10 @@ function closeCategoryPanel() {
   document.getElementById('catPanel').classList.remove('open');
   document.body.style.overflow = '';
   currentCategory = null;
+  const backFab = document.getElementById('catBackFab');
+  if (backFab) backFab.classList.remove('visible');
+  const bubble = document.getElementById('catLoadingBubble');
+  if (bubble) bubble.classList.remove('visible');
 }
 
 // ─── SHARE CATALOG ───────────────────────────────────────────────────
@@ -4111,23 +4234,83 @@ renderInfoSections();
 <script>setTimeout(function(){ if(typeof cerrarWelcome==='function') cerrarWelcome(); }, 3000);</script>
 
 <!-- FAB-VISUAL watermark -->
-<div style="position:fixed;bottom:16px;right:16px;z-index:500;opacity:0.35;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:3px;">
-  <svg width="38" height="38" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="goldG" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#f0c040"/>
-        <stop offset="50%" stop-color="#c9973a"/>
-        <stop offset="100%" stop-color="#e8b830"/>
-      </linearGradient>
-    </defs>
-    <rect width="100" height="100" rx="18" fill="#111" stroke="url(#goldG)" stroke-width="3"/>
-    <path d="M18 14 H70 V26 H32 V42 H62 V54 H32 V86 H18 Z" fill="url(#goldG)"/>
-    <line x1="42" y1="86" x2="80" y2="42" stroke="url(#goldG)" stroke-width="5" stroke-linecap="round"/>
-    <circle cx="80" cy="40" r="8" fill="none" stroke="url(#goldG)" stroke-width="4"/>
-    <circle cx="44" cy="84" r="8" fill="none" stroke="url(#goldG)" stroke-width="4"/>
-  </svg>
-  <span style="font-family:'Arial Black',Arial,sans-serif;font-size:6.5px;font-weight:900;letter-spacing:1.8px;color:#c9973a;text-transform:uppercase;white-space:nowrap;">FAB-VISUAL</span>
+<div id="fabVisualWrap" style="position:fixed;bottom:16px;right:16px;z-index:500;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;" onclick="toggleFabCard()">
+  <div style="opacity:0.38;display:flex;flex-direction:column;align-items:center;gap:3px;pointer-events:none;">
+    <svg width="28" height="28" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="goldG" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#f0c040"/>
+          <stop offset="50%" stop-color="#c9973a"/>
+          <stop offset="100%" stop-color="#e8b830"/>
+        </linearGradient>
+      </defs>
+      <rect width="100" height="100" rx="18" fill="#111" stroke="url(#goldG)" stroke-width="3"/>
+      <path d="M18 14 H70 V26 H32 V42 H62 V54 H32 V86 H18 Z" fill="url(#goldG)"/>
+      <line x1="42" y1="86" x2="80" y2="42" stroke="url(#goldG)" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="80" cy="40" r="8" fill="none" stroke="url(#goldG)" stroke-width="4"/>
+      <circle cx="44" cy="84" r="8" fill="none" stroke="url(#goldG)" stroke-width="4"/>
+    </svg>
+    <span style="font-family:'Arial Black',Arial,sans-serif;font-size:6.5px;font-weight:900;letter-spacing:1.8px;color:#c9973a;text-transform:uppercase;white-space:nowrap;">FAB-VISUAL</span>
+  </div>
 </div>
+
+<!-- Tarjeta de presentación FAB-VISUAL -->
+<div id="fabCard" style="
+  display:none;
+  position:fixed;bottom:70px;right:14px;z-index:9999;
+  background:rgba(10,8,4,0.88);
+  border:1px solid rgba(201,151,58,0.4);
+  border-radius:16px;
+  padding:18px 20px;
+  min-width:200px;max-width:240px;
+  backdrop-filter:blur(18px);
+  box-shadow:0 8px 32px rgba(0,0,0,0.7),0 0 0 1px rgba(201,151,58,0.1);
+  animation:fadeUp 0.25s ease;
+">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+    <svg width="36" height="36" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
+      <defs><linearGradient id="goldG2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#f0c040"/><stop offset="50%" stop-color="#c9973a"/><stop offset="100%" stop-color="#e8b830"/></linearGradient></defs>
+      <rect width="100" height="100" rx="18" fill="#1a1408" stroke="url(#goldG2)" stroke-width="3"/>
+      <path d="M18 14 H70 V26 H32 V42 H62 V54 H32 V86 H18 Z" fill="url(#goldG2)"/>
+      <line x1="42" y1="86" x2="80" y2="42" stroke="url(#goldG2)" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="80" cy="40" r="8" fill="none" stroke="url(#goldG2)" stroke-width="4"/>
+      <circle cx="44" cy="84" r="8" fill="none" stroke="url(#goldG2)" stroke-width="4"/>
+    </svg>
+    <div>
+      <div style="font-family:'Arial Black',Arial,sans-serif;font-size:11px;font-weight:900;letter-spacing:2px;color:#c9973a;text-transform:uppercase;">FAB-VISUAL</div>
+      <div style="font-family:'Cinzel',serif;font-size:7px;letter-spacing:1.5px;color:rgba(201,151,58,0.55);text-transform:uppercase;margin-top:2px;">Software Development</div>
+    </div>
+  </div>
+  <div style="border-top:1px solid rgba(201,151,58,0.2);padding-top:12px;">
+    <a href="https://www.fab-visual.com" target="_blank" style="
+      display:flex;align-items:center;gap:6px;
+      font-family:'Cinzel',serif;font-size:8px;letter-spacing:1px;
+      color:#c9973a;text-decoration:none;text-transform:lowercase;
+      padding:7px 10px;
+      background:rgba(201,151,58,0.08);
+      border:1px solid rgba(201,151,58,0.25);
+      border-radius:8px;
+      transition:background 0.2s;
+    " onmouseover="this.style.background='rgba(201,151,58,0.16)'" onmouseout="this.style.background='rgba(201,151,58,0.08)'">
+      <svg width="11" height="11" fill="none" stroke="#c9973a" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+      www.fab-visual.com
+    </a>
+  </div>
+</div>
+
+<script>
+function toggleFabCard() {
+  const card = document.getElementById('fabCard');
+  card.style.display = card.style.display === 'none' ? 'block' : 'none';
+}
+document.addEventListener('click', function(e) {
+  const wrap = document.getElementById('fabVisualWrap');
+  const card = document.getElementById('fabCard');
+  if (card && !wrap.contains(e.target) && !card.contains(e.target)) {
+    card.style.display = 'none';
+  }
+});
+</script>
 
 </body>
 </html>

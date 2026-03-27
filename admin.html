@@ -870,15 +870,8 @@ textarea { resize: vertical; min-height: 80px; }
     padding: 16px 18px 100px;
     gap: 16px;
   }
-  .drawer-footer {
-    flex-shrink: 0;
-    padding: 12px 16px;
-    border-top: 1px solid var(--border);
-    background: var(--surface);
-    gap: 10px;
-    display: flex;
-  }
-  #drawerActionSheet { display: none !important; }
+  .drawer-footer { display: none; }
+  .drawer-body { padding-bottom: 140px; }
 }
 
 /* ─── VISTA MÓVIL RÁPIDA (agregar/eliminar artículos) ─── */
@@ -981,12 +974,12 @@ textarea { resize: vertical; min-height: 80px; }
   position: fixed;
   bottom: 68px; left: 0; right: 0;
   z-index: 500;
-  padding: 10px 14px 12px;
+  padding: 7px 6px 9px;
   background: var(--dark2);
   border-top: 1px solid rgba(201,151,58,0.35);
   box-shadow: 0 -6px 28px rgba(0,0,0,0.55);
   flex-direction: row;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
   animation: slideUpSheet 0.28s cubic-bezier(0.34,1.4,0.64,1);
 }
@@ -997,22 +990,26 @@ textarea { resize: vertical; min-height: 80px; }
 #drawerActionSheet.open { display: flex; }
 .das-btn {
   flex: 1;
-  padding: 11px 6px;
+  min-width: 0;
+  padding: 8px 4px;
   border-radius: 6px;
   border: none;
   font-family: 'Cinzel', serif;
-  font-size: 8px;
-  letter-spacing: 1.5px;
+  font-size: 6.5px;
+  letter-spacing: 1px;
   text-transform: uppercase;
   cursor: pointer;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
+  gap: 4px;
   transition: opacity 0.2s, transform 0.15s;
+  white-space: nowrap;
+  overflow: hidden;
 }
 .das-btn:active { transform: scale(0.95); opacity: 0.8; }
-.das-btn svg { width: 20px; height: 20px; }
+.das-btn svg { width: 11px; height: 11px; flex-shrink: 0; }
 .das-btn-save    { background: linear-gradient(135deg, var(--gold-deep), var(--gold-light)); color: #1a1508; }
 .das-btn-update  { background: rgba(201,151,58,0.15); color: var(--gold-light); border: 1px solid rgba(201,151,58,0.4); }
 .das-btn-delete  { background: rgba(200,60,60,0.12); color: #e07070; border: 1px solid rgba(200,60,60,0.3); }
@@ -1876,7 +1873,6 @@ textarea { resize: vertical; min-height: 80px; }
   </div>
   <div class="drawer-footer">
     <button class="btn btn-outline" onclick="closeDrawer()">Cancelar</button>
-    <button class="btn btn-danger" id="drawerDeleteBtn" onclick="dasDelete()" style="display:none">🗑</button>
     <button class="btn btn-primary" id="drawerSaveBtn" onclick="saveProduct()" style="flex:1">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
       <span id="drawerSaveTxt">Guardar prenda</span>
@@ -2437,9 +2433,14 @@ function openDrawer(id) {
   document.getElementById('drawerOverlay').classList.add('open');
   document.getElementById('drawer').classList.add('open');
   document.body.style.overflow = 'hidden';
-  // Botón eliminar en footer: solo al editar
-  const delBtn = document.getElementById('drawerDeleteBtn');
-  if (delBtn) delBtn.style.display = id ? '' : 'none';
+  // Ventana emergente de botones en móvil
+  const das = document.getElementById('drawerActionSheet');
+  if (das) {
+    das.classList.add('open');
+    document.getElementById('dasGuardar').style.display   = id ? 'none' : '';
+    document.getElementById('dasActualizar').style.display = id ? '' : 'none';
+    document.getElementById('dasEliminar').style.display   = id ? '' : 'none';
+  }
 }
 
 function closeDrawer() {
@@ -2447,8 +2448,8 @@ function closeDrawer() {
   document.getElementById('drawer').classList.remove('open');
   document.body.style.overflow = '';
   editingId = null;
-  const delBtn = document.getElementById('drawerDeleteBtn');
-  if (delBtn) delBtn.style.display = 'none';
+  const das = document.getElementById('drawerActionSheet');
+  if (das) das.classList.remove('open');
 }
 
 function editProduct(id) { openDrawer(id); }
