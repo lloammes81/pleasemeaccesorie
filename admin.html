@@ -2643,9 +2643,10 @@ async function saveProduct() {
     medida:         document.getElementById('f_medida').value.trim(),
     peso:           document.getElementById('f_peso').value.trim(),
     badge:          document.getElementById('f_badge').value || null,
-    photo_data:     finalPhotoUrl,
     active:         true,
   };
+  // Solo incluir photo_data si hay una imagen nueva o se está creando un producto
+  if (finalPhotoUrl) data.photo_data = finalPhotoUrl;
 
   // ─── DUPLICATE CHECK (solo al agregar nueva prenda) ───────────────
   if (!editingId) {
@@ -2669,11 +2670,6 @@ async function saveProduct() {
   }
 
   if (editingId) {
-    // Si se seleccionó imagen nueva, limpiar la anterior del registro primero
-    if (finalPhotoUrl && finalPhotoUrl !== (products.find(x=>x.id===editingId)||{}).photo) {
-      // Limpiar foto vieja en la BD antes de guardar la nueva
-      await _sb.from('catalogo_productos').update({ photo_data: null }).eq('id', editingId);
-    }
     const { error } = await _sb.from('catalogo_productos').update(data).eq('id', editingId);
     if (error) return showToast('Error al actualizar: ' + error.message);
     showToast('✦ Prenda actualizada · imagen optimizada');
