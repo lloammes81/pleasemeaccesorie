@@ -3257,10 +3257,23 @@ async function sendWhatsApp() {
   if (btn) { btn.disabled = true; btn.textContent = 'Preparando...'; }
 
   const msg = buildOrderMsg();
-  const url = `https://wa.me/${getWhatsAppNumber()}?text=${encodeURIComponent(msg)}`;
+  const phone = getWhatsAppNumber();
+  const encoded = encodeURIComponent(msg);
+  // Deep link directo a la app de WhatsApp (sin página intermedia)
+  const url = `whatsapp://send?phone=${phone}&text=${encoded}`;
+  const urlFallback = `https://wa.me/${phone}?text=${encoded}`;
 
-  // Abrir WhatsApp directo al número del admin ANTES del await (evita bloqueo en móvil)
-  window.open(url, '_blank');
+  // Abrir WhatsApp ANTES del await para evitar bloqueo en móvil
+  const a = document.createElement('a');
+  a.href = url;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  // Fallback a wa.me si el deep link no abre en 1.5s
+  setTimeout(() => {
+    if (document.visibilityState !== 'hidden') window.open(urlFallback, '_blank');
+  }, 1500);
 
   let canvas = null;
   try { canvas = await buildOrderCanvas(); } catch(e) {}
