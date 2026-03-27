@@ -876,11 +876,9 @@ textarea { resize: vertical; min-height: 80px; }
     border-top: 1px solid var(--border);
     background: var(--surface);
     gap: 10px;
-    display: none;
-  }
-  .drawer-footer.mob-visible {
     display: flex;
   }
+  #drawerActionSheet { display: none !important; }
 }
 
 /* ─── VISTA MÓVIL RÁPIDA (agregar/eliminar artículos) ─── */
@@ -1794,6 +1792,16 @@ textarea { resize: vertical; min-height: 80px; }
       </button>
       <!-- Input oculto para cámara -->
       <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this)">
+      <!-- Progress bar compresión -->
+      <div id="photoProgressWrap" style="display:none;margin-top:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <span id="photoProgressLabel" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase;">Procesando...</span>
+          <span id="photoProgressPct" style="font-family:'Cinzel',serif;font-size:9px;color:var(--text-muted);">0%</span>
+        </div>
+        <div style="width:100%;height:4px;background:rgba(201,151,58,0.12);border-radius:2px;overflow:hidden;">
+          <div id="photoProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--gold-deep),var(--gold-light));border-radius:2px;transition:width 0.3s ease;"></div>
+        </div>
+      </div>
       <div class="photo-preview" id="photoPreview">
         <img id="photoPreviewImg" src="" alt="Preview">
         <span id="photoSize" style="position:absolute;bottom:6px;left:8px;font-size:11px;color:#fff;background:rgba(0,0,0,.55);padding:2px 6px;border-radius:4px;"></span>
@@ -1868,6 +1876,7 @@ textarea { resize: vertical; min-height: 80px; }
   </div>
   <div class="drawer-footer">
     <button class="btn btn-outline" onclick="closeDrawer()">Cancelar</button>
+    <button class="btn btn-danger" id="drawerDeleteBtn" onclick="dasDelete()" style="display:none">🗑</button>
     <button class="btn btn-primary" id="drawerSaveBtn" onclick="saveProduct()" style="flex:1">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
       <span id="drawerSaveTxt">Guardar prenda</span>
@@ -2111,8 +2120,11 @@ async function loadConfig() {
       _sb.from('config').select('value').eq('key', 'pm_contact').single(),
       _sb.from('admin_auth').select('password_hash').eq('id', 1).single()
     ]);
-    if (contactRes.data) contact       = contactRes.data.value || {};
-    if (authRes.data)    adminPassword = authRes.data.password_hash || DEFAULT_PASS;
+    if (contactRes.data) {
+      const v = contactRes.data.value;
+      contact = (typeof v === 'string' ? JSON.parse(v) : v) || {};
+    }
+    if (authRes.data) adminPassword = authRes.data.password_hash || DEFAULT_PASS;
   } catch(e) {
     console.error('Error cargando config:', e);
     try { contact = JSON.parse(localStorage.getItem(CONTACT_KEY)) || {}; } catch {}
@@ -2311,10 +2323,10 @@ function renderTable() {
       <div class="stat-val">${products.filter(p => p.photo).length}</div>
       <div class="stat-sub">de ${products.length}</div>
     </div>
-    <div class="stat-card" style="cursor:pointer;transition:box-shadow 0.2s;" onclick="goTo('visitas')" title="Ver detalle de visitas">
-      <div class="stat-label">Visitas al catálogo</div>
-      <div class="stat-val" id="statVisitTotal" style="color:var(--gold);">—</div>
-      <div class="stat-sub" id="statVisitSub">cargando...</div>
+    <div class="stat-card">
+      <div class="stat-label">Valor total inventario</div>
+      <div class="stat-val" style="font-size:18px;color:var(--gold);">$${products.reduce((s,p)=>s+(p.price||0),0).toLocaleString('es-CO')}</div>
+      <div class="stat-sub">${products.length} artículos</div>
     </div>
   `;
 
@@ -2372,13 +2384,13 @@ function renderMobileQuickView() {
         <div class="mob-product-info" style="flex:1;min-width:0;">
           <div class="mob-product-name">${p.name}</div>
           <div style="font-size:10px;color:var(--gold);font-family:'Cinzel',serif;letter-spacing:1px;margin-top:2px;">${CAT_LABELS[p.category]||p.category}</div>
-          <div class="mob-product-price" style="font-size:14px;font-family:'Cormorant Garamond',serif;font-weight:600;color:var(--gold-deep);margin-top:3px;">$${(p.price||0).toLocaleString('es-CO')}</div>
           ${p.badge ? `<div style="font-size:9px;font-family:'Cinzel',serif;color:var(--gold);margin-top:3px;letter-spacing:1px;">${p.badge}</div>` : ''}
         </div>
       </div>
-      <div style="display:flex;gap:8px;width:100%;justify-content:flex-end;padding-top:4px;">
-        <button class="mob-update-btn" onclick="editProduct('${p.id}')">✎ Actualizar</button>
-        <button class="mob-del-btn" onclick="askDelete('${p.id}')" title="Eliminar">🗑 Eliminar</button>
+      <div style="display:flex;gap:8px;width:100%;justify-content:center;padding-top:4px;">
+        <button class="mob-update-btn" onclick="editProduct('${p.id}')" style="background:rgba(201,151,58,0.12);">✎ Editar</button>
+        <button class="mob-update-btn" onclick="editProduct('${p.id}')">↑ Actualizar</button>
+        <button class="mob-del-btn" onclick="askDelete('${p.id}')" title="Eliminar">🗑</button>
       </div>
     </div>
   `).join('');
@@ -2425,21 +2437,9 @@ function openDrawer(id) {
   document.getElementById('drawerOverlay').classList.add('open');
   document.getElementById('drawer').classList.add('open');
   document.body.style.overflow = 'hidden';
-  // Mostrar botones en móvil
-  const df = document.querySelector('.drawer-footer');
-  if (df && window.innerWidth <= 768) df.classList.add('mob-visible');
-  // Menú emergente de acciones (móvil)
-  if (window.innerWidth <= 768) {
-    const das = document.getElementById('drawerActionSheet');
-    if (das) {
-      das.classList.add('open');
-      // nuevo producto: mostrar guardar, ocultar actualizar/eliminar
-      // editar: mostrar actualizar + eliminar, ocultar guardar
-      document.getElementById('dasGuardar').style.display   = id ? 'none' : '';
-      document.getElementById('dasActualizar').style.display = id ? '' : 'none';
-      document.getElementById('dasEliminar').style.display   = id ? '' : 'none';
-    }
-  }
+  // Botón eliminar en footer: solo al editar
+  const delBtn = document.getElementById('drawerDeleteBtn');
+  if (delBtn) delBtn.style.display = id ? '' : 'none';
 }
 
 function closeDrawer() {
@@ -2447,12 +2447,8 @@ function closeDrawer() {
   document.getElementById('drawer').classList.remove('open');
   document.body.style.overflow = '';
   editingId = null;
-  // Ocultar botones en móvil
-  const df = document.querySelector('.drawer-footer');
-  if (df) df.classList.remove('mob-visible');
-  // Ocultar menú emergente
-  const das = document.getElementById('drawerActionSheet');
-  if (das) das.classList.remove('open');
+  const delBtn = document.getElementById('drawerDeleteBtn');
+  if (delBtn) delBtn.style.display = 'none';
 }
 
 function editProduct(id) { openDrawer(id); }
@@ -2461,6 +2457,20 @@ function dasDelete() {
   if (!editingId) return;
   closeDrawer();
   deleteProduct(editingId);
+}
+
+// ─── PHOTO PROGRESS BAR ───────────────────────────────────────────────
+function setPhotoProgress(pct, label) {
+  const wrap  = document.getElementById('photoProgressWrap');
+  const bar   = document.getElementById('photoProgressBar');
+  const pctEl = document.getElementById('photoProgressPct');
+  const lblEl = document.getElementById('photoProgressLabel');
+  if (!wrap) return;
+  if (pct === null) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  bar.style.width = pct + '%';
+  if (pctEl) pctEl.textContent = pct + '%';
+  if (lblEl && label) lblEl.textContent = label;
 }
 
 // ─── PHOTO COMPRESSION ───────────────────────────────────────────────
@@ -2487,24 +2497,40 @@ async function handlePhoto(input) {
   const file = input.files && input.files[0];
   if (!file) return;
   if (!file.type.startsWith('image/')) return showToast('Solo se permiten imágenes');
+
+  setPhotoProgress(10, 'Leyendo imagen...');
   const dataUrl = await new Promise((resolve) => {
     const reader = new FileReader();
     reader.addEventListener('load', (e) => resolve(e.target.result));
     reader.readAsDataURL(file);
   });
+
+  setPhotoProgress(35, 'Redimensionando...');
+  await new Promise(r => setTimeout(r, 80)); // permite que el DOM se actualice
   const compressed = await resizeAndCompressPhoto(dataUrl);
   rawPhotoData = compressed;
-  const kb = Math.round(compressed.length * 0.75 / 1024);
+
+  const kbBefore = Math.round(file.size / 1024);
+  const kbAfter  = Math.round(compressed.length * 0.75 / 1024);
   const sizeEl = document.getElementById('photoSize');
-  if (sizeEl) sizeEl.textContent = `~${kb} KB`;
+  if (sizeEl) sizeEl.textContent = `~${kbAfter} KB`;
+
+  setPhotoProgress(70, 'Comprimiendo...');
+  await new Promise(r => setTimeout(r, 80));
+
   const wmCfg = getWatermarkConfig();
   if (wmCfg.active) {
+    setPhotoProgress(85, 'Aplicando marca de agua...');
+    await new Promise(r => setTimeout(r, 80));
     photoData = await applyWatermark(compressed);
   } else {
     photoData = compressed;
   }
+
+  setPhotoProgress(100, `Listo · ${kbBefore}KB → ${kbAfter}KB`);
   document.getElementById('photoPreviewImg').src = photoData;
   document.getElementById('photoPreview').style.display = 'block';
+  setTimeout(() => setPhotoProgress(null), 2000);
 }
 
 function removePhoto() {
@@ -2609,19 +2635,30 @@ async function saveProduct() {
     if (photoData.startsWith('data:')) {
       // Comprimir siempre antes de guardar (nueva o existente)
       const beforeKB = Math.round(photoData.length * 0.75 / 1024);
+      setPhotoProgress(20, 'Redimensionando...');
+      await new Promise(r => setTimeout(r, 60));
       const compressed = await resizeAndCompressPhoto(photoData);
       const afterKB  = Math.round(compressed.length * 0.75 / 1024);
-      showToast(`✦ Foto comprimida: ${beforeKB}KB → ${afterKB}KB`);
 
+      setPhotoProgress(55, 'Comprimiendo...');
+      await new Promise(r => setTimeout(r, 60));
       const wmCfg = getWatermarkConfig();
-      const withWm = wmCfg.active ? await applyWatermark(compressed) : compressed;
+      let withWm = compressed;
+      if (wmCfg.active) {
+        setPhotoProgress(70, 'Aplicando marca de agua...');
+        await new Promise(r => setTimeout(r, 60));
+        withWm = await applyWatermark(compressed);
+      }
 
+      setPhotoProgress(85, 'Subiendo foto...');
       try {
         finalPhotoUrl = await uploadPhotoToCloudinary(withWm);
       } catch (e) {
-        // Si falla Cloudinary, guarda base64 directo en Supabase
         finalPhotoUrl = withWm;
       }
+      setPhotoProgress(100, `${beforeKB}KB → ${afterKB}KB`);
+      showToast(`✦ Foto comprimida: ${beforeKB}KB → ${afterKB}KB`);
+      setTimeout(() => setPhotoProgress(null), 2000);
     } else {
       finalPhotoUrl = photoData; // ya es URL externa
     }
@@ -3326,10 +3363,6 @@ document.addEventListener('keydown', e => {
   <button class="mob-nav-btn" id="mob-nav-contacto" onclick="mobGoTo('contacto')">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 11.5 19.79 19.79 0 01.12 2.86 2 2 0 012.11.68h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.09a16 16 0 006 6l.61-.54a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
     Contacto
-  </button>
-  <!-- Botón central — Nuevo producto -->
-  <button class="mob-nav-btn mob-center" onclick="openDrawer()" title="Nuevo producto">
-    <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
   </button>
   <button class="mob-nav-btn" onclick="volverAlCatalogo()" title="Ver catálogo">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
