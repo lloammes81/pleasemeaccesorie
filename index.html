@@ -78,7 +78,7 @@
 
   .header-logo {
     font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(72px, 15vw, 140px);
+    font-size: clamp(48px, 10vw, 90px);
     font-weight: 300;
     letter-spacing: -1px;
     line-height: 0.9;
@@ -3263,16 +3263,18 @@ async function sendWhatsApp() {
   if (btn) { btn.disabled = true; btn.textContent = 'Preparando...'; }
 
   const msg = buildOrderMsg();
+
+  // Abrir WhatsApp ANTES del await para que el navegador móvil no bloquee el popup
+  const url = `https://wa.me/${getWhatsAppNumber()}?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+
+  limpiarCarritoPostPedido();
+
   let canvas = null;
   try { canvas = await buildOrderCanvas(); } catch(e) {}
 
-  // Restaurar botón
   if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> Enviar por WhatsApp'; }
 
-  // Abrir directamente WhatsApp del administrador
-  const url = `https://wa.me/${getWhatsAppNumber()}?text=${encodeURIComponent(msg)}`;
-  window.open(url, '_blank');
-  limpiarCarritoPostPedido();
   setTimeout(() => mostrarModalGracias(canvas), 700);
 }
 function closeTyModal() {
@@ -4214,7 +4216,57 @@ renderInfoSections();
 <div id="welcomeOverlay">
   <div id="welcomeBox">
     <span class="wp-sparkle-l">✦</span>
-    <span class="wp-crown">👑</span>
+    <span class="wp-crown">
+      <svg viewBox="0 0 200 110" width="120" height="66" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0 auto;">
+        <defs>
+          <linearGradient id="crownGold" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#f5d060"/>
+            <stop offset="40%" stop-color="#c9973a"/>
+            <stop offset="100%" stop-color="#e8c040"/>
+          </linearGradient>
+        </defs>
+        <g fill="url(#crownGold)">
+          <!-- Cuerpo principal + base curva + puntas -->
+          <path d="
+            M10,95
+            Q100,108 190,95
+            L183,70
+            C175,76 167,72 163,65
+            L152,48
+            C147,56 143,60 140,55
+            C138,48 135,38 132,28
+            L128,42 C126,50 122,53 119,48
+            L113,32 C112,27 110,22 100,15
+            C90,22 88,27 87,32
+            L81,48 C78,53 74,50 72,42
+            L68,28 C65,38 62,48 60,55
+            C57,60 53,56 48,48
+            L37,65
+            C33,72 25,76 17,70
+            Z
+          "/>
+          <!-- Punta exterior izquierda -->
+          <path d="M10,95 L5,80 L16,68 L22,82 Z"/>
+          <!-- Punta exterior derecha -->
+          <path d="M190,95 L195,80 L184,68 L178,82 Z"/>
+          <!-- Drips internos (espacios negativos simulados oscuros) -->
+          <!-- drip 1 -->
+          <path d="M52,90 Q48,76 52,64 Q56,76 60,90 Q56,92 52,90 Z" fill="#0a0804"/>
+          <!-- drip 2 -->
+          <path d="M82,93 Q78,78 82,65 Q86,78 90,93 Q86,95 82,93 Z" fill="#0a0804"/>
+          <!-- drip 3 -->
+          <path d="M110,94 Q106,79 110,66 Q114,79 118,94 Q114,96 110,94 Z" fill="#0a0804"/>
+          <!-- drip 4 -->
+          <path d="M140,93 Q136,78 140,65 Q144,78 148,93 Q144,95 140,93 Z" fill="#0a0804"/>
+          <!-- Diamante punta central -->
+          <polygon points="97,30 100,15 103,30 100,36"/>
+          <!-- Diamante punta izq media -->
+          <polygon points="64,58 67,46 70,58 67,63"/>
+          <!-- Diamante punta der media -->
+          <polygon points="130,58 133,46 136,58 133,63"/>
+        </g>
+      </svg>
+    </span>
     <p class="wp-eyebrow">Pleaseme Accessories</p>
     <h2 class="wp-title">Bienvenida a nuestro<br><em>catálogo exclusivo</em></h2>
     <div class="wp-discount-ring">
