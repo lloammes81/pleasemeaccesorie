@@ -2861,7 +2861,7 @@ function getWhatsAppNumber() {
     const c = JSON.parse(localStorage.getItem('pm_contact') || '{}');
     if (c.whatsapp && c.whatsapp.trim()) return c.whatsapp.trim().replace(/\D/g, '');
   } catch(e) {}
-  return localStorage.getItem('pm_whatsapp') || '573001234567';
+  return localStorage.getItem('pm_whatsapp') || '15623992460';
 }
 
 let activeCategory = "";
@@ -4221,7 +4221,7 @@ function mostrarWelcome() {
   const box = overlay.querySelector('#welcomeBox');
   if (box) { box.style.animation = ''; void box.offsetWidth; box.style.animation = 'wPopBox 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.15s both'; }
   clearTimeout(_welcomeTimer);
-  _welcomeTimer = setTimeout(cerrarWelcome, 13000);
+  _welcomeTimer = setTimeout(cerrarWelcome, 9000);
 }
 function cerrarWelcome() {
   clearTimeout(_welcomeTimer);
@@ -4445,7 +4445,7 @@ renderInfoSections();
     <button class="wp-skip" onclick="cerrarWelcome()">Omitir</button>
   </div>
 </div>
-<script>setTimeout(function(){ if(typeof cerrarWelcome==='function') cerrarWelcome(); }, 6000);</script>
+<script>setTimeout(function(){ if(typeof cerrarWelcome==='function') cerrarWelcome(); }, 9000);</script>
 
 <!-- FAB-VISUAL watermark -->
 <div id="fabVisualWrap" style="position:fixed;bottom:16px;right:16px;z-index:500;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;" onclick="toggleFabCard()">
