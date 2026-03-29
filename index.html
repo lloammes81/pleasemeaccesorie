@@ -3404,7 +3404,7 @@ async function sendWhatsApp() {
   if (btn) { btn.disabled = false; btn.innerHTML = waIconHtml; }
 
   // Redirigir la ventana ya abierta a WhatsApp
-  const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+  const waUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`;
   if (waWin) { waWin.location.href = waUrl; } else { window.open(waUrl, '_blank'); }
 
   mostrarModalGracias(canvas, numero);
