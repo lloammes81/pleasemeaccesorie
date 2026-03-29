@@ -124,6 +124,13 @@
     font-size: 14px;
   }
 
+  @media (max-width: 600px) {
+    header { padding: 18px 20px 12px; }
+    .header-eyebrow { margin-bottom: 10px; }
+    .header-sub { margin-top: 8px; }
+    .header-divider { margin: 18px auto 0; }
+  }
+
   /* ─── FILTERS ─── */
   .filters-wrap {
     display: flex;
@@ -1488,6 +1495,10 @@
     0%,100% { transform: rotate(-8deg); }
     50%     { transform: rotate(8deg); }
   }
+  @keyframes estrella-girar {
+    0%   { transform: rotate(0deg) scale(1); }
+    100% { transform: rotate(30deg) scale(1.15); }
+  }
 
 
   /* ─── WELCOME POPUP ─── */
@@ -2467,6 +2478,7 @@
     <p class="ty-title">Pleaseme Accessories</p>
     <h2 class="ty-name">¡Gracias por tu pedido!</h2>
     <div class="ty-divider"></div>
+    <p id="tyNumeroPedido" style="font-family:'Cinzel',serif;font-size:13px;letter-spacing:3px;color:var(--gold-light);margin-bottom:16px;"></p>
     <!-- Imagen resumen del pedido -->
     <div class="ty-order-img-wrap" id="tyImgWrap">
       <p class="ty-order-loading" id="tyImgLoading">Generando resumen visual…</p>
@@ -2474,11 +2486,8 @@
     <p class="ty-msg" style="margin-bottom:14px;">
       Gracias por elegirnos 💛<br>
       WhatsApp se abrió con tu pedido.<br><br>
-      <strong>Envía también la imagen</strong> al chat para que la tienda vea el resumen visual de tu pedido.
+      Guarda tu <strong>número de pedido</strong> para cualquier consulta.
     </p>
-    <button class="ty-share-btn" id="btnAdjuntarImg" onclick="shareOrderImage()" style="display:none;">
-      🖼️ Enviar imagen al chat de WhatsApp
-    </button>
     <button class="ty-close-btn" onclick="closeTyModal()">Continuar explorando</button>
   </div>
 </div>
@@ -3215,19 +3224,20 @@ function buildOrderMsg() {
   cart.forEach((item, idx) => {
     const p = products.find(x => String(x.id) === String(item.id));
     if (!p) return;
-    msg += `${idx + 1}. *${p.name}* (${p.categoryLabel})\n`;
-    msg += `   Cantidad: ${item.qty}  ·  Precio: $${p.price} c/u\n`;
+    msg += `▪️ *${p.name}*\n`;
+    msg += `   🔢 Cantidad: *${item.qty}*   💲 Precio: *$${p.price}* c/u\n`;
   });
   const _raw = cartTotal();
   const ds = getDiscountSettings();
   const _disc = _raw > ds.min;
   const _final = _disc ? Math.round(_raw * (1 - ds.pct / 100)) : _raw;
+  msg += '\n━━━━━━━━━━━━━━━━━━';
   if (_disc) {
-    msg += `\n💰 *Subtotal:* $${_raw.toLocaleString('es-CO')}`;
-    msg += `\n🎉 *Descuento mayorista ${ds.pct}%:* -$${(_raw - _final).toLocaleString('es-CO')}`;
-    msg += `\n✅ *Total con descuento:* $${_final.toLocaleString('es-CO')}`;
+    msg += `\n💰 Subtotal: *$${_raw.toLocaleString('es-CO')}*`;
+    msg += `\n🎉 Descuento mayorista *${ds.pct}%:* *-$${(_raw - _final).toLocaleString('es-CO')}*`;
+    msg += `\n\n✅ *TOTAL: $${_final.toLocaleString('es-CO')}*`;
   } else {
-    msg += `\n💰 *Total estimado:* $${_final.toLocaleString('es-CO')}`;
+    msg += `\n\n✅ *TOTAL: $${_final.toLocaleString('es-CO')}*`;
   }
   if (note) msg += `\n\n📝 *Nota:* ${note}`;
   msg += '\n\n_Catálogo Oro Laminado 14k — Pleaseme Accessories_';
@@ -3241,7 +3251,7 @@ function limpiarCarritoPostPedido() {
   closeCart();
 }
 
-function mostrarModalGracias(canvas) {
+function mostrarModalGracias(canvas, numero) {
   const wrap = document.getElementById('tyImgWrap');
   if (canvas && wrap) {
     const imgEl = document.createElement('img');
@@ -3254,11 +3264,8 @@ function mostrarModalGracias(canvas) {
   }
   window._orderCanvas = canvas;
 
-  // Mostrar botón siempre que haya imagen (share en móvil, descarga en desktop)
-  const btnAdj = document.getElementById('btnAdjuntarImg');
-  if (btnAdj && canvas) {
-    btnAdj.style.display = 'block';
-  }
+  const numEl = document.getElementById('tyNumeroPedido');
+  if (numEl) numEl.textContent = numero ? '# ' + numero : '';
 
   document.getElementById('tyOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -3321,6 +3328,50 @@ async function subirImagenPedidoCloudinary(canvas) {
   }
 }
 
+// Genera el próximo número de pedido (PM-0001, PM-0002…)
+async function generarNumeroPedido() {
+  try {
+    const ref = _db.collection('config').doc('pm_pedidos_counter');
+    await ref.set({ value: firebase.firestore.FieldValue.increment(1) }, { merge: true });
+    const snap = await ref.get();
+    const n = (snap.data() && snap.data().value) || 1;
+    return 'PM-' + String(n).padStart(4, '0');
+  } catch(e) { return 'PM-' + Date.now().toString().slice(-6); }
+}
+
+// Guarda el pedido en Firebase (en segundo plano)
+async function guardarPedidoFirebase(numero, canvas) {
+  try {
+    const note    = document.getElementById('cartNote') ? document.getElementById('cartNote').value.trim() : '';
+    const raw     = cartTotal();
+    const ds      = getDiscountSettings();
+    const disc    = raw > ds.min;
+    const final   = disc ? Math.round(raw * (1 - ds.pct / 100)) : raw;
+    const items   = cart.map(item => {
+      const p = products.find(x => String(x.id) === String(item.id));
+      return p ? { name: p.name, category: p.categoryLabel, qty: item.qty, price: p.price } : null;
+    }).filter(Boolean);
+
+    let imgUrl = null;
+    if (canvas) {
+      imgUrl = await subirImagenPedidoCloudinary(canvas);
+      if (!imgUrl) imgUrl = await subirImagenFallback(canvas);
+    }
+
+    await _db.collection('pedidos').add({
+      numero,
+      fecha:       firebase.firestore.FieldValue.serverTimestamp(),
+      items,
+      subtotal:    raw,
+      total_final: final,
+      descuento:   disc ? ds.pct : 0,
+      nota:        note,
+      img_url:     imgUrl || null,
+      leido:       false
+    });
+  } catch(e) { console.warn('No se pudo guardar pedido:', e.message); }
+}
+
 async function sendWhatsApp() {
   if (cart.length === 0) return;
 
@@ -3329,25 +3380,19 @@ async function sendWhatsApp() {
 
   if (btn) { btn.disabled = true; btn.textContent = 'Preparando pedido...'; }
 
-  const phone = getWhatsAppNumber();
+  const phone  = getWhatsAppNumber();
+  const numero = await generarNumeroPedido();
 
   // Generar canvas ANTES de limpiar el carrito
   let canvas = null;
   try { canvas = await buildOrderCanvas(); } catch(e) {}
 
-  // Subir imagen a Cloudinary para incluir el link en el mensaje
-  let imgUrl = null;
-  if (canvas) {
-    if (btn) btn.textContent = 'Subiendo imagen...';
-    imgUrl = await subirImagenPedidoCloudinary(canvas);
-    if (!imgUrl) imgUrl = await subirImagenFallback(canvas);
-  }
-
-  // Construir mensaje con el link de la imagen si se subió
+  // Mensaje limpio con número de pedido (sin link de imagen)
   let msg = buildOrderMsg();
-  if (imgUrl) {
-    msg += `\n\n🖼️ *Imagen del pedido:*\n${imgUrl}`;
-  }
+  msg = `📋 *Pedido ${numero}*\n\n` + msg;
+
+  // Guardar pedido + imagen en Firebase en segundo plano
+  guardarPedidoFirebase(numero, canvas);
 
   limpiarCarritoPostPedido();
 
@@ -3357,7 +3402,7 @@ async function sendWhatsApp() {
   const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
   window.open(waUrl, '_blank');
 
-  mostrarModalGracias(canvas);
+  mostrarModalGracias(canvas, numero);
 }
 function closeTyModal() {
   document.getElementById('tyOverlay').classList.remove('open');
@@ -4042,31 +4087,58 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal
 let   popupTimer      = null;
 let   popupLastState  = null;
 
+function tocarSonidoFelicitaciones() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const notas = [
+      { f: 523.25, t: 0.00, d: 0.18 }, // C5
+      { f: 659.25, t: 0.14, d: 0.18 }, // E5
+      { f: 783.99, t: 0.28, d: 0.18 }, // G5
+      { f: 1046.5, t: 0.42, d: 0.30 }, // C6
+      { f: 783.99, t: 0.55, d: 0.15 }, // G5
+      { f: 1046.5, t: 0.68, d: 0.45 }, // C6 largo
+    ];
+    notas.forEach(({ f, t, d }) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'triangle';
+      osc.frequency.value = f;
+      const start = ctx.currentTime + t;
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.28, start + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + d);
+      osc.start(start);
+      osc.stop(start + d + 0.05);
+    });
+  } catch(e) {}
+}
+
 function lanzarGlobos() {
-  const colores = ['#FF6B6B','#FFD93D','#6BCB77','#4D96FF','#FF6FC8','#C9973A','#B388FF','#FF9A3C'];
-  const total = 14;
+  const total = 18;
   for (let i = 0; i < total; i++) {
     setTimeout(() => {
       const wrap = document.createElement('div');
       wrap.className = 'globo-wrap';
-      const color = colores[i % colores.length];
-      const size  = 38 + Math.random() * 22;
-      const left  = 5 + Math.random() * 90;
-      const dur   = 3.8 + Math.random() * 1.8;
-      const delay = Math.random() * 0.4;
-      const swing = 1.2 + Math.random() * 1.6;
+      const size  = 22 + Math.random() * 24;
+      const left  = 3 + Math.random() * 94;
+      const dur   = 3.2 + Math.random() * 2;
+      const delay = Math.random() * 0.3;
+      const spin  = (Math.random() > 0.5 ? 1 : -1) * (180 + Math.random() * 360);
+      const gold  = ['#E8C96D','#C9973A','#F5E6B8','#FFD700','#D4A017'][i % 5];
       wrap.style.cssText = `left:${left}vw; animation-duration:${dur}s; animation-delay:${delay}s;`;
       wrap.innerHTML = `
-        <svg width="${size}" height="${size*1.25}" viewBox="0 0 100 125" style="animation:globo-mecerse ${swing}s ease-in-out infinite; transform-origin:50% 100%;">
-          <ellipse cx="50" cy="55" rx="46" ry="52" fill="${color}" opacity="0.92"/>
-          <ellipse cx="36" cy="38" rx="12" ry="8" fill="rgba(255,255,255,0.28)" transform="rotate(-30 36 38)"/>
-          <path d="M50 107 Q54 115 50 122 Q46 115 50 107Z" fill="${color}" opacity="0.7"/>
-        </svg>
-        <div class="globo-hilo"></div>`;
+        <svg width="${size}" height="${size}" viewBox="0 0 51 48"
+          style="animation:estrella-girar ${1.4 + Math.random()}s ease-in-out infinite alternate; filter:drop-shadow(0 0 6px ${gold}aa);">
+          <path d="M25.5 0 L31.8 18.4 L51 18.4 L36.1 29.8 L42.4 48 L25.5 36.6 L8.6 48 L14.9 29.8 L0 18.4 L19.2 18.4 Z"
+            fill="${gold}"/>
+          <path d="M25.5 6 L30 20 L44 20 L33 28 L37 42 L25.5 34 L14 42 L18 28 L7 20 L21 20 Z"
+            fill="rgba(255,255,255,0.22)"/>
+        </svg>`;
       document.body.appendChild(wrap);
-      const t = (dur + delay) * 1000 + 400;
-      setTimeout(() => wrap.remove(), t);
-    }, i * 120);
+      setTimeout(() => wrap.remove(), (dur + delay) * 1000 + 400);
+    }, i * 100);
   }
 }
 
@@ -4091,6 +4163,7 @@ function mostrarPopup(estado) {
     msg.innerHTML      = 'Se aplicó el <strong>' + ds.pct + '% de descuento</strong><br>automáticamente a tu pedido.';
     sub.textContent    = 'El precio ya aparece descontado en tu carrito.';
     lanzarGlobos();
+    tocarSonidoFelicitaciones();
   } else {
     const falta = (ds.min - cartTotalRaw()).toLocaleString('es-CO');
     icon.textContent   = '✦';

@@ -1192,6 +1192,72 @@ textarea { resize: vertical; min-height: 80px; }
   background: linear-gradient(90deg, var(--gold-deep), var(--gold-light), transparent);
   margin-bottom: 32px;
 }
+
+/* ─── PEDIDOS ─── */
+.pedidos-toolbar { display:flex; gap:10px; align-items:center; margin-bottom:20px; flex-wrap:wrap; }
+.pedidos-search {
+  flex:1; min-width:200px;
+  padding:8px 14px;
+  border:1px solid var(--border); background:var(--bg2); color:var(--text);
+  font-family:'Montserrat',sans-serif; font-size:13px; outline:none;
+}
+.pedidos-search:focus { border-color:var(--gold); }
+.pedidos-empty { text-align:center; padding:48px 20px; color:var(--text-muted); font-size:13px; }
+.pedido-card {
+  background:var(--surface); border:1px solid var(--border);
+  margin-bottom:12px; overflow:hidden; transition:box-shadow 0.2s;
+}
+.pedido-card.nuevo { border-color:var(--gold); }
+.pedido-card-head {
+  display:flex; align-items:center; gap:12px;
+  padding:12px 16px; background:var(--bg2); cursor:pointer;
+  user-select:none;
+}
+.pedido-card-head:hover { background:var(--bg3); }
+.pedido-numero { font-family:'Cinzel',serif; font-size:12px; color:var(--gold); font-weight:600; letter-spacing:1px; }
+.pedido-fecha { font-size:11px; color:var(--text-muted); }
+.pedido-total-head { font-weight:600; color:var(--text); margin-left:auto; font-size:13px; }
+.pedido-badge-nuevo {
+  background:var(--gold); color:#fff;
+  font-size:9px; padding:2px 7px; letter-spacing:1px; text-transform:uppercase;
+}
+.pedido-arrow { transition:transform 0.25s; flex-shrink:0; }
+.pedido-body {
+  display:none; padding:18px;
+  gap:20px;
+}
+.pedido-body.open { display:grid; grid-template-columns:160px 1fr; }
+@media(max-width:600px){ .pedido-body.open { grid-template-columns:1fr; } }
+.pedido-img img { width:100%; border:1px solid var(--border); display:block; cursor:zoom-in; transition:opacity 0.15s; }
+.pedido-img img:hover { opacity:0.85; }
+
+/* ─── LIGHTBOX PEDIDO ─── */
+#pedidoLightbox {
+  display:none; position:fixed; inset:0; z-index:99999;
+  background:rgba(0,0,0,0.92); align-items:center; justify-content:center;
+}
+#pedidoLightbox.open { display:flex; }
+#pedidoLightbox img {
+  max-width:92vw; max-height:88vh; object-fit:contain;
+  border:1px solid rgba(201,151,58,0.3); display:block;
+}
+#pedidoLightboxBack {
+  position:fixed; top:18px; left:18px;
+  display:flex; align-items:center; gap:8px;
+  background:rgba(20,16,10,0.85); border:1px solid rgba(201,151,58,0.4);
+  color:#E8C96D; font-family:'Cinzel',serif; font-size:11px; letter-spacing:2px;
+  padding:9px 16px; cursor:pointer; text-transform:uppercase;
+  transition:background 0.2s;
+}
+#pedidoLightboxBack:hover { background:rgba(201,151,58,0.18); }
+.pedido-sin-img { width:160px; height:160px; display:flex; align-items:center; justify-content:center; background:var(--bg2); color:var(--text-muted); font-size:11px; border:1px dashed var(--border); }
+.pedido-items-table { width:100%; border-collapse:collapse; font-size:12px; margin-bottom:10px; }
+.pedido-items-table th { text-align:left; padding:4px 8px; color:var(--text-muted); border-bottom:1px solid var(--border); font-weight:500; }
+.pedido-items-table td { padding:5px 8px; border-bottom:1px solid var(--border); }
+.pedido-items-table tr:last-child td { border-bottom:none; }
+.pedido-total-row { font-size:14px; font-weight:600; color:var(--gold); margin-top:8px; }
+.pedido-nota { font-size:11px; color:var(--text-muted); margin-top:6px; }
+.pedido-actions { display:flex; gap:8px; margin-top:12px; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -1254,6 +1320,10 @@ textarea { resize: vertical; min-height: 80px; }
       <button class="nav-item" onclick="goTo('info')" id="nav-info">
         <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
         Información
+      </button>
+      <button class="nav-item" onclick="goTo('pedidos')" id="nav-pedidos">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Pedidos
       </button>
       <button class="nav-item" onclick="goTo('config')" id="nav-config">
         <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
@@ -1815,6 +1885,16 @@ textarea { resize: vertical; min-height: 80px; }
       </div>
     </div>
 
+    <!-- PAGE: PEDIDOS -->
+    <div class="page" id="page-pedidos">
+      <div class="pedidos-toolbar">
+        <input class="pedidos-search" id="pedidosSearch" type="text"
+          placeholder="Buscar por número de pedido…" oninput="filtrarPedidos()">
+        <button class="btn" onclick="loadPedidos()" style="white-space:nowrap">↺ Actualizar</button>
+      </div>
+      <div id="pedidosLista"><p class="pedidos-empty">Cargando pedidos…</p></div>
+    </div>
+
     <!-- PAGE: CONFIGURACIÓN -->
     <div class="page" id="page-config">
       <div class="contact-grid">
@@ -2368,7 +2448,7 @@ function goTo(page) {
   document.getElementById('page-' + page).classList.add('active');
   document.getElementById('nav-' + page).classList.add('active');
 
-  const titles = { productos: 'Productos', contacto: 'Información de contacto', banner: 'Banner de anuncio', visitas: 'Visitas al catálogo', info: 'Información del catálogo', config: 'Configuración · API Keys' };
+  const titles = { productos: 'Productos', contacto: 'Información de contacto', banner: 'Banner de anuncio', visitas: 'Visitas al catálogo', info: 'Información del catálogo', config: 'Configuración · API Keys', pedidos: 'Pedidos de clientes' };
   document.getElementById('topbarTitle').textContent = titles[page] || '';
 
   const topAction = document.getElementById('topbarAction');
@@ -2376,11 +2456,110 @@ function goTo(page) {
   if (page === 'visitas') loadVisitas();
   if (page === 'info') { loadCatalogInfo(); renderInfoTable(); loadWatermarkConfig(); }
   if (page === 'config') fillCloudinaryForm();
+  if (page === 'pedidos') loadPedidos();
   if (page === 'productos') {
     topAction.style.display = '';
   } else {
     topAction.style.display = 'none';
   }
+}
+
+// ─── PEDIDOS ─────────────────────────────────────────────────────────
+let _pedidos = [];
+
+async function loadPedidos() {
+  const lista = document.getElementById('pedidosLista');
+  if (!lista) return;
+  lista.innerHTML = '<p class="pedidos-empty">Cargando pedidos…</p>';
+  try {
+    const snap = await _db.collection('pedidos').orderBy('fecha', 'desc').limit(200).get();
+    _pedidos = snap.docs.map(doc => ({ _docId: doc.id, ...doc.data() }));
+    renderPedidos(_pedidos);
+  } catch(e) {
+    lista.innerHTML = '<p class="pedidos-empty">Error al cargar pedidos.</p>';
+  }
+}
+
+function renderPedidos(lista) {
+  const el = document.getElementById('pedidosLista');
+  if (!el) return;
+  if (!lista.length) {
+    el.innerHTML = '<p class="pedidos-empty">No hay pedidos registrados aún.</p>';
+    return;
+  }
+  el.innerHTML = lista.map(p => {
+    const fecha = p.fecha ? new Date(p.fecha.seconds * 1000).toLocaleString('es-CO', { dateStyle:'short', timeStyle:'short' }) : '—';
+    const totalFinal = Number(p.total_final || p.total || 0).toLocaleString('es-CO');
+    const nuevo = !p.leido;
+    const itemsRows = (p.items || []).map(it =>
+      `<tr>
+        <td>${it.name || '—'}</td>
+        <td>${it.category || ''}</td>
+        <td style="text-align:center">${it.qty}</td>
+        <td style="text-align:right">$${it.price || '—'}</td>
+      </tr>`).join('');
+    const descHtml = (p.subtotal && p.subtotal !== p.total_final)
+      ? `<p style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Subtotal: $${Number(p.subtotal).toLocaleString('es-CO')} · Desc. ${p.descuento||0}%: -$${Number(p.subtotal - p.total_final).toLocaleString('es-CO')}</p>` : '';
+    const imgHtml = p.img_url
+      ? `<div class="pedido-img"><img src="${p.img_url}" alt="Resumen del pedido" onclick="abrirLightbox('${p.img_url}')" title="Ver imagen completa"></div>`
+      : `<div class="pedido-sin-img">Sin imagen</div>`;
+    return `
+      <div class="pedido-card${nuevo?' nuevo':''}" id="pcard-${p._docId}">
+        <div class="pedido-card-head" onclick="togglePedido('${p._docId}')">
+          <span class="pedido-numero">${p.numero || '—'}</span>
+          ${nuevo ? '<span class="pedido-badge-nuevo">Nuevo</span>' : ''}
+          <span class="pedido-fecha">${fecha}</span>
+          <span class="pedido-total-head">$${totalFinal}</span>
+          <svg class="pedido-arrow" id="parrow-${p._docId}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="pedido-body" id="pbody-${p._docId}">
+          ${imgHtml}
+          <div>
+            <table class="pedido-items-table">
+              <thead><tr>
+                <th>Artículo</th><th>Categoría</th>
+                <th style="text-align:center">Cant.</th>
+                <th style="text-align:right">Precio</th>
+              </tr></thead>
+              <tbody>${itemsRows}</tbody>
+            </table>
+            ${descHtml}
+            <p class="pedido-total-row">Total: $${totalFinal}</p>
+            ${p.nota ? `<p class="pedido-nota"><strong>Nota:</strong> ${p.nota}</p>` : ''}
+            <div class="pedido-actions">
+              <button class="btn" style="font-size:11px;padding:5px 12px" onclick="eliminarPedido('${p._docId}')">Eliminar</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function togglePedido(docId) {
+  const body  = document.getElementById('pbody-'  + docId);
+  const arrow = document.getElementById('parrow-' + docId);
+  const open  = body.classList.toggle('open');
+  arrow.style.transform = open ? 'rotate(180deg)' : '';
+  if (open) {
+    const p = _pedidos.find(x => x._docId === docId);
+    if (p && !p.leido) {
+      p.leido = true;
+      document.getElementById('pcard-' + docId).classList.remove('nuevo');
+      _db.collection('pedidos').doc(docId).update({ leido: true }).catch(() => {});
+    }
+  }
+}
+
+function filtrarPedidos() {
+  const q = (document.getElementById('pedidosSearch').value || '').toLowerCase().trim();
+  renderPedidos(q ? _pedidos.filter(p => (p.numero || '').toLowerCase().includes(q)) : _pedidos);
+}
+
+async function eliminarPedido(docId) {
+  if (!confirm('¿Eliminar este pedido?')) return;
+  await _db.collection('pedidos').doc(docId).delete();
+  _pedidos = _pedidos.filter(p => p._docId !== docId);
+  renderPedidos(_pedidos);
 }
 
 function volverAlCatalogo() {
@@ -3776,6 +3955,28 @@ function mobGoTo(page) {
     else document.body.classList.remove('is-mobile');
   });
 })();
+</script>
+
+<!-- LIGHTBOX IMAGEN PEDIDO -->
+<div id="pedidoLightbox" onclick="cerrarLightbox()">
+  <button id="pedidoLightboxBack" onclick="cerrarLightbox()">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg>
+    Volver
+  </button>
+  <img id="pedidoLightboxImg" src="" alt="Imagen del pedido" onclick="event.stopPropagation()">
+</div>
+
+<script>
+function abrirLightbox(src) {
+  document.getElementById('pedidoLightboxImg').src = src;
+  document.getElementById('pedidoLightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function cerrarLightbox() {
+  document.getElementById('pedidoLightbox').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarLightbox(); });
 </script>
 
 </body>
