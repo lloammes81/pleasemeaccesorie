@@ -414,38 +414,84 @@ body.dark-theme textarea:focus { background: #231f17; border-color: var(--gold);
 
 /* ─── STATS ─── */
 .stats-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
   margin-bottom: 28px;
+  align-items: center;
 }
 
 .stat-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  padding: 14px 16px;
-  box-shadow: var(--shadow);
+  background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.06) 0%, var(--surface) 60%);
+  border: 1px solid rgba(201,151,58,0.3);
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 10px;
+  flex-shrink: 0;
+  position: relative;
+  transition: transform 0.25s, box-shadow 0.25s;
+  box-shadow:
+    0 0 18px rgba(201,151,58,0.18),
+    0 0 40px rgba(201,151,58,0.08),
+    inset 0 1px 0 rgba(255,255,255,0.07);
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(201,151,58,0.12) 0%, transparent 70%);
+  z-index: -1;
+  pointer-events: none;
+}
+
+.stat-card::after {
+  content: '';
+  position: absolute;
+  top: 12%;
+  left: 20%;
+  width: 28%;
+  height: 14%;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.09);
+  pointer-events: none;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px) scale(1.04);
+  border-color: rgba(201,151,58,0.6);
+  box-shadow:
+    0 0 28px rgba(201,151,58,0.35),
+    0 0 60px rgba(201,151,58,0.15),
+    inset 0 1px 0 rgba(255,255,255,0.1);
 }
 
 .stat-label {
   font-family: 'Cinzel', serif;
-  font-size: 7.5px;
-  letter-spacing: 2px;
+  font-size: 6px;
+  letter-spacing: 1.5px;
   color: var(--text-muted);
   text-transform: uppercase;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .stat-val {
   font-family: 'Cormorant Garamond', serif;
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 600;
   color: var(--gold);
   line-height: 1;
 }
 
 .stat-sub {
-  font-size: 10px;
+  font-size: 8px;
   color: var(--text-muted);
   margin-top: 3px;
   font-weight: 300;
@@ -838,7 +884,9 @@ textarea { resize: vertical; min-height: 80px; }
   .main { margin-left: 0; }
   .page { padding: 16px 14px 100px; }
   .field-row { grid-template-columns: 1fr; }
-  .stats-row { grid-template-columns: 1fr 1fr; }
+  .stats-row { gap: 10px; }
+  .stat-card { width: 80px; height: 80px; }
+  .stat-val { font-size: 22px; }
   .topbar { padding: 0 14px; }
   .topbar-title { font-size: 9px; letter-spacing: 2px; }
   .sb-status { display: none; }
@@ -1145,7 +1193,8 @@ textarea { resize: vertical; min-height: 80px; }
   margin-bottom: 32px;
 }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -1231,13 +1280,12 @@ textarea { resize: vertical; min-height: 80px; }
     <div class="topbar">
       <span class="topbar-title" id="topbarTitle">Productos</span>
       <div class="topbar-actions">
-        <div class="sb-status connecting" id="sbStatus" title="Estado de conexión Supabase">
+        <div class="sb-status connecting" id="sbStatus" title="Estado de conexión Firebase">
           <span class="sb-dot"></span>
-          <span id="sbStatusText">Conectando</span>
+          <span id="sbStatusText">Firebase</span>
         </div>
-        <div class="sb-status connecting" id="cdnStatus" title="Estado configuración Cloudinary">
-          <span class="sb-dot"></span>
-          <span id="cdnStatusText">Cloudinary</span>
+        <div id="cdnStatus" style="display:none">
+          <span id="cdnStatusText"></span>
         </div>
         <button class="icon-btn" id="reconnectBtn" onclick="manualReconnect()" title="Reconectar" style="display:none">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.36-3.36L23 10M1 14l5.13 4.36A9 9 0 0020.49 15"/></svg>
@@ -1273,7 +1321,12 @@ textarea { resize: vertical; min-height: 80px; }
 
       <div class="section-header">
         <span class="section-title">Catálogo de prendas</span>
-        <span style="font-size:11px;color:var(--text-muted);font-weight:300;" id="productCount"></span>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:11px;color:var(--text-muted);font-weight:300;" id="productCount"></span>
+          <button id="btnFiltroSinFoto" onclick="toggleFiltroSinFoto()" style="font-family:'Cinzel',serif;font-size:8px;letter-spacing:1px;padding:4px 10px;border:1px solid rgba(201,151,58,0.35);background:transparent;color:var(--text-muted);cursor:pointer;border-radius:2px;transition:all 0.2s;">
+            SIN FOTO (34)
+          </button>
+        </div>
       </div>
 
       <div id="optimizarProgress" style="display:none;margin:12px 0;padding:12px 16px;background:rgba(201,151,58,0.08);border:1px solid rgba(201,151,58,0.2);font-family:'Cinzel',serif;font-size:10px;letter-spacing:1.5px;color:var(--gold);">
@@ -1789,8 +1842,32 @@ textarea { resize: vertical; min-height: 80px; }
               <button class="btn" onclick="testCloudinaryConnection()" style="border:1px solid var(--gold);color:var(--gold);background:transparent;">Verificar conexión</button>
               <button class="btn btn-primary" onclick="saveCloudinaryConfig()">Guardar</button>
             </div>
+            <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(201,151,58,0.15);">
+              <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;">Migrar imágenes guardadas en base64 a Cloudinary.</div>
+              <div class="save-row">
+                <button class="btn" id="btnMigrar" onclick="migrarImagenesACloudinary()" style="border:1px solid var(--gold);color:var(--gold);background:transparent;">Migrar imágenes a Cloudinary</button>
+                <button class="btn" onclick="diagnosticarFotos()" style="border:1px solid var(--gold);color:var(--gold);background:transparent;">Diagnóstico de fotos</button>
+              </div>
+              <div id="migrationProgress" style="display:none;margin-top:10px;font-size:10px;color:var(--text-muted);line-height:1.6;"></div>
+              <div id="diagFotos" style="display:none;margin-top:12px;font-size:11px;line-height:1.7;"></div>
+            </div>
           </div>
         </div>
+
+        <!-- ── Firebase Connection ── -->
+        <div class="section-card" style="margin-top:24px;">
+          <div class="section-title">Base de datos · Firebase</div>
+          <div class="contact-form" style="max-width:480px">
+            <div id="firebaseCheckStatus" style="font-size:11px;margin-bottom:10px;color:var(--text-muted);">Haz clic en "Verificar" para comprobar la conexión.</div>
+            <div class="save-row">
+              <button class="btn" id="btnCheckFirebase" onclick="verificarFirebase()" style="border:1px solid var(--gold);color:var(--gold);background:transparent;">
+                Verificar conexión Firebase
+              </button>
+            </div>
+            <div id="firebaseCheckResult" style="margin-top:12px;font-size:11px;display:none;padding:10px 12px;border-radius:6px;"></div>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -1933,11 +2010,16 @@ textarea { resize: vertical; min-height: 80px; }
 <div class="toast" id="toast"></div>
 
 <script>
-// ─── SUPABASE ─────────────────────────────────────────────────────────
-const _sb = supabase.createClient(
-  'https://sqcggascnbcnfkymqcql.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxY2dnYXNjbmJjbmZreW1xY3FsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2ODQ2NzIsImV4cCI6MjA4NzI2MDY3Mn0.q0C_q3gOZZzcr6dWPrIhWS63gst5OBYIg9FDxThaKt4'
-);
+// ─── FIREBASE ─────────────────────────────────────────────────────────
+firebase.initializeApp({
+  apiKey:            'AIzaSyCqer7Y1lA9ciISWJ7FogszjGgZ8CCpTDg',
+  authDomain:        'pleasemecatalogo.firebaseapp.com',
+  projectId:         'pleasemecatalogo',
+  storageBucket:     'pleasemecatalogo.firebasestorage.app',
+  messagingSenderId: '1003192303604',
+  appId:             '1:1003192303604:web:bfd1b608f1807af3e8c3a1'
+});
+const _db = firebase.firestore();
 
 // ─── CONFIG ──────────────────────────────────────────────────────────
 const ADMIN_PASS_KEY = 'pm_admin_pass';
@@ -1945,21 +2027,23 @@ const PRODUCTS_KEY   = 'pm_products';
 const CONTACT_KEY    = 'pm_contact';
 const DEFAULT_PASS   = 'pleaseme2024';
 
-// ─── CONFIG CACHE (Supabase) ─────────────────────────────────────────
+// ─── CONFIG CACHE (Firebase) ─────────────────────────────────────────
 let _cfgCache = {};
 
 async function _loadConfigs() {
   try {
-    const { data } = await _sb.from('config').select('key,value')
-      .in('key', ['pm_watermark','pm_banner','pm_catalog_info','pm_info_sections','pm_discount','pm_cloudinary']);
-    if (data) data.forEach(r => { _cfgCache[r.key] = r.value; });
+    const keys = ['pm_watermark','pm_banner','pm_catalog_info','pm_info_sections','pm_discount','pm_cloudinary'];
+    const docs = await Promise.all(keys.map(k => _db.collection('config').doc(k).get()));
+    docs.forEach(d => { if (d.exists) _cfgCache[d.id] = d.data().value; });
   } catch(e) { console.error('Error cargando configs:', e); }
 }
 
 async function _saveConfig(key, value) {
   _cfgCache[key] = value;
-  const { error } = await _sb.from('config').upsert({ key, value }, { onConflict: 'key' });
-  return error;
+  try {
+    await _db.collection('config').doc(key).set({ value });
+    return null;
+  } catch(e) { return e; }
 }
 
 // ─── AUTH ────────────────────────────────────────────────────────────
@@ -1969,8 +2053,18 @@ function getPass() {
   return adminPassword;
 }
 
-function doLogin() {
+async function doLogin() {
   const val = document.getElementById('loginPass').value;
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  btn.textContent = 'Verificando...';
+
+  // Siempre re-intentar cargar la contraseña desde Firebase antes de validar
+  await loadConfig();
+
+  btn.disabled = false;
+  btn.textContent = 'Ingresar';
+
   if (val === getPass()) {
     document.getElementById('loginPass').value = '';
     document.getElementById('loginError').textContent = '';
@@ -2023,11 +2117,8 @@ async function changePassword() {
   if (p1.length < 6) return showToast('Mínimo 6 caracteres');
   let savedCloud = false;
   try {
-    const { error } = await _sb.from('admin_auth').upsert({
-      id: 1,
-      password_hash: p1
-    }, { onConflict: 'id' });
-    if (!error) savedCloud = true;
+    await _db.collection('config').doc('admin_auth').set({ password_hash: p1 });
+    savedCloud = true;
   } catch(e) { /* sin conexión, continúa con localStorage */ }
   // Siempre guardar en localStorage como respaldo
   localStorage.setItem(ADMIN_PASS_KEY, p1);
@@ -2042,6 +2133,7 @@ let products = [];
 let editingId = null;
 let deleteId = null;
 let photoData = null;
+let photoChanged = false; // true solo cuando el usuario seleccionó una foto nueva
 
 const CAT_LABELS = {
   anillos: 'Anillos', aretes: 'Aretes', collares: 'Collares',
@@ -2064,68 +2156,46 @@ async function loadProducts() {
     const diag    = document.getElementById('diagPanel');
     const diagMsg = document.getElementById('diagMsg');
 
-    // Cargar primero SIN fotos para que sea rapido
-    const { data, error } = await _sb
-      .from('catalogo_productos')
-      .select('id,name,subtitle,category,category_label,price,description,material,medida,peso,badge,created_at')
-      .order('created_at');
+    const snap = await _db.collection('catalogo_productos').get();
 
-    if (error) {
-      if (diag) { diag.style.display = ''; diagMsg.textContent = 'Error Supabase: ' + error.message; }
-      throw error;
-    }
-
-    if (!data || data.length === 0) {
-      if (diag) { diag.style.display = ''; diagMsg.textContent = 'La tabla esta vacia. Agrega productos con "Nuevo producto".'; }
+    if (snap.empty) {
+      if (diag) { diag.style.display = ''; diagMsg.textContent = 'La colección está vacía. Agrega productos con "Nuevo producto".'; }
       products = [];
       return;
     }
 
     if (diag) diag.style.display = 'none';
 
-    products = data.map(p => ({
-      id:            p.id,
-      name:          p.name,
-      subtitle:      p.subtitle      || '',
-      category:      p.category      || '',
-      categoryLabel: p.category_label || CAT_LABELS[p.category] || p.category,
-      price:         p.price,
-      desc:          p.description   || '',
-      material:      p.material      || 'Oro laminado 14k',
-      medida:        p.medida        || '',
-      peso:          p.peso          || '',
-      badge:         p.badge         || null,
-      photo:         null,
-    }));
+    products = snap.docs.map(doc => {
+      const p = doc.data();
+      return {
+        id:            doc.id,
+        name:          p.name,
+        subtitle:      p.subtitle      || '',
+        category:      p.category      || '',
+        categoryLabel: p.category_label || CAT_LABELS[p.category] || p.category,
+        price:         Number(p.price) || 0,
+        desc:          p.description   || '',
+        material:      p.material      || 'Oro laminado 14k',
+        medida:        p.medida        || '',
+        peso:          p.peso          || '',
+        badge:         p.badge         || null,
+        photo:         p.photo_data    || null,
+      };
+    });
 
-    console.log('Productos cargados (sin fotos):', products.length);
+    console.log('Productos cargados:', products.length);
     renderTable();
 
-    // Cargar fotos en segundo plano de a 5
-    const ids = data.map(p => p.id);
-    const BATCH = 5;
-    for (let i = 0; i < ids.length; i += BATCH) {
-      const batch = ids.slice(i, i + BATCH);
-      const { data: fotoData } = await _sb
-        .from('catalogo_productos')
-        .select('id,photo_data')
-        .in('id', batch);
-      if (fotoData) {
-        fotoData.forEach(row => {
-          const p = products.find(x => x.id === row.id);
-          if (p && row.photo_data) {
-            p.photo = row.photo_data;
-            // Actualizar tabla desktop
-            const photoCell = document.querySelector(`#productTableBody tr[data-id="${p.id}"] .td-photo`);
-            if (photoCell) photoCell.innerHTML = `<img src="${row.photo_data}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;">`;
-            // Actualizar vista móvil
-            const mobImg = document.querySelector(`#mobProductsList [data-id="${p.id}"] img`);
-            if (mobImg) mobImg.src = row.photo_data;
-          }
-        });
-      }
-      await new Promise(r => setTimeout(r, 80));
-    }
+    // Actualizar fotos en tabla (ya están cargadas)
+    products.forEach(p => {
+      if (!p.photo) return;
+      const photoCell = document.querySelector(`#productTableBody tr[data-id="${p.id}"] .td-photo`);
+      if (photoCell) photoCell.innerHTML = `<img src="${p.photo}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;">`;
+      const mobImg = document.querySelector(`#mobProductsList [data-id="${p.id}"] img`);
+      if (mobImg) mobImg.src = p.photo;
+    });
+
   } catch(e) {
     console.error('Error cargando productos:', e);
     showToast('Error al conectar: ' + e.message);
@@ -2145,18 +2215,18 @@ async function eliminarDuplicados() {
 // ─── CONTACT + CONFIG STATE ───────────────────────────────────────────
 let contact = {};
 
-// Carga contacto (config) y contraseña (admin_auth) desde Supabase
+// Carga contacto (config) y contraseña desde Firebase
 async function loadConfig() {
   try {
-    const [contactRes, authRes] = await Promise.all([
-      _sb.from('config').select('value').eq('key', 'pm_contact').single(),
-      _sb.from('admin_auth').select('password_hash').eq('id', 1).single()
+    const [contactDoc, authDoc] = await Promise.all([
+      _db.collection('config').doc('pm_contact').get(),
+      _db.collection('config').doc('admin_auth').get()
     ]);
-    if (contactRes.data) {
-      const v = contactRes.data.value;
+    if (contactDoc.exists) {
+      const v = contactDoc.data().value;
       contact = (typeof v === 'string' ? JSON.parse(v) : v) || {};
     }
-    if (authRes.data) adminPassword = authRes.data.password_hash || DEFAULT_PASS;
+    if (authDoc.exists) adminPassword = authDoc.data().password_hash || DEFAULT_PASS;
   } catch(e) {
     console.error('Error cargando config:', e);
     try { contact = JSON.parse(localStorage.getItem(CONTACT_KEY)) || {}; } catch {}
@@ -2180,12 +2250,10 @@ async function saveContact(section) {
     // Solo sobreescribir si el campo tiene valor o si el campo existe y fue editado
     if (el && el.value.trim() !== '') contact[k] = el.value.trim();
   });
-  const { error } = await _sb.from('config').upsert({
-    key: 'pm_contact',
-    value: contact
-  }, { onConflict: 'key' });
-  if (error) return showToast('Error al guardar: ' + error.message);
-  showToast('✦ Información guardada');
+  try {
+    await _db.collection('config').doc('pm_contact').set({ value: contact });
+    showToast('✦ Información guardada');
+  } catch(e) { showToast('Error al guardar: ' + e.message); }
 }
 
 async function testCloudinaryConnection() {
@@ -2196,10 +2264,12 @@ async function testCloudinaryConnection() {
   const st = document.getElementById('cloudinaryStatus');
   if (st) { st.style.color = 'var(--text-muted)'; st.textContent = 'Verificando...'; }
 
+  // Subir imagen de 1x1 con public_id fijo para no acumular archivos en Cloudinary
   const testImg = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
   const form = new FormData();
   form.append('file', testImg);
   form.append('upload_preset', upload_preset);
+  form.append('public_id', 'pm_connection_test');
   try {
     const resp = await fetch(`https://api.cloudinary.com/v1_1/${cloud_name}/image/upload`, { method: 'POST', body: form });
     const json = await resp.json();
@@ -2224,11 +2294,12 @@ async function saveCloudinaryConfig() {
   const st = document.getElementById('cloudinaryStatus');
   if (st) { st.style.color = 'var(--text-muted)'; st.textContent = 'Verificando...'; }
 
-  // Test real contra Cloudinary antes de guardar
+  // Test con public_id fijo para no crear archivos nuevos en Cloudinary cada vez
   const testImg = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
   const form = new FormData();
   form.append('file', testImg);
   form.append('upload_preset', upload_preset);
+  form.append('public_id', 'pm_connection_test');
   try {
     const resp = await fetch(`https://api.cloudinary.com/v1_1/${cloud_name}/image/upload`, { method: 'POST', body: form });
     const json = await resp.json();
@@ -2242,11 +2313,9 @@ async function saveCloudinaryConfig() {
     return showToast('No se pudo conectar a Cloudinary');
   }
 
-  const { error } = await _sb.from('config').upsert(
-    { key: 'pm_cloudinary', value: { cloud_name, upload_preset } },
-    { onConflict: 'key' }
-  );
-  if (error) return showToast('Error al guardar: ' + error.message);
+  try {
+    await _db.collection('config').doc('pm_cloudinary').set({ value: { cloud_name, upload_preset } });
+  } catch(e) { return showToast('Error al guardar: ' + e.message); }
   _cfgCache['pm_cloudinary'] = { cloud_name, upload_preset };
   if (st) { st.style.color = 'var(--gold)'; st.textContent = '✦ Cloudinary conectado y guardado'; }
   showToast('✦ Cloudinary conectado y guardado');
@@ -2325,10 +2394,29 @@ function volverAlCatalogo() {
 }
 
 // ─── RENDER TABLE ─────────────────────────────────────────────────────
+let filtroSinFoto = false;
+
+function toggleFiltroSinFoto() {
+  filtroSinFoto = !filtroSinFoto;
+  const btn = document.getElementById('btnFiltroSinFoto');
+  if (btn) {
+    btn.style.background    = filtroSinFoto ? 'rgba(192,57,43,0.12)' : 'transparent';
+    btn.style.borderColor   = filtroSinFoto ? 'rgba(192,57,43,0.5)'  : 'rgba(201,151,58,0.35)';
+    btn.style.color         = filtroSinFoto ? 'var(--red)'           : 'var(--text-muted)';
+  }
+  renderTable();
+}
+
 function renderTable() {
   const tbody = document.getElementById('productTableBody');
   const empty = document.getElementById('emptyProducts');
-  document.getElementById('productCount').textContent = `${products.length} prenda${products.length !== 1 ? 's' : ''}`;
+
+  const sinFotoCount = products.filter(p => !p.photo).length;
+  const btnF = document.getElementById('btnFiltroSinFoto');
+  if (btnF) btnF.textContent = `SIN FOTO (${sinFotoCount})`;
+
+  const displayed = filtroSinFoto ? products.filter(p => !p.photo) : products;
+  document.getElementById('productCount').textContent = `${displayed.length} prenda${displayed.length !== 1 ? 's' : ''}${filtroSinFoto ? ' sin foto' : ''}`;
 
   // Stats
   const cats = {};
@@ -2363,20 +2451,20 @@ function renderTable() {
     </div>
     <div class="stat-card">
       <div class="stat-label">Inventario</div>
-      <div class="stat-val" style="font-size:16px;">$${products.reduce((s,p)=>s+(p.price||0),0).toLocaleString('es-CO')}</div>
+      <div class="stat-val" style="font-size:13px;">$${products.reduce((s,p)=>s+(p.price||0),0).toLocaleString('es-CO')}</div>
       <div class="stat-sub">${products.length} artículos</div>
     </div>
     ${catCards}
   `;
 
-  if (products.length === 0) {
+  if (displayed.length === 0) {
     tbody.innerHTML = '';
     empty.style.display = '';
     return;
   }
   empty.style.display = 'none';
 
-  tbody.innerHTML = products.map(p => `
+  tbody.innerHTML = displayed.map(p => `
     <tr data-id="${p.id}">
       <td>
         <div class="td-photo">
@@ -2390,7 +2478,7 @@ function renderTable() {
         <div class="td-sub">${p.subtitle || ''}</div>
       </td>
       <td><span class="badge badge-cat">${CAT_LABELS[p.category] || p.category}</span></td>
-      <td><span class="price-cell">$${p.price}</span></td>
+      <td><span class="price-cell">$${Number(p.price).toLocaleString('es-CO')}</span></td>
       <td>${p.badge ? `<span class="badge badge-gold">${p.badge}</span>` : '<span style="color:var(--text-muted);font-size:11px">—</span>'}</td>
       <td>
         <div class="actions-cell">
@@ -2466,6 +2554,7 @@ function openDrawer(id) {
   editingId = id || null;
   photoData    = null;
   rawPhotoData = null;
+  photoChanged = false;
   document.getElementById('photoPreview').style.display = 'none';
   document.getElementById('photoInput').value = '';
 
@@ -2567,6 +2656,7 @@ async function handlePhoto(input) {
   const file = input.files && input.files[0];
   if (!file) return;
   if (!file.type.startsWith('image/')) return showToast('Solo se permiten imágenes');
+  photoChanged = true; // el usuario eligió una foto nueva
 
   setPhotoProgress(10, 'Leyendo imagen...');
   const dataUrl = await new Promise((resolve) => {
@@ -2618,16 +2708,8 @@ function abrirCamara() {
 }
 
 async function uploadPhotoToStorage(base64Data) {
-  const res  = await fetch(base64Data);
-  const blob = await res.blob();
-  const ext  = blob.type.split('/')[1] || 'jpg';
-  const filename = `product_${Date.now()}.${ext}`;
-  const { data, error } = await _sb.storage
-    .from('product-photos')
-    .upload(filename, blob, { contentType: blob.type, upsert: false });
-  if (error) throw new Error('No se pudo subir la foto: ' + error.message);
-  const { data: { publicUrl } } = _sb.storage.from('product-photos').getPublicUrl(data.path);
-  return publicUrl;
+  // Redirigir a Cloudinary (Supabase Storage ya no se usa)
+  return await uploadPhotoToCloudinary(base64Data);
 }
 
 async function uploadPhotoToCloudinary(base64Data) {
@@ -2648,7 +2730,99 @@ async function uploadPhotoToCloudinary(base64Data) {
   return json.secure_url;
 }
 
-// ─── OPTIMIZAR FOTOS EN EL SERVIDOR (EDGE FUNCTION) ──────────────────
+async function diagnosticarFotos() {
+  const box = document.getElementById('diagFotos');
+  box.style.display = 'block';
+  box.innerHTML = 'Analizando fotos en Firebase...';
+
+  const snap = await _db.collection('catalogo_productos').get();
+  const all  = snap.docs.map(d => ({ id: d.id, name: d.data().name, photo: d.data().photo_data }));
+
+  const sinFoto   = all.filter(p => !p.photo);
+  const conBase64 = all.filter(p => p.photo && p.photo.startsWith('data:'));
+  const conUrl    = all.filter(p => p.photo && p.photo.startsWith('http'));
+
+  // Verificar cuáles URLs de Cloudinary responden
+  box.innerHTML = `Verificando ${conUrl.length} URLs de Cloudinary...`;
+  let urlsOk = 0, urlsRotas = [];
+
+  for (const p of conUrl) {
+    try {
+      const resp = await fetch(p.photo, { method: 'HEAD', mode: 'no-cors' });
+      urlsOk++;
+    } catch(e) {
+      urlsRotas.push(p.name);
+    }
+  }
+
+  let html = `
+    <b>Resumen de fotos (${all.length} productos)</b><br><br>
+    ✅ Con URL Cloudinary: <b>${conUrl.length}</b><br>
+    ⚠️ Aún en base64: <b>${conBase64.length}</b>${conBase64.length > 0 ? ' → usa "Migrar imágenes"' : ''}<br>
+    ❌ Sin foto: <b>${sinFoto.length}</b><br>
+  `;
+
+  if (sinFoto.length > 0) {
+    html += `<br><b>Productos sin foto:</b><br>`;
+    html += sinFoto.map(p => `&nbsp;• ${p.name}`).join('<br>');
+  }
+  if (conBase64.length > 0) {
+    html += `<br><br><b>Productos con base64 (pendientes de migrar):</b><br>`;
+    html += conBase64.map(p => `&nbsp;• ${p.name}`).join('<br>');
+  }
+
+  box.innerHTML = html;
+}
+
+async function migrarImagenesACloudinary() {
+  const cfg = _cfgCache['pm_cloudinary'] || {};
+  if (!cfg.cloud_name || !cfg.upload_preset)
+    return showToast('Guarda la configuración de Cloudinary primero');
+
+  const btn  = document.getElementById('btnMigrar');
+  const prog = document.getElementById('migrationProgress');
+  btn.disabled = true;
+  prog.style.display = 'block';
+  prog.textContent = 'Cargando productos...';
+
+  try {
+    const snap = await _db.collection('catalogo_productos').get();
+    const toMigrate = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .filter(p => p.photo_data && p.photo_data.startsWith('data:'));
+
+    if (toMigrate.length === 0) {
+      prog.textContent = '✓ No hay imágenes base64 para migrar. Todas ya están en Cloudinary.';
+      btn.disabled = false;
+      return;
+    }
+
+    let ok = 0, fail = 0;
+    for (let i = 0; i < toMigrate.length; i++) {
+      const p = toMigrate[i];
+      prog.textContent = `Subiendo ${i + 1} / ${toMigrate.length}: ${p.name}...`;
+      try {
+        const url = await uploadPhotoToCloudinary(p.photo_data);
+        await _db.collection('catalogo_productos').doc(p.id).update({ photo_data: url });
+        ok++;
+      } catch(e) {
+        console.error(`Error migrando "${p.name}":`, e);
+        fail++;
+      }
+    }
+
+    prog.textContent = `✓ Migración completa: ${ok} migradas${fail ? `, ${fail} con error (ver consola)` : ''}.`;
+    showToast(`✦ ${ok} imágenes migradas a Cloudinary`);
+    if (ok > 0) await loadProducts();
+  } catch(e) {
+    prog.textContent = 'Error: ' + e.message;
+    showToast('Error en migración: ' + e.message);
+  }
+
+  btn.disabled = false;
+}
+
+// ─── OPTIMIZAR FOTOS (COMPRESIÓN EN CLIENTE) ─────────────────────────
 async function optimizarFotos() {
   const btnOpt  = document.getElementById('btnOptimizar');
   const progDiv = document.getElementById('optimizarProgress');
@@ -2657,35 +2831,60 @@ async function optimizarFotos() {
 
   btnOpt.disabled = true;
   progDiv.style.display = 'block';
-  progTxt.textContent = 'Procesando fotos en el servidor...';
   progBar.style.width = '0%';
-
-  // Animación indeterminada mientras espera la respuesta del servidor
-  let pct = 0;
-  const ticker = setInterval(() => {
-    pct = Math.min(pct + 2, 85);
-    progBar.style.width = pct + '%';
-  }, 400);
+  progTxt.textContent = 'Cargando fotos...';
 
   try {
-    const { data, error } = await _sb.functions.invoke('optimize-photos');
-    if (error) throw error;
+    const snap = await _db.collection('catalogo_productos').get();
+    const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-    clearInterval(ticker);
+    const base64Items = data.filter(p => p.photo_data && p.photo_data.startsWith('data:'));
+
+    if (base64Items.length === 0) {
+      progTxt.textContent = '✓ No hay fotos base64 para comprimir.';
+      progBar.style.width = '100%';
+      btnOpt.disabled = false;
+      setTimeout(() => { progDiv.style.display = 'none'; }, 3000);
+      return;
+    }
+
+    let ok = 0, skipped = 0, fail = 0;
+    let ahorroTotal = 0;
+
+    for (let i = 0; i < base64Items.length; i++) {
+      const p = base64Items[i];
+      progBar.style.width = Math.round((i / base64Items.length) * 100) + '%';
+      progTxt.textContent = `Comprimiendo ${i + 1} / ${base64Items.length}: ${p.name}...`;
+
+      try {
+        const originalKB = Math.round(p.photo_data.length * 0.75 / 1024);
+        const compressed = await resizeAndCompressPhoto(p.photo_data);
+        const compressedKB = Math.round(compressed.length * 0.75 / 1024);
+
+        if (compressedKB >= originalKB) { skipped++; continue; } // ya está optimizada
+
+        await _db.collection('catalogo_productos').doc(p.id).update({ photo_data: compressed });
+
+        ahorroTotal += originalKB - compressedKB;
+        ok++;
+      } catch(e) {
+        console.error(`Error comprimiendo "${p.name}":`, e);
+        fail++;
+      }
+    }
+
     progBar.style.width = '100%';
-    const ok = data.ok ?? 0;
-    progTxt.textContent = `✦ ${ok} foto${ok !== 1 ? 's' : ''} optimizada${ok !== 1 ? 's' : ''}${data.errors ? ' · ' + data.errors + ' con error' : ''}`;
-  } catch (e) {
-    clearInterval(ticker);
+    const ahorroMB = (ahorroTotal / 1024).toFixed(1);
+    progTxt.textContent = `✦ ${ok} foto${ok !== 1 ? 's' : ''} comprimida${ok !== 1 ? 's' : ''} · ${ahorroMB} MB liberados${skipped ? ` · ${skipped} ya optimizadas` : ''}${fail ? ` · ${fail} con error` : ''}`;
+    if (ok > 0) { showToast(`✦ ${ok} fotos comprimidas · ${ahorroMB} MB liberados`); await loadProducts(); renderTable(); }
+  } catch(e) {
     progBar.style.width = '0%';
-    progTxt.textContent = 'Error: ' + (e.message || 'No se pudo conectar con el servidor');
-    showToast('Error al optimizar: ' + (e.message || 'ver consola'));
+    progTxt.textContent = 'Error: ' + e.message;
+    showToast('Error al optimizar: ' + e.message);
   }
 
   btnOpt.disabled = false;
-  setTimeout(() => { progDiv.style.display = 'none'; }, 5000);
-  await loadProducts();
-  renderTable();
+  setTimeout(() => { progDiv.style.display = 'none'; }, 6000);
 }
 
 async function saveProduct() {
@@ -2701,7 +2900,7 @@ async function saveProduct() {
   if (btn) { btn.disabled = true; btn.querySelector('#drawerSaveTxt').textContent = 'Procesando...'; }
 
   let finalPhotoUrl = null;
-  if (photoData) {
+  if (photoData && photoChanged) {
     if (photoData.startsWith('data:')) {
       // Comprimir siempre antes de guardar (nueva o existente)
       const beforeKB = Math.round(photoData.length * 0.75 / 1024);
@@ -2720,11 +2919,13 @@ async function saveProduct() {
         withWm = await applyWatermark(compressed);
       }
 
-      setPhotoProgress(85, 'Subiendo foto...');
+      setPhotoProgress(85, 'Subiendo foto a Cloudinary...');
       try {
         finalPhotoUrl = await uploadPhotoToCloudinary(withWm);
       } catch (e) {
-        finalPhotoUrl = withWm;
+        setPhotoProgress(null);
+        if (btn) { btn.disabled = false; btn.querySelector('#drawerSaveTxt').textContent = editingId ? 'Actualizar prenda' : 'Guardar prenda'; }
+        return showToast('⚠ Configura Cloudinary antes de guardar fotos — Admin → Configuración → Cloudinary');
       }
       setPhotoProgress(100, `${beforeKB}KB → ${afterKB}KB`);
       showToast(`✦ Foto comprimida: ${beforeKB}KB → ${afterKB}KB`);
@@ -2777,13 +2978,15 @@ async function saveProduct() {
   }
 
   if (editingId) {
-    const { error } = await _sb.from('catalogo_productos').update(data).eq('id', editingId);
-    if (error) return showToast('Error al actualizar: ' + error.message);
-    showToast('✦ Prenda actualizada · imagen optimizada');
+    try {
+      await _db.collection('catalogo_productos').doc(String(editingId)).update(data);
+      showToast('✦ Prenda actualizada · imagen optimizada');
+    } catch(e) { return showToast('Error al actualizar: ' + e.message); }
   } else {
-    const { error } = await _sb.from('catalogo_productos').insert(data);
-    if (error) return showToast('Error al guardar: ' + error.message);
-    showToast('✦ Prenda agregada al catálogo');
+    try {
+      await _db.collection('catalogo_productos').add(data);
+      showToast('✦ Prenda agregada al catálogo');
+    } catch(e) { return showToast('Error al guardar: ' + e.message); }
   }
 
   await loadProducts();
@@ -3013,7 +3216,8 @@ function closeConfirm() {
 
 async function confirmDelete() {
   if (!deleteId) return;
-  const { error } = await _sb.from('catalogo_productos').delete().eq('id', deleteId);
+  try { await _db.collection('catalogo_productos').doc(String(deleteId)).delete(); } catch(e) { return showToast('Error al eliminar: ' + e.message); }
+  const error = null;
   if (error) return showToast('Error al eliminar: ' + error.message);
   await loadProducts();
   renderTable();
@@ -3275,22 +3479,93 @@ async function saveDiscount() {
   showToast('✦ Descuento actualizado en el catálogo');
 }
 
-// ─── SUPABASE CONNECTION STATUS ──────────────────────────────────────
+// ─── VERIFICAR FIREBASE MANUAL ───────────────────────────────────────
+async function verificarFirebase() {
+  const btn    = document.getElementById('btnCheckFirebase');
+  const status = document.getElementById('firebaseCheckStatus');
+  const result = document.getElementById('firebaseCheckResult');
+
+  btn.disabled = true;
+  btn.textContent = 'Verificando...';
+  status.textContent = 'Conectando con Firebase...';
+  result.style.display = 'none';
+
+  try {
+    const snap = await _db.collection('catalogo_productos').limit(1).get();
+    const total = snap.size;
+
+    // Contar productos reales
+    const snapAll = await _db.collection('catalogo_productos').get();
+    const nProd = snapAll.size;
+
+    // Verificar config
+    const snapCfg = await _db.collection('config').get();
+    const nCfg = snapCfg.size;
+
+    status.textContent = '✓ Firebase conectado correctamente';
+    status.style.color = 'var(--green)';
+
+    result.style.display = 'block';
+    result.style.background = 'var(--green-light)';
+    result.style.color = 'var(--green)';
+    result.style.border = '1px solid rgba(26,122,58,0.2)';
+    result.innerHTML = `
+      <b>✓ Conexión exitosa</b><br>
+      Productos en base de datos: <b>${nProd}</b><br>
+      Configuraciones: <b>${nCfg}</b><br>
+      Proyecto: <b>pleasemecatalogo</b>
+    `;
+
+    // También actualizar el indicador del header
+    const el  = document.getElementById('sbStatus');
+    const txt = document.getElementById('sbStatusText');
+    if (el)  el.className    = 'sb-status connected';
+    if (txt) txt.textContent = 'Firebase OK';
+
+  } catch(e) {
+    status.textContent = '✗ Sin conexión';
+    status.style.color = 'var(--red)';
+
+    result.style.display = 'block';
+    result.style.background = 'var(--red-light)';
+    result.style.color = 'var(--red)';
+    result.style.border = '1px solid rgba(192,57,43,0.2)';
+    result.innerHTML = `
+      <b>✗ Error de conexión</b><br>
+      ${e.message}<br><br>
+      <span style="font-size:10px;opacity:0.8;">
+        Verifica las reglas de Firestore en:<br>
+        console.firebase.google.com → Firestore → Reglas
+      </span>
+    `;
+
+    const el  = document.getElementById('sbStatus');
+    const txt = document.getElementById('sbStatusText');
+    if (el)  el.className    = 'sb-status offline';
+    if (txt) txt.textContent = 'Sin conexión';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Verificar conexión Firebase';
+}
+
+// ─── FIREBASE CONNECTION STATUS ──────────────────────────────────────
 async function checkSupabaseConnection() {
   const el  = document.getElementById('sbStatus');
   const txt = document.getElementById('sbStatusText');
   const btn = document.getElementById('reconnectBtn');
   if (!el || !txt) return;
   try {
-    const { error } = await _sb.from('config').select('key').limit(1);
-    if (error) throw error;
+    await _db.collection('catalogo_productos').limit(1).get();
     el.className     = 'sb-status connected';
-    txt.textContent  = 'Conectado';
+    txt.textContent  = 'Firebase OK';
     if (btn) btn.style.display = 'none';
   } catch(e) {
     el.className     = 'sb-status offline';
     txt.textContent  = 'Sin conexión';
     if (btn) btn.style.display = '';
+    // Reintentar en 5 segundos si falla
+    setTimeout(checkSupabaseConnection, 5000);
   }
 }
 
@@ -3342,22 +3617,20 @@ function toggleTheme() {
 // ─── INIT ────────────────────────────────────────────────────────────
 async function autoConnectCloudinary() {
   const cfg = _cfgCache['pm_cloudinary'] || {};
-  if (!cfg.cloud_name || !cfg.upload_preset) return;
   const el  = document.getElementById('cdnStatus');
   const txt = document.getElementById('cdnStatusText');
-  if (el)  el.className = 'sb-status connecting';
-  if (txt) txt.textContent = 'Conectando...';
-  const testImg = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
-  const form = new FormData();
-  form.append('file', testImg);
-  form.append('upload_preset', cfg.upload_preset);
+  if (!cfg.cloud_name || !cfg.upload_preset) {
+    if (el)  el.className = 'sb-status connecting';
+    if (txt) txt.textContent = 'Sin configurar';
+    return;
+  }
+  // Solo marcar como OK si hay credenciales — sin subir nada a Cloudinary
+  if (el)  el.className = 'sb-status connected';
+  if (txt) txt.textContent = 'Cloudinary OK';
   try {
-    const resp = await fetch(`https://api.cloudinary.com/v1_1/${cfg.cloud_name}/image/upload`, { method: 'POST', body: form });
-    const json = await resp.json();
-    if (json.secure_url) {
-      if (el)  el.className = 'sb-status connected';
-      if (txt) txt.textContent = 'Cloudinary OK';
-    } else {
+    // Verificación silenciosa: intenta listar recursos (no sube nada)
+    const resp = await fetch(`https://api.cloudinary.com/v1_1/${cfg.cloud_name}/resources/image?max_results=1`, { method: 'GET' });
+    if (!resp.ok) {
       if (el)  el.className = 'sb-status error';
       if (txt) txt.textContent = 'Cloudinary Error';
     }
@@ -3368,7 +3641,8 @@ async function autoConnectCloudinary() {
 }
 
 async function init() {
-  await Promise.all([loadProducts(), _loadConfigs(), loadConfig(), checkSupabaseConnection()]);
+  await Promise.all([loadProducts(), _loadConfigs(), loadConfig()]);
+  setTimeout(checkSupabaseConnection, 1500);
   fillContactForm();
   fillCloudinaryForm();
   checkCloudinaryConfig();

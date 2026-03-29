@@ -2239,6 +2239,8 @@
 
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -2780,63 +2782,48 @@ const categories = [
 ];
 
 // ─── SUPABASE CONFIG ─────────────────────────────────────────────────
-const SB_URL = 'https://sqcggascnbcnfkymqcql.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxY2dnYXNjbmJjbmZreW1xY3FsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2ODQ2NzIsImV4cCI6MjA4NzI2MDY3Mn0.q0C_q3gOZZzcr6dWPrIhWS63gst5OBYIg9FDxThaKt4';
-const SB_H  = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' };
+// ─── FIREBASE ─────────────────────────────────────────────────────────
+firebase.initializeApp({
+  apiKey:            'AIzaSyCqer7Y1lA9ciISWJ7FogszjGgZ8CCpTDg',
+  authDomain:        'pleasemecatalogo.firebaseapp.com',
+  projectId:         'pleasemecatalogo',
+  storageBucket:     'pleasemecatalogo.firebasestorage.app',
+  messagingSenderId: '1003192303604',
+  appId:             '1:1003192303604:web:bfd1b608f1807af3e8c3a1'
+});
+const _db = firebase.firestore();
 
-async function fetchProductsFromSupabase() {
-  // Traer info sin fotos (rápido) — las fotos se cargan en lote al abrir categoría
-  const r = await fetch(
-    SB_URL + '/rest/v1/catalogo_productos?select=id,name,subtitle,category,category_label,price,description,material,medida,peso,badge,active&order=created_at.desc',
-    { headers: SB_H }
-  );
-  if (!r.ok) throw new Error('HTTP ' + r.status + ': ' + await r.text());
-  const data = await r.json();
-  return (data || []).map(p => ({
-    id:            p.id,
-    name:          p.name           || '',
-    subtitle:      p.subtitle       || '',
-    category:      p.category       || '',
-    categoryLabel: p.category_label || '',
-    price:         String(p.price   || ''),
-    desc:          p.description    || '',
-    material:      p.material       || 'Oro laminado 14k',
-    medida:        p.medida         || '',
-    peso:          p.peso           || '',
-    badge:         p.badge          || null,
-    photo:         null,
-    active:        p.active,
-  }));
+async function fetchProductsFromFirebase() {
+  const snap = await _db.collection('catalogo_productos').get();
+  return snap.docs.map(doc => {
+    const p = doc.data();
+    return {
+      id:            doc.id,
+      name:          p.name           || '',
+      subtitle:      p.subtitle       || '',
+      category:      p.category       || '',
+      categoryLabel: p.category_label || '',
+      price:         String(p.price   || ''),
+      desc:          p.description    || '',
+      material:      p.material       || 'Oro laminado 14k',
+      medida:        p.medida         || '',
+      peso:          p.peso           || '',
+      badge:         p.badge          || null,
+      photo:         p.photo_data     || null,
+      active:        p.active !== false,
+    };
+  });
 }
 
-// 2. Cargar fotos individualmente en segundo plano
-async function loadPhotosLazy() {
-  for (const p of products) {
-    if (p.photo) continue; // ya tiene foto (photo_url)
-    try {
-      const r = await fetch(
-        SB_URL + `/rest/v1/catalogo_productos?select=photo_data&id=eq.${p.id}`,
-        { headers: SB_H }
-      );
-      if (!r.ok) continue;
-      const rows = await r.json();
-      if (!rows || !rows[0] || !rows[0].photo_data) continue;
-      p.photo = rows[0].photo_data;
-      // Actualizar tarjeta de producto dentro del panel de categoría si está abierto
-      const prodCard = document.querySelector(`[data-pid="${p.id}"] .cat-product-img`);
-      if (prodCard && !prodCard.querySelector('img')) {
-        prodCard.innerHTML = `<img src="${p.photo}" alt="${p.name}">`;
-      }
-    } catch(e) {}
-  }
-}
+// Fotos ya son URLs de Cloudinary — no se necesita carga lazy
+async function loadPhotosLazy() {}
 
 let products = [];
 
 // Mostrar categorías de inmediato (vacías) para que la página no salga en blanco
 renderGrid();
 
-fetchProductsFromSupabase()
+fetchProductsFromFirebase()
   .then(data => {
     products = data.filter(p => p.active !== false);
     renderFilters();
@@ -2861,7 +2848,7 @@ function getWhatsAppNumber() {
     const c = JSON.parse(localStorage.getItem('pm_contact') || '{}');
     if (c.whatsapp && c.whatsapp.trim()) return c.whatsapp.trim().replace(/\D/g, '');
   } catch(e) {}
-  return localStorage.getItem('pm_whatsapp') || '15623992460';
+  return localStorage.getItem('pm_whatsapp') || '573001234567';
 }
 
 let activeCategory = "";
@@ -3003,18 +2990,11 @@ function renderCartItems() {
   const sinFoto = cart.map(item => products.find(x => String(x.id) === String(item.id))).filter(p => p && !p.photo);
   if (sinFoto.length > 0) {
     const ids = sinFoto.map(p => p.id).join(',');
-    fetch(SB_URL + `/rest/v1/catalogo_productos?select=id,photo_data&id=in.(${ids})`, {
-      headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY }
-    }).then(r => r.json()).then(rows => {
-      if (!rows) return;
-      rows.forEach(row => {
-        if (!row.photo_data) return;
-        const p = products.find(x => String(x.id) === String(row.id));
-        if (p) p.photo = row.photo_data;
-        const icon = document.querySelector(`#cartItems [data-pid="${row.id}"] .cart-item-icon`);
-        if (icon) icon.innerHTML = `<img src="${row.photo_data}" alt="" style="width:100%;height:100%;object-fit:contain;display:block;">`;
-      });
-    }).catch(() => {});
+    sinFoto.forEach(p => {
+      if (!p.photo) return;
+      const icon = document.querySelector(`#cartItems [data-pid="${p.id}"] .cart-item-icon`);
+      if (icon) icon.innerHTML = `<img src="${p.photo}" alt="" style="width:100%;height:100%;object-fit:contain;display:block;">`;
+    });
   }
 }
 
@@ -3126,12 +3106,7 @@ async function openCategoryPanel(category) {
       const lote = sinFoto.slice(i, i + BATCH);
       const ids  = lote.map(p => p.id).join(',');
       try {
-        const r = await fetch(
-          SB_URL + `/rest/v1/catalogo_productos?select=id,photo_data&id=in.(${ids})`,
-          { headers: SB_H }
-        );
-        if (!r.ok) continue;
-        const rows = await r.json();
+        const rows = lote.map(p => ({ id: p.id, photo_data: p.photo }));
         (rows || []).forEach(row => {
           const foto = row.photo_data;
           if (!foto) return;
@@ -4142,32 +4117,26 @@ async function loadContactInfo() {
     applyContactInfo(local);
   } catch(e) {}
 
-  // 2. Sincronizar desde Supabase (así cualquier cliente recibe el número actualizado)
+  // 2. Sincronizar desde Firebase
   try {
-    const r = await fetch(
-      SB_URL + `/rest/v1/config?select=value&key=eq.pm_contact`,
-      { headers: SB_H }
-    );
-    if (!r.ok) return;
-    const rows = await r.json();
-    if (!rows || !rows[0]) return;
-    const remote = typeof rows[0].value === 'string'
-      ? JSON.parse(rows[0].value)
-      : rows[0].value;
-    // Guardar en localStorage para próximas visitas
+    const doc = await _db.collection('config').doc('pm_contact').get();
+    if (!doc.exists) return;
+    const remote = typeof doc.data().value === 'string'
+      ? JSON.parse(doc.data().value)
+      : doc.data().value;
     localStorage.setItem('pm_contact', JSON.stringify(remote));
     applyContactInfo(remote);
   } catch(e) {}
 }
 loadContactInfo();
 
-// ─── SYNC pm_discount y pm_banner desde Supabase ─────────────────────
+// ─── SYNC pm_discount y pm_banner desde Firebase ─────────────────────
 (async function syncRemoteSettings() {
   try {
-    const r = await fetch(SB_URL + '/rest/v1/config?select=key,value&key=in.(pm_discount,pm_banner)', { headers: SB_H });
-    if (!r.ok) return;
-    const rows = await r.json();
-    if (!rows) return;
+    const keys = ['pm_discount', 'pm_banner'];
+    const docs = await Promise.all(keys.map(k => _db.collection('config').doc(k).get()));
+    const rows = docs.filter(d => d.exists).map(d => ({ key: d.id, value: d.data().value }));
+    if (!rows.length) return;
     rows.forEach(row => {
       const val = typeof row.value === 'string' ? JSON.parse(row.value) : row.value;
       localStorage.setItem(row.key, JSON.stringify(val));
@@ -4221,7 +4190,7 @@ function mostrarWelcome() {
   const box = overlay.querySelector('#welcomeBox');
   if (box) { box.style.animation = ''; void box.offsetWidth; box.style.animation = 'wPopBox 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.15s both'; }
   clearTimeout(_welcomeTimer);
-  _welcomeTimer = setTimeout(cerrarWelcome, 9000);
+  _welcomeTimer = setTimeout(cerrarWelcome, 13000);
 }
 function cerrarWelcome() {
   clearTimeout(_welcomeTimer);
@@ -4247,11 +4216,9 @@ async function loadCatalogInfo() {
     applyCatalogInfo(local);
   } catch(e) {}
   try {
-    const r = await fetch(SB_URL + '/rest/v1/config?select=value&key=eq.pm_catalog_info', { headers: SB_H });
-    if (!r.ok) return;
-    const rows = await r.json();
-    if (!rows || !rows[0]) return;
-    const remote = typeof rows[0].value === 'string' ? JSON.parse(rows[0].value) : rows[0].value;
+    const doc = await _db.collection('config').doc('pm_catalog_info').get();
+    if (!doc.exists) return;
+    const remote = typeof doc.data().value === 'string' ? JSON.parse(doc.data().value) : doc.data().value;
     localStorage.setItem('pm_catalog_info', JSON.stringify(remote));
     applyCatalogInfo(remote);
   } catch(e) {}
@@ -4445,7 +4412,7 @@ renderInfoSections();
     <button class="wp-skip" onclick="cerrarWelcome()">Omitir</button>
   </div>
 </div>
-<script>setTimeout(function(){ if(typeof cerrarWelcome==='function') cerrarWelcome(); }, 9000);</script>
+<script>setTimeout(function(){ if(typeof cerrarWelcome==='function') cerrarWelcome(); }, 6000);</script>
 
 <!-- FAB-VISUAL watermark -->
 <div id="fabVisualWrap" style="position:fixed;bottom:16px;right:16px;z-index:500;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;" onclick="toggleFabCard()">
