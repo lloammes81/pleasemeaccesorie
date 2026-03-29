@@ -125,10 +125,10 @@
   }
 
   @media (max-width: 600px) {
-    header { padding: 18px 20px 12px; }
-    .header-eyebrow { margin-bottom: 10px; }
-    .header-sub { margin-top: 8px; }
-    .header-divider { margin: 18px auto 0; }
+    header { padding: 10px 20px 8px; }
+    .header-eyebrow { margin-bottom: 6px; font-size: 14px; letter-spacing: 8px; }
+    .header-sub { margin-top: 6px; }
+    .header-divider { margin: 10px auto 0; }
   }
 
   /* ─── FILTERS ─── */
@@ -3269,6 +3269,7 @@ function mostrarModalGracias(canvas, numero) {
 
   document.getElementById('tyOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
+  setTimeout(() => closeTyModal(), 2000);
 }
 
 async function adjuntarImagenWhatsApp() {
@@ -3380,6 +3381,9 @@ async function sendWhatsApp() {
 
   if (btn) { btn.disabled = true; btn.textContent = 'Preparando pedido...'; }
 
+  // Abrir ventana ANTES de los await para evitar el bloqueador de popups
+  const waWin = window.open('', '_blank');
+
   const phone  = getWhatsAppNumber();
   const numero = await generarNumeroPedido();
 
@@ -3398,9 +3402,9 @@ async function sendWhatsApp() {
 
   if (btn) { btn.disabled = false; btn.innerHTML = waIconHtml; }
 
-  // Abrir WhatsApp directo con el número de la tienda
+  // Redirigir la ventana ya abierta a WhatsApp
   const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
-  window.open(waUrl, '_blank');
+  if (waWin) { waWin.location.href = waUrl; } else { window.open(waUrl, '_blank'); }
 
   mostrarModalGracias(canvas, numero);
 }
