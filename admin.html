@@ -2896,18 +2896,37 @@ async function saveProduct() {
   if (!category) return showToast('Selecciona una categoría');
   if (!price)    return showToast('El precio es requerido');
 
-  const btn = document.getElementById('drawerSaveBtn');
-  if (btn) { btn.disabled = true; btn.querySelector('#drawerSaveTxt').textContent = 'Procesando...'; }
+  // ── Bloquear botón durante todo el proceso para evitar duplicados ──
+  const btn     = document.getElementById('drawerSaveBtn');
+  const dasGuar = document.getElementById('dasGuardar');
+  const dasAct  = document.getElementById('dasActualizar');
+  const label   = editingId ? 'Actualizar prenda' : 'Guardar prenda';
+  const setBtnState = (disabled, txt) => {
+    if (btn)     { btn.disabled = disabled; btn.querySelector('#drawerSaveTxt').textContent = txt; }
+    if (dasGuar) dasGuar.disabled = disabled;
+    if (dasAct)  dasAct.disabled  = disabled;
+  };
+  setBtnState(true, 'Procesando...');
 
+  // ── Verificar duplicados ANTES de cualquier operación ──────────────
+  if (!editingId) {
+    const nameLower = name.toLowerCase().trim();
+    const dupByName = products.find(p => p.name && p.name.toLowerCase().trim() === nameLower);
+    if (dupByName) {
+      setBtnState(false, label);
+      return showToast('Ya existe una prenda con ese nombre: "' + dupByName.name + '"');
+    }
+  }
+
+  // ── Comprimir y subir foto SOLO si el usuario eligió una nueva ─────
   let finalPhotoUrl = null;
   if (photoData && photoChanged) {
     if (photoData.startsWith('data:')) {
-      // Comprimir siempre antes de guardar (nueva o existente)
       const beforeKB = Math.round(photoData.length * 0.75 / 1024);
       setPhotoProgress(20, 'Redimensionando...');
       await new Promise(r => setTimeout(r, 60));
       const compressed = await resizeAndCompressPhoto(photoData);
-      const afterKB  = Math.round(compressed.length * 0.75 / 1024);
+      const afterKB    = Math.round(compressed.length * 0.75 / 1024);
 
       setPhotoProgress(55, 'Comprimiendo...');
       await new Promise(r => setTimeout(r, 60));
@@ -2919,27 +2938,22 @@ async function saveProduct() {
         withWm = await applyWatermark(compressed);
       }
 
-      setPhotoProgress(85, 'Subiendo foto a Cloudinary...');
+      setPhotoProgress(85, 'Subiendo a Cloudinary...');
       try {
         finalPhotoUrl = await uploadPhotoToCloudinary(withWm);
-      } catch (e) {
+      } catch(e) {
         setPhotoProgress(null);
-        if (btn) { btn.disabled = false; btn.querySelector('#drawerSaveTxt').textContent = editingId ? 'Actualizar prenda' : 'Guardar prenda'; }
+        setBtnState(false, label);
         return showToast('⚠ Configura Cloudinary antes de guardar fotos — Admin → Configuración → Cloudinary');
       }
-      setPhotoProgress(100, `${beforeKB}KB → ${afterKB}KB`);
-      showToast(`✦ Foto comprimida: ${beforeKB}KB → ${afterKB}KB`);
+      setPhotoProgress(100, `✓ ${beforeKB}KB → ${afterKB}KB`);
       setTimeout(() => setPhotoProgress(null), 2000);
     } else {
-      finalPhotoUrl = photoData; // ya es URL externa
+      finalPhotoUrl = photoData;
     }
   }
 
-  if (btn) {
-    btn.disabled = false;
-    btn.querySelector('#drawerSaveTxt').textContent = editingId ? 'Actualizar prenda' : 'Guardar prenda';
-  }
-
+  // ── Armar datos ────────────────────────────────────────────────────
   const data = {
     name,
     subtitle:       document.getElementById('f_subtitle').value.trim(),
@@ -2953,45 +2967,51 @@ async function saveProduct() {
     badge:          document.getElementById('f_badge').value || null,
     active:         true,
   };
-  // Solo incluir photo_data si hay una imagen nueva o se está creando un producto
   if (finalPhotoUrl) data.photo_data = finalPhotoUrl;
 
-  // ─── DUPLICATE CHECK (solo al agregar nueva prenda) ───────────────
-  if (!editingId) {
-    const nameLower = name.toLowerCase().trim();
-    // Verificar duplicado por nombre
-    const dupByName = products.find(p =>
-      p.name && p.name.toLowerCase().trim() === nameLower
-    );
-    if (dupByName) {
-      return showToast('✦ Ya existe una prenda con ese nombre: "' + dupByName.name + '"');
-    }
-    // Verificar duplicado por imagen (photo_data)
-    if (photoData) {
-      const dupByPhoto = products.find(p =>
-        p.photo && p.photo === photoData
-      );
-      if (dupByPhoto) {
-        return showToast('✦ Esa imagen ya está en uso: "' + dupByPhoto.name + '"');
-      }
-    }
-  }
-
-  if (editingId) {
-    try {
+  // ── Guardar en Firebase ────────────────────────────────────────────
+  setBtnState(true, 'Guardando...');
+  try {
+    if (editingId) {
       await _db.collection('catalogo_productos').doc(String(editingId)).update(data);
-      showToast('✦ Prenda actualizada · imagen optimizada');
-    } catch(e) { return showToast('Error al actualizar: ' + e.message); }
-  } else {
-    try {
+    } else {
       await _db.collection('catalogo_productos').add(data);
-      showToast('✦ Prenda agregada al catálogo');
-    } catch(e) { return showToast('Error al guardar: ' + e.message); }
+    }
+  } catch(e) {
+    setBtnState(false, label);
+    return showToast('Error al guardar: ' + e.message);
   }
 
+  // ── Éxito: limpiar formulario y cerrar ────────────────────────────
   await loadProducts();
   renderTable();
+
+  const esActualizar = !!editingId;
+  limpiarFormulario();
   closeDrawer();
+  showToast(esActualizar ? '✦ Artículo actualizado correctamente' : '✦ Artículo guardado correctamente');
+}
+
+function limpiarFormulario() {
+  ['f_name','f_subtitle','f_price','f_desc','f_medida','f_peso'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  const cat = document.getElementById('f_category');
+  const mat = document.getElementById('f_material');
+  const bdg = document.getElementById('f_badge');
+  if (cat) cat.value = '';
+  if (mat) mat.value = 'Oro laminado 14k';
+  if (bdg) bdg.value = '';
+  photoData    = null;
+  rawPhotoData = null;
+  photoChanged = false;
+  editingId    = null;
+  const prev = document.getElementById('photoPreview');
+  const inp  = document.getElementById('photoInput');
+  if (prev) prev.style.display = 'none';
+  if (inp)  inp.value = '';
+  setPhotoProgress(null);
 }
 
 // ─── WATERMARK ADMIN ─────────────────────────────────────────────────

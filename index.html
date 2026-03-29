@@ -2445,13 +2445,11 @@
     <div class="ty-order-img-wrap" id="tyImgWrap">
       <p class="ty-order-loading" id="tyImgLoading">Generando resumen visual…</p>
     </div>
-    <p class="ty-msg" style="margin-bottom:18px;">
+    <p class="ty-msg" style="margin-bottom:14px;">
       Gracias por elegirnos 💛<br>
-      Tu pedido fue enviado con éxito.<br><br>
-      📄 <strong>El PDF del pedido se descargó</strong> en tu dispositivo.<br>
-      Adjúntalo en el chat de WhatsApp que se abrió.<br><br>
-      <strong>En breve serás contactado</strong><br>
-      para confirmar los detalles.
+      WhatsApp se abrió con tu pedido.<br><br>
+      🖼️ El mensaje incluye un <strong>enlace directo a la imagen</strong> del pedido para que la tienda pueda verla de inmediato.<br><br>
+      <strong>En breve serás contactado</strong> para confirmar los detalles.
     </p>
     <button class="ty-close-btn" onclick="closeTyModal()">Continuar explorando</button>
   </div>
@@ -3224,75 +3222,106 @@ function mostrarModalGracias(canvas) {
     wrap.innerHTML = '';
   }
   window._orderCanvas = canvas;
+
+  // Mostrar botón adjuntar solo si el navegador soporta share con archivos
+  const btnAdj = document.getElementById('btnAdjuntarImg');
+  if (btnAdj && canvas && navigator.canShare) {
+    canvas.toBlob(blob => {
+      if (!blob) return;
+      const file = new File([blob], 'pedido-pleaseme.png', { type: 'image/png' });
+      if (navigator.canShare({ files: [file] })) {
+        btnAdj.style.display = 'block';
+      }
+    }, 'image/png');
+  }
+
   document.getElementById('tyOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
+}
+
+async function adjuntarImagenWhatsApp() {
+  const canvas = window._orderCanvas;
+  if (!canvas) return;
+  canvas.toBlob(async blob => {
+    if (!blob) return;
+    const file = new File([blob], 'pedido-pleaseme.png', { type: 'image/png' });
+    try {
+      await navigator.share({ files: [file], title: 'Pedido Pleaseme Accessories' });
+    } catch(e) {
+      if (e.name !== 'AbortError') console.error('Error al compartir:', e);
+    }
+  }, 'image/png');
+}
+
+// Sube imagen del pedido a Cloudinary y devuelve la URL pública
+async function subirImagenPedidoCloudinary(canvas) {
+  try {
+    const cfgDoc = await _db.collection('config').doc('pm_cloudinary').get();
+    if (!cfgDoc.exists) return null;
+    const cfg = cfgDoc.data().value || {};
+    if (!cfg.cloud_name || !cfg.upload_preset) return null;
+
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.88));
+    if (!blob) return null;
+
+    const form = new FormData();
+    form.append('file', blob, 'pedido.jpg');
+    form.append('upload_preset', cfg.upload_preset);
+    form.append('folder', 'pedidos');
+
+    const resp = await fetch(`https://api.cloudinary.com/v1_1/${cfg.cloud_name}/image/upload`, {
+      method: 'POST', body: form
+    });
+    const json = await resp.json();
+    return json.secure_url || null;
+  } catch(e) {
+    console.warn('No se pudo subir imagen a Cloudinary:', e.message);
+    return null;
+  }
 }
 
 async function sendWhatsApp() {
   if (cart.length === 0) return;
 
   const btn = document.getElementById('whatsappBtn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Generando factura...'; }
+  const waIconHtml = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> Enviar por WhatsApp';
 
-  const msg = buildOrderMsg();
+  if (btn) { btn.disabled = true; btn.textContent = 'Preparando pedido...'; }
+
   const phone = getWhatsAppNumber();
 
-  // Generar canvas y PDF ANTES de limpiar el carrito
+  // Generar canvas ANTES de limpiar el carrito
   let canvas = null;
   try { canvas = await buildOrderCanvas(); } catch(e) {}
 
-  let pdfBlob = null;
-  try { pdfBlob = await generarFacturaPDF(); } catch(e) { console.error('PDF error:', e); }
+  // Subir imagen a Cloudinary para incluir el link en el mensaje
+  let imgUrl = null;
+  if (canvas) {
+    if (btn) btn.textContent = 'Subiendo imagen...';
+    imgUrl = await subirImagenPedidoCloudinary(canvas);
+  }
+
+  // Construir mensaje con el link de la imagen si se subió
+  let msg = buildOrderMsg();
+  if (imgUrl) {
+    msg += `\n\n🖼️ *Resumen visual del pedido:*\n${imgUrl}`;
+  }
 
   limpiarCarritoPostPedido();
 
-  if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> Enviar por WhatsApp'; }
+  if (btn) { btn.disabled = false; btn.innerHTML = waIconHtml; }
 
-  // Compartir PDF via menú nativo (móvil) o descarga (desktop)
-  if (pdfBlob) {
-    const pdfFile = new File([pdfBlob], 'pedido-pleaseme.pdf', { type: 'application/pdf' });
-    const canShare = navigator.canShare && navigator.canShare({ files: [pdfFile] });
-    if (canShare) {
-      try {
-        await navigator.share({ files: [pdfFile], text: msg, title: 'Pedido Pleaseme Accessories' });
-      } catch(e) {
-        // Si cancela el share, igual abrimos WhatsApp con el texto
-        if (e.name !== 'AbortError') {
-          const a = document.createElement('a');
-          a.href = `whatsapp://send?phone=${phone}&text=${encodeURIComponent(msg)}`;
-          a.style.display = 'none';
-          document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        }
-      }
-    } else {
-      // Desktop o browser sin soporte: descarga el PDF + abre WhatsApp
-      const url = URL.createObjectURL(pdfBlob);
-      const dl = document.createElement('a');
-      dl.href = url; dl.download = 'pedido-pleaseme.pdf';
-      dl.style.display = 'none';
-      document.body.appendChild(dl); dl.click(); document.body.removeChild(dl);
-      setTimeout(() => URL.revokeObjectURL(url), 3000);
-      setTimeout(() => {
-        const a = document.createElement('a');
-        a.href = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
-        a.target = '_blank'; a.style.display = 'none';
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      }, 800);
-    }
+  // Abrir WhatsApp directo con el número de la tienda (sin selección de contacto)
+  const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isMobile) {
+    window.location.href = `whatsapp://send?phone=${phone}&text=${encodeURIComponent(msg)}`;
+    setTimeout(() => { window.open(waUrl, '_blank'); }, 1200);
   } else {
-    // Sin PDF: solo abre WhatsApp con texto
-    const a = document.createElement('a');
-    a.href = `whatsapp://send?phone=${phone}&text=${encodeURIComponent(msg)}`;
-    a.style.display = 'none';
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    setTimeout(() => {
-      if (document.visibilityState !== 'hidden') {
-        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
-      }
-    }, 1500);
+    window.open(waUrl, '_blank');
   }
 
-  setTimeout(() => mostrarModalGracias(canvas), 700);
+  setTimeout(() => mostrarModalGracias(canvas), 800);
 }
 function closeTyModal() {
   document.getElementById('tyOverlay').classList.remove('open');
