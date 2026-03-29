@@ -1463,6 +1463,32 @@
 
   #popupBackdrop.visible { opacity: 1; pointer-events: all; }
 
+  /* ─── GLOBOS MAYORISTA ─── */
+  .globo-wrap {
+    position: fixed;
+    bottom: -160px;
+    pointer-events: none;
+    z-index: 9100;
+    animation: globo-subir 4.5s ease-in forwards;
+  }
+  .globo-wrap svg { display: block; }
+  .globo-hilo {
+    width: 2px;
+    height: 60px;
+    background: rgba(255,255,255,0.35);
+    margin: 0 auto;
+    border-radius: 2px;
+  }
+  @keyframes globo-subir {
+    0%   { bottom: -160px; opacity: 1; }
+    80%  { opacity: 1; }
+    100% { bottom: 110vh;  opacity: 0; }
+  }
+  @keyframes globo-mecerse {
+    0%,100% { transform: rotate(-8deg); }
+    50%     { transform: rotate(8deg); }
+  }
+
 
   /* ─── WELCOME POPUP ─── */
   @keyframes wPopBg {
@@ -2448,9 +2474,11 @@
     <p class="ty-msg" style="margin-bottom:14px;">
       Gracias por elegirnos 💛<br>
       WhatsApp se abrió con tu pedido.<br><br>
-      🖼️ El mensaje incluye un <strong>enlace directo a la imagen</strong> del pedido para que la tienda pueda verla de inmediato.<br><br>
-      <strong>En breve serás contactado</strong> para confirmar los detalles.
+      <strong>Envía también la imagen</strong> al chat para que la tienda vea el resumen visual de tu pedido.
     </p>
+    <button class="ty-share-btn" id="btnAdjuntarImg" onclick="shareOrderImage()" style="display:none;">
+      🖼️ Enviar imagen al chat de WhatsApp
+    </button>
     <button class="ty-close-btn" onclick="closeTyModal()">Continuar explorando</button>
   </div>
 </div>
@@ -2860,7 +2888,8 @@ function cartCount() { return cart.reduce((s, i) => s + i.qty, 0); }
 function cartTotal() {
   return cart.reduce((s, item) => {
     const p = products.find(x => String(x.id) === String(item.id));
-    const num = parseInt(p.price.replace(/[^0-9]/g, ''));
+    if (!p) return s;
+    const num = Math.round(parseFloat(String(p.price))) || 0;
     return s + num * item.qty;
   }, 0);
 }
@@ -2911,7 +2940,7 @@ function updateCartUI() {
   }
   const rawTotal = cartTotal();
   const ds = getDiscountSettings();
-  const discountApplied = rawTotal >= ds.min;
+  const discountApplied = rawTotal > ds.min;
   const finalTotal = discountApplied ? Math.round(rawTotal * (1 - ds.pct / 100)) : rawTotal;
 
   const totalEl     = document.getElementById('cartTotal');
@@ -2962,6 +2991,7 @@ function renderCartItems() {
 
   container.innerHTML = cart.map(item => {
     const p = products.find(x => String(x.id) === String(item.id));
+    if (!p) return '';
     const thumb = p.photo
       ? `<img src="${p.photo}" alt="${p.name}" style="width:100%;height:100%;object-fit:contain;display:block;">`
       : productIconHTML(p);
@@ -3184,12 +3214,13 @@ function buildOrderMsg() {
     : '✨ *Hola Pleaseme!* Quiero hacer un pedido:\n\n';
   cart.forEach((item, idx) => {
     const p = products.find(x => String(x.id) === String(item.id));
+    if (!p) return;
     msg += `${idx + 1}. *${p.name}* (${p.categoryLabel})\n`;
     msg += `   Cantidad: ${item.qty}  ·  Precio: $${p.price} c/u\n`;
   });
   const _raw = cartTotal();
   const ds = getDiscountSettings();
-  const _disc = _raw >= ds.min;
+  const _disc = _raw > ds.min;
   const _final = _disc ? Math.round(_raw * (1 - ds.pct / 100)) : _raw;
   if (_disc) {
     msg += `\n💰 *Subtotal:* $${_raw.toLocaleString('es-CO')}`;
@@ -3223,16 +3254,10 @@ function mostrarModalGracias(canvas) {
   }
   window._orderCanvas = canvas;
 
-  // Mostrar botón adjuntar solo si el navegador soporta share con archivos
+  // Mostrar botón siempre que haya imagen (share en móvil, descarga en desktop)
   const btnAdj = document.getElementById('btnAdjuntarImg');
-  if (btnAdj && canvas && navigator.canShare) {
-    canvas.toBlob(blob => {
-      if (!blob) return;
-      const file = new File([blob], 'pedido-pleaseme.png', { type: 'image/png' });
-      if (navigator.canShare({ files: [file] })) {
-        btnAdj.style.display = 'block';
-      }
-    }, 'image/png');
+  if (btnAdj && canvas) {
+    btnAdj.style.display = 'block';
   }
 
   document.getElementById('tyOverlay').classList.add('open');
@@ -3251,6 +3276,22 @@ async function adjuntarImagenWhatsApp() {
       if (e.name !== 'AbortError') console.error('Error al compartir:', e);
     }
   }, 'image/png');
+}
+
+// Sube imagen del pedido a servicio gratuito (sin configuración) como respaldo
+async function subirImagenFallback(canvas) {
+  try {
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.88));
+    if (!blob) return null;
+    const form = new FormData();
+    form.append('file', blob, 'pedido-pleaseme.jpg');
+    const resp = await fetch('https://0x0.st', { method: 'POST', body: form });
+    if (!resp.ok) return null;
+    const url = (await resp.text()).trim();
+    return url.startsWith('http') ? url : null;
+  } catch(e) {
+    return null;
+  }
 }
 
 // Sube imagen del pedido a Cloudinary y devuelve la URL pública
@@ -3299,29 +3340,24 @@ async function sendWhatsApp() {
   if (canvas) {
     if (btn) btn.textContent = 'Subiendo imagen...';
     imgUrl = await subirImagenPedidoCloudinary(canvas);
+    if (!imgUrl) imgUrl = await subirImagenFallback(canvas);
   }
 
   // Construir mensaje con el link de la imagen si se subió
   let msg = buildOrderMsg();
   if (imgUrl) {
-    msg += `\n\n🖼️ *Resumen visual del pedido:*\n${imgUrl}`;
+    msg += `\n\n🖼️ *Imagen del pedido:*\n${imgUrl}`;
   }
 
   limpiarCarritoPostPedido();
 
   if (btn) { btn.disabled = false; btn.innerHTML = waIconHtml; }
 
-  // Abrir WhatsApp directo con el número de la tienda (sin selección de contacto)
+  // Abrir WhatsApp directo con el número de la tienda
   const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if (isMobile) {
-    window.location.href = `whatsapp://send?phone=${phone}&text=${encodeURIComponent(msg)}`;
-    setTimeout(() => { window.open(waUrl, '_blank'); }, 1200);
-  } else {
-    window.open(waUrl, '_blank');
-  }
+  window.open(waUrl, '_blank');
 
-  setTimeout(() => mostrarModalGracias(canvas), 800);
+  mostrarModalGracias(canvas);
 }
 function closeTyModal() {
   document.getElementById('tyOverlay').classList.remove('open');
@@ -3468,7 +3504,7 @@ async function generarFacturaPDF() {
   doc.line(PAD, y - 2, PW - PAD, y - 2);
 
   const ds = getDiscountSettings(), raw = cartTotalRaw();
-  const disc = raw >= ds.min, fin = disc ? Math.round(raw * (1 - ds.pct / 100)) : raw;
+  const disc = raw > ds.min, fin = disc ? Math.round(raw * (1 - ds.pct / 100)) : raw;
 
   if (disc) {
     doc.setTextColor(200, 200, 200);
@@ -3605,7 +3641,7 @@ async function buildOrderCanvas() {
   cx.beginPath(); cx.moveTo(16,FY+1); cx.lineTo(W-16,FY+1); cx.stroke();
 
   const ds=getDiscountSettings(), raw=cartTotalRaw();
-  const disc=raw>=ds.min, fin=disc?Math.round(raw*(1-ds.pct/100)):raw;
+  const disc=raw>ds.min, fin=disc?Math.round(raw*(1-ds.pct/100)):raw;
   let ty = FY+34;
   if(disc){
     cx.fillStyle='rgba(245,237,224,0.45)'; cx.font='11px Arial';
@@ -4006,6 +4042,34 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal
 let   popupTimer      = null;
 let   popupLastState  = null;
 
+function lanzarGlobos() {
+  const colores = ['#FF6B6B','#FFD93D','#6BCB77','#4D96FF','#FF6FC8','#C9973A','#B388FF','#FF9A3C'];
+  const total = 14;
+  for (let i = 0; i < total; i++) {
+    setTimeout(() => {
+      const wrap = document.createElement('div');
+      wrap.className = 'globo-wrap';
+      const color = colores[i % colores.length];
+      const size  = 38 + Math.random() * 22;
+      const left  = 5 + Math.random() * 90;
+      const dur   = 3.8 + Math.random() * 1.8;
+      const delay = Math.random() * 0.4;
+      const swing = 1.2 + Math.random() * 1.6;
+      wrap.style.cssText = `left:${left}vw; animation-duration:${dur}s; animation-delay:${delay}s;`;
+      wrap.innerHTML = `
+        <svg width="${size}" height="${size*1.25}" viewBox="0 0 100 125" style="animation:globo-mecerse ${swing}s ease-in-out infinite; transform-origin:50% 100%;">
+          <ellipse cx="50" cy="55" rx="46" ry="52" fill="${color}" opacity="0.92"/>
+          <ellipse cx="36" cy="38" rx="12" ry="8" fill="rgba(255,255,255,0.28)" transform="rotate(-30 36 38)"/>
+          <path d="M50 107 Q54 115 50 122 Q46 115 50 107Z" fill="${color}" opacity="0.7"/>
+        </svg>
+        <div class="globo-hilo"></div>`;
+      document.body.appendChild(wrap);
+      const t = (dur + delay) * 1000 + 400;
+      setTimeout(() => wrap.remove(), t);
+    }, i * 120);
+  }
+}
+
 function mostrarPopup(estado) {
   const popup   = document.getElementById('popupDescuento');
   const backdrop= document.getElementById('popupBackdrop');
@@ -4026,6 +4090,7 @@ function mostrarPopup(estado) {
     title.textContent  = '¡Precio mayorista desbloqueado!';
     msg.innerHTML      = 'Se aplicó el <strong>' + ds.pct + '% de descuento</strong><br>automáticamente a tu pedido.';
     sub.textContent    = 'El precio ya aparece descontado en tu carrito.';
+    lanzarGlobos();
   } else {
     const falta = (ds.min - cartTotalRaw()).toLocaleString('es-CO');
     icon.textContent   = '✦';
@@ -4051,14 +4116,16 @@ function cerrarPopup() {
 function cartTotalRaw() {
   return cart.reduce((s, item) => {
     const p = products.find(x => String(x.id) === String(item.id));
-    return s + parseInt(p.price.replace(/[^0-9]/g, '')) * item.qty;
+    if (!p) return s;
+    const num = Math.round(parseFloat(String(p.price))) || 0;
+    return s + num * item.qty;
   }, 0);
 }
 
 function checkPopup() {
   const total = cartTotalRaw();
   if (total <= 0) { popupLastState = null; return; }
-  const estado = total >= getDiscountSettings().min ? 'unlocked' : 'approaching';
+  const estado = total > getDiscountSettings().min ? 'unlocked' : 'approaching';
   if (estado !== popupLastState) {
     mostrarPopup(estado);
     popupLastState = estado;
