@@ -155,6 +155,251 @@ body {
   font-weight: 300;
 }
 
+/* ─── SPHERE KEYPAD ─── */
+.pin-sphere-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* PIN dots display */
+.sphere-pin-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  min-height: 28px;
+  width: 100%;
+  padding: 6px 0 16px;
+}
+
+.sphere-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid rgba(201,151,58,0.28);
+  background: transparent;
+  transition: all 0.15s;
+}
+
+.sphere-dot.filled {
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255,240,160,0.9), #C9973A 60%, #8B6410 100%);
+  border-color: transparent;
+  box-shadow: 0 0 10px rgba(201,151,58,0.75), 0 2px 4px rgba(0,0,0,0.4);
+}
+
+.sphere-dot-more {
+  color: rgba(201,151,58,0.6);
+  font-size: 14px;
+}
+
+/* Shiny panel behind keypad */
+.pin-pad-bg {
+  background:
+    radial-gradient(ellipse at 28% 14%, rgba(255,225,110,0.11) 0%, transparent 48%),
+    radial-gradient(ellipse at 74% 90%, rgba(201,151,58,0.07) 0%, transparent 42%),
+    linear-gradient(148deg, #231809 0%, #130c03 42%, #060402 80%, #0e0a05 100%);
+  border: 1px solid rgba(201,151,58,0.22);
+  border-radius: 16px;
+  padding: 22px 22px 24px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,225,100,0.12),
+    inset 0 -1px 0 rgba(0,0,0,0.75),
+    inset 1px 0 0 rgba(255,255,255,0.04),
+    inset -1px 0 0 rgba(0,0,0,0.3),
+    0 22px 64px rgba(0,0,0,0.82),
+    0 4px 14px rgba(0,0,0,0.55),
+    0 0 80px rgba(201,151,58,0.05);
+}
+
+/* 3×4 phone-style grid */
+.pin-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 60px);
+  gap: 16px;
+}
+
+/* ── 3D Sphere buttons ── */
+.pin-key {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  font-family: 'Cinzel', serif;
+  font-size: 19px;
+  color: #F2DC88;
+  transition: transform 0.1s ease, box-shadow 0.12s ease;
+  background:
+    /* specular glare top-left */
+    radial-gradient(circle at 34% 26%,
+      rgba(255,255,255,0.44) 0%,
+      rgba(255,255,255,0.14) 22%,
+      transparent 44%
+    ),
+    /* warm bottom reflection */
+    radial-gradient(circle at 64% 80%,
+      rgba(201,151,58,0.2) 0%,
+      transparent 38%
+    ),
+    /* main sphere body */
+    radial-gradient(circle at 48% 42%,
+      #4c3314 0%,
+      #2e1e08 42%,
+      #160e04 72%,
+      #0c0903 100%
+    );
+  box-shadow:
+    0 8px 24px rgba(0,0,0,0.82),
+    0 0 0 1px rgba(201,151,58,0.15),
+    inset 0 1px 2px rgba(255,255,255,0.13),
+    inset 0 -4px 8px rgba(0,0,0,0.58);
+}
+
+.pin-key:hover {
+  transform: translateY(-2px) scale(1.07);
+  color: #FFE990;
+  background:
+    radial-gradient(circle at 34% 26%,
+      rgba(255,255,255,0.6) 0%,
+      rgba(255,255,255,0.22) 22%,
+      transparent 44%
+    ),
+    radial-gradient(circle at 64% 80%,
+      rgba(201,151,58,0.34) 0%,
+      transparent 38%
+    ),
+    radial-gradient(circle at 48% 42%,
+      #62431c 0%,
+      #3e280e 42%,
+      #221608 72%,
+      #130f06 100%
+    );
+  box-shadow:
+    0 14px 34px rgba(0,0,0,0.82),
+    0 0 0 1px rgba(201,151,58,0.42),
+    0 0 22px rgba(201,151,58,0.2),
+    inset 0 1px 3px rgba(255,255,255,0.2),
+    inset 0 -4px 8px rgba(0,0,0,0.46);
+}
+
+.pin-key:active {
+  transform: translateY(1px) scale(0.96);
+  box-shadow:
+    0 3px 10px rgba(0,0,0,0.85),
+    0 0 0 1px rgba(201,151,58,0.22),
+    inset 0 3px 9px rgba(0,0,0,0.65);
+}
+
+/* Delete key — muted */
+.pin-del-key {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 17px;
+  color: #9a7c50;
+  background:
+    radial-gradient(circle at 34% 26%,
+      rgba(255,255,255,0.22) 0%,
+      rgba(255,255,255,0.07) 22%,
+      transparent 44%
+    ),
+    radial-gradient(circle at 48% 42%,
+      #2c2010 0%,
+      #1a1206 50%,
+      #0c0904 100%
+    );
+}
+.pin-del-key:hover { color: #d0a870; }
+
+/* Enter key — golden sphere */
+.pin-enter-key {
+  font-family: 'Cinzel', serif;
+  font-size: 8px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #1a0e02;
+  background:
+    radial-gradient(circle at 34% 26%,
+      rgba(255,255,255,0.55) 0%,
+      rgba(255,230,110,0.3) 28%,
+      transparent 52%
+    ),
+    radial-gradient(circle at 64% 80%,
+      rgba(160,100,10,0.45) 0%,
+      transparent 42%
+    ),
+    radial-gradient(circle at 48% 42%,
+      #EAC96A 0%,
+      #C9973A 44%,
+      #8B6414 80%,
+      #6A4A08 100%
+    );
+  box-shadow:
+    0 8px 24px rgba(0,0,0,0.82),
+    0 0 0 1px rgba(201,151,58,0.55),
+    0 0 22px rgba(201,151,58,0.22),
+    inset 0 1px 2px rgba(255,255,255,0.35),
+    inset 0 -4px 8px rgba(100,58,0,0.42);
+}
+
+.pin-enter-key:hover {
+  color: #1a0e02;
+  background:
+    radial-gradient(circle at 34% 26%,
+      rgba(255,255,255,0.7) 0%,
+      rgba(255,240,130,0.4) 28%,
+      transparent 52%
+    ),
+    radial-gradient(circle at 64% 80%,
+      rgba(180,120,15,0.55) 0%,
+      transparent 42%
+    ),
+    radial-gradient(circle at 48% 42%,
+      #F2D472 0%,
+      #D4A040 44%,
+      #9A7018 80%,
+      #7A540E 100%
+    );
+  box-shadow:
+    0 14px 34px rgba(0,0,0,0.82),
+    0 0 0 1px rgba(255,210,80,0.75),
+    0 0 32px rgba(201,151,58,0.38),
+    inset 0 1px 3px rgba(255,255,255,0.45),
+    inset 0 -4px 8px rgba(100,58,0,0.36);
+}
+
+.pin-enter-key:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.pin-keyboard-toggle {
+  background: none;
+  border: none;
+  color: rgba(107,94,74,0.44);
+  font-family: 'Montserrat', sans-serif;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  margin-top: 14px;
+  padding: 2px 0;
+  transition: color 0.2s;
+}
+
+.pin-keyboard-toggle:hover { color: rgba(201,151,58,0.55); }
+
+@keyframes sphere-shake {
+  0%,100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+}
+
+.pin-pad-bg.sphere-shake { animation: sphere-shake 0.45s ease; }
+
 /* ─── INPUT OVERRIDES DARK THEME ─── */
 body.dark-theme input[type=text],
 body.dark-theme input[type=number],
@@ -1283,9 +1528,34 @@ textarea { resize: vertical; min-height: 80px; }
   <div class="login-box">
     <div class="login-logo">Pleaseme</div>
     <div class="login-sub">Panel Administrativo</div>
-    <label class="login-label">Contraseña</label>
-    <input class="login-input" type="password" id="loginPass" placeholder="••••••••" autocomplete="off">
-    <button class="login-btn" id="loginBtn" onclick="doLogin()" disabled>Cargando...</button>
+    <!-- Sphere Keypad -->
+    <div class="pin-sphere-wrap" id="pinSphereWrap">
+      <div class="sphere-pin-display" id="spherePinDisplay"></div>
+      <div class="pin-pad-bg" id="pinSphereEl">
+        <div class="pin-pad">
+          <button class="pin-key" onclick="pinAddDigit('1')">1</button>
+          <button class="pin-key" onclick="pinAddDigit('2')">2</button>
+          <button class="pin-key" onclick="pinAddDigit('3')">3</button>
+          <button class="pin-key" onclick="pinAddDigit('4')">4</button>
+          <button class="pin-key" onclick="pinAddDigit('5')">5</button>
+          <button class="pin-key" onclick="pinAddDigit('6')">6</button>
+          <button class="pin-key" onclick="pinAddDigit('7')">7</button>
+          <button class="pin-key" onclick="pinAddDigit('8')">8</button>
+          <button class="pin-key" onclick="pinAddDigit('9')">9</button>
+          <button class="pin-key pin-del-key" onclick="pinDeleteDigit()">⌫</button>
+          <button class="pin-key" onclick="pinAddDigit('0')">0</button>
+          <button class="pin-key pin-enter-key" id="pinEnterBtn" onclick="doLogin()" disabled>Cargando...</button>
+        </div>
+      </div>
+      <button class="pin-keyboard-toggle" onclick="pinToggleKeyboard()">⌨ usar teclado</button>
+    </div>
+    <!-- Classic input (hidden by default) -->
+    <div id="pinClassicWrap" style="display:none">
+      <label class="login-label">Contraseña</label>
+      <input class="login-input" type="password" id="loginPass" placeholder="••••••••" autocomplete="off">
+      <button class="login-btn" id="loginBtn" onclick="doLogin()" disabled>Cargando...</button>
+      <button class="pin-keyboard-toggle" style="display:block;margin-top:8px" onclick="pinToggleKeyboard()">⊞ teclado numérico</button>
+    </div>
     <div class="login-error" id="loginError"></div>
   </div>
 </div>
@@ -2133,9 +2403,65 @@ function getPass() {
   return adminPassword;
 }
 
+// ─── PIN SPHERE ──────────────────────────────────────────────────────
+let pinValue = '';
+
+function pinAddDigit(d) {
+  if (pinValue.length >= 20) return;
+  pinValue += d;
+  updatePinDisplay();
+}
+
+function pinDeleteDigit() {
+  pinValue = pinValue.slice(0, -1);
+  updatePinDisplay();
+}
+
+function updatePinDisplay() {
+  const disp = document.getElementById('spherePinDisplay');
+  if (!disp) return;
+  disp.innerHTML = '';
+  const show = Math.min(pinValue.length, 8);
+  for (let i = 0; i < show; i++) {
+    const dot = document.createElement('span');
+    dot.className = 'sphere-dot filled';
+    disp.appendChild(dot);
+  }
+  if (pinValue.length > 8) {
+    const m = document.createElement('span');
+    m.className = 'sphere-dot-more';
+    m.textContent = '…';
+    disp.appendChild(m);
+  }
+}
+
+function pinResetValue() {
+  pinValue = '';
+  updatePinDisplay();
+}
+
+function pinToggleKeyboard() {
+  const wrap = document.getElementById('pinSphereWrap');
+  const classic = document.getElementById('pinClassicWrap');
+  if (wrap.style.display === 'none') {
+    wrap.style.display = '';
+    classic.style.display = 'none';
+  } else {
+    wrap.style.display = 'none';
+    classic.style.display = '';
+    document.getElementById('loginPass').focus();
+  }
+}
+
+function pinIsSphereMode() {
+  const wrap = document.getElementById('pinSphereWrap');
+  return wrap && wrap.style.display !== 'none';
+}
+
 async function doLogin() {
-  const val = document.getElementById('loginPass').value;
-  const btn = document.getElementById('loginBtn');
+  const usePin = pinIsSphereMode();
+  const val = usePin ? pinValue : document.getElementById('loginPass').value;
+  const btn = document.getElementById(usePin ? 'pinEnterBtn' : 'loginBtn');
   btn.disabled = true;
   btn.textContent = 'Verificando...';
 
@@ -2146,6 +2472,7 @@ async function doLogin() {
   btn.textContent = 'Ingresar';
 
   if (val === getPass()) {
+    pinResetValue();
     document.getElementById('loginPass').value = '';
     document.getElementById('loginError').textContent = '';
     document.getElementById('loginPass').style.borderColor = '';
@@ -2153,10 +2480,16 @@ async function doLogin() {
     sessionStorage.setItem('pm_auth', '1');
     init();
   } else {
+    pinResetValue();
     document.getElementById('loginPass').value = '';
     document.getElementById('loginError').textContent = 'Contraseña incorrecta';
-    document.getElementById('loginPass').style.borderColor = 'rgba(192,57,43,0.5)';
-    document.getElementById('loginPass').focus();
+    if (usePin) {
+      const sphere = document.getElementById('pinSphereEl');
+      if (sphere) { sphere.classList.add('sphere-shake'); setTimeout(() => sphere.classList.remove('sphere-shake'), 500); }
+    } else {
+      document.getElementById('loginPass').style.borderColor = 'rgba(192,57,43,0.5)';
+      document.getElementById('loginPass').focus();
+    }
     setTimeout(() => {
       document.getElementById('loginError').textContent = '';
       document.getElementById('loginPass').style.borderColor = '';
@@ -2170,15 +2503,25 @@ document.getElementById('loginPass').addEventListener('keydown', e => {
   document.getElementById('loginPass').style.borderColor = '';
 });
 
+document.addEventListener('keydown', e => {
+  if (!pinIsSphereMode()) return;
+  if (document.getElementById('loginScreen').classList.contains('hidden')) return;
+  if (e.key >= '0' && e.key <= '9') { pinAddDigit(e.key); return; }
+  if (e.key === 'Backspace') { e.preventDefault(); pinDeleteDigit(); return; }
+  if (e.key === 'Enter') { doLogin(); return; }
+  document.getElementById('loginError').textContent = '';
+});
+
 // Limpiar campo cada vez que la pantalla de login se muestre
 (function() {
   const observer = new MutationObserver(() => {
     const screen = document.getElementById('loginScreen');
     if (screen && !screen.classList.contains('hidden')) {
       document.getElementById('loginPass').value = '';
+      pinResetValue();
       document.getElementById('loginError').textContent = '';
       document.getElementById('loginPass').style.borderColor = '';
-      document.getElementById('loginPass').focus();
+      if (!pinIsSphereMode()) document.getElementById('loginPass').focus();
     }
   });
   observer.observe(document.getElementById('loginScreen'), { attributes: true, attributeFilter: ['class'] });
@@ -3866,6 +4209,8 @@ async function init() {
   const btn = document.getElementById('loginBtn');
   btn.disabled = false;
   btn.textContent = 'Ingresar';
+  const pinBtn = document.getElementById('pinEnterBtn');
+  if (pinBtn) { pinBtn.disabled = false; pinBtn.textContent = 'Ingresar'; }
   if (sessionStorage.getItem('pm_auth') === '1') {
     document.getElementById('loginScreen').classList.add('hidden');
     init();
