@@ -155,6 +155,22 @@ body {
   font-weight: 300;
 }
 
+.login-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: rgba(154,140,118,0.55);
+  font-family: 'Cinzel', serif;
+  font-size: 8.5px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-decoration: none;
+  margin-bottom: 28px;
+  transition: color 0.2s;
+}
+
+.login-back-btn:hover { color: rgba(201,151,58,0.75); }
+
 /* ─── SPHERE KEYPAD ─── */
 .pin-sphere-wrap {
   display: flex;
@@ -1526,6 +1542,10 @@ textarea { resize: vertical; min-height: 80px; }
 <!-- ═══ LOGIN ═══ -->
 <div id="loginScreen">
   <div class="login-box">
+    <a href="index.html" class="login-back-btn" title="Volver al catálogo">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Catálogo
+    </a>
     <div class="login-logo">Pleaseme</div>
     <div class="login-sub">Panel Administrativo</div>
     <!-- Sphere Keypad -->
