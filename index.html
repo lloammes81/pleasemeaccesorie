@@ -51,7 +51,8 @@
   header {
     position: relative;
     text-align: center;
-    padding: 36px 20px 24px;
+    padding: calc(36px + constant(safe-area-inset-top)) 20px 24px;
+    padding: calc(36px + env(safe-area-inset-top)) 20px 24px;
     overflow: hidden;
   }
 
@@ -125,11 +126,14 @@
   }
 
   @media (max-width: 600px) {
-    header { padding: 8px 20px 4px; }
-    .header-eyebrow { margin-bottom: 4px; font-size: 14px; letter-spacing: 8px; }
-    .header-logo { font-size: 32px; }
-    .header-sub { margin-top: 4px; font-size: 9px; letter-spacing: 5px; }
-    .header-divider { margin: 8px auto 0; }
+    header {
+      padding: calc(14px + constant(safe-area-inset-top)) 20px 8px;
+      padding: calc(14px + env(safe-area-inset-top)) 20px 8px;
+    }
+    .header-eyebrow { margin-bottom: 2px; font-size: 10px; letter-spacing: 6px; }
+    .header-logo { font-size: 22px; line-height: 1; }
+    .header-sub { margin-top: 2px; font-size: 8px; letter-spacing: 4px; }
+    .header-divider { margin: 6px auto 0; width: 180px; }
   }
 
   /* ─── FILTERS ─── */
