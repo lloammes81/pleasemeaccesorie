@@ -1881,7 +1881,7 @@
     text-align: center;
     font-family: 'Cinzel', serif;
     font-size: 8.5px;
-    letter-spacing: 3px;
+    letter-spacing: 1.5px;
     color: var(--text-muted);
     text-transform: uppercase;
     margin-top: 0;
@@ -4959,16 +4959,30 @@ renderInfoSections();
   const fab = document.getElementById('cartFab');
   if (!fab) return;
 
-  // Restore saved position
+  // Restore saved position (clamped to current viewport)
+  function clampFabToViewport() {
+    const w = fab.offsetWidth  || 62;
+    const h = fab.offsetHeight || 62;
+    const curLeft = parseFloat(fab.style.left);
+    const curTop  = parseFloat(fab.style.top);
+    if (fab.style.left && fab.style.top && !isNaN(curLeft) && !isNaN(curTop)) {
+      fab.style.left = Math.max(0, Math.min(curLeft, window.innerWidth  - w)) + 'px';
+      fab.style.top  = Math.max(0, Math.min(curTop,  window.innerHeight - h)) + 'px';
+    }
+  }
   try {
     const saved = JSON.parse(localStorage.getItem('pm_fab_pos') || 'null');
-    if (saved) {
+    if (saved && typeof saved.x === 'number' && typeof saved.y === 'number') {
+      const w = 62, h = 62;
+      const clampedX = Math.max(0, Math.min(saved.x, window.innerWidth  - w));
+      const clampedY = Math.max(0, Math.min(saved.y, window.innerHeight - h));
       fab.style.right  = 'auto';
       fab.style.bottom = 'auto';
-      fab.style.left   = saved.x + 'px';
-      fab.style.top    = saved.y + 'px';
+      fab.style.left   = clampedX + 'px';
+      fab.style.top    = clampedY + 'px';
     }
   } catch(e) {}
+  window.addEventListener('resize', clampFabToViewport);
 
   let dragging = false, startX, startY, origLeft, origTop;
 
