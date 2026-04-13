@@ -1941,6 +1941,27 @@ textarea { resize: vertical; min-height: 80px; }
           <p style="font-size:11px;color:var(--text-muted);font-weight:300;margin-bottom:16px;">
             Selecciona cuáles productos aparecerán en la sección de ofertas.
           </p>
+
+          <!-- Buscador + Filtro por categoría -->
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+            <input type="text" id="ofertaSearch" placeholder="Buscar por nombre…"
+              oninput="renderOfertaProductList()"
+              style="flex:1;min-width:160px;font-size:12px;padding:8px 12px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:'Montserrat',sans-serif;outline:none;transition:border-color 0.2s;"
+              onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border)'">
+            <select id="ofertaCatFilter" onchange="renderOfertaProductList()"
+              style="font-size:11px;padding:8px 12px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:'Montserrat',sans-serif;cursor:pointer;outline:none;transition:border-color 0.2s;"
+              onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border)'">
+              <option value="">Todas las categorías</option>
+              <option value="anillos">Anillos</option>
+              <option value="aretes">Aretes</option>
+              <option value="collares">Collares</option>
+              <option value="pulseras">Pulseras</option>
+              <option value="tobilleras">Tobilleras</option>
+              <option value="dijes">Dijes</option>
+              <option value="temporada">⭐ Temporada</option>
+            </select>
+          </div>
+
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
             <button class="btn btn-outline" style="font-size:9px;padding:5px 12px;" onclick="ofertaSelectAll(true)">Seleccionar todos</button>
             <button class="btn btn-outline" style="font-size:9px;padding:5px 12px;" onclick="ofertaSelectAll(false)">Quitar todos</button>
@@ -2518,6 +2539,7 @@ textarea { resize: vertical; min-height: 80px; }
           <option value="pulseras">Pulseras</option>
           <option value="tobilleras">Tobilleras</option>
           <option value="dijes">Dijes</option>
+          <option value="temporada">⭐ Temporada</option>
         </select>
       </div>
       <div class="field">
@@ -2787,7 +2809,8 @@ let photoChanged = false; // true solo cuando el usuario seleccionó una foto nu
 
 const CAT_LABELS = {
   anillos: 'Anillos', aretes: 'Aretes', collares: 'Collares',
-  pulseras: 'Pulseras', tobilleras: 'Tobilleras', dijes: 'Dijes'
+  pulseras: 'Pulseras', tobilleras: 'Tobilleras', dijes: 'Dijes',
+  temporada: 'Temporada'
 };
 
 async function recargarProductos() {
@@ -3206,6 +3229,13 @@ function renderTable() {
       <div class="stat-sub">prenda${n !== 1 ? 's' : ''}</div>
     </div>`;
   }).join('');
+  // Esfera especial Temporada
+  const nTemporada = cats['temporada'] || 0;
+  const temporadaCard = `<div class="stat-card filterable" onclick="goTo('ofertas')" title="Ver productos de temporada" style="background:radial-gradient(circle at 35% 35%, rgba(201,151,58,0.22) 0%, var(--surface) 60%);border-color:rgba(201,151,58,0.55);box-shadow:0 0 28px rgba(201,151,58,0.3),0 0 60px rgba(201,151,58,0.12),inset 0 1px 0 rgba(255,255,255,0.1);">
+    <div class="stat-label" style="color:var(--gold);">⭐ Temporada</div>
+    <div class="stat-val">${nTemporada}</div>
+    <div class="stat-sub">productos</div>
+  </div>`;
   const isTodosActive = filtroCategoria === '';
   document.getElementById('statsRow').innerHTML = `
     <div class="stat-card filterable${isTodosActive ? ' active-filter' : ''}" onclick="filterByCategory('')" title="Mostrar todos los productos">
@@ -3224,6 +3254,7 @@ function renderTable() {
       <div class="stat-sub">${products.length} artículos</div>
     </div>
     ${catCards}
+    ${temporadaCard}
   `;
 
   if (displayed.length === 0) {
@@ -4330,7 +4361,21 @@ function renderOfertaProductList() {
     return;
   }
 
-  container.innerHTML = products.map(p => {
+  // Filtros
+  const searchQ  = (document.getElementById('ofertaSearch')?.value || '').toLowerCase().trim();
+  const catFilter = (document.getElementById('ofertaCatFilter')?.value || '');
+
+  let filtered = products;
+  if (catFilter)  filtered = filtered.filter(p => p.category === catFilter);
+  if (searchQ)    filtered = filtered.filter(p => (p.name || '').toLowerCase().includes(searchQ) || (p.subtitle || '').toLowerCase().includes(searchQ));
+
+  if (!filtered.length) {
+    container.innerHTML = '<p style="color:var(--text-muted);font-size:11px;text-align:center;padding:20px 0;">Sin resultados para esa búsqueda.</p>';
+    if (counter) counter.textContent = `${_ofertaSelectedIds.size} seleccionados`;
+    return;
+  }
+
+  container.innerHTML = filtered.map(p => {
     const checked  = _ofertaSelectedIds.has(p.id);
     const thumb    = p.photo
       ? `<img src="${p.photo}" alt="${p.name}">`
