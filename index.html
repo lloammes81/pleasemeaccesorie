@@ -4667,8 +4667,10 @@ let _seasonalOffer = null;
       const o = typeof ofertaData.value === 'string' ? JSON.parse(ofertaData.value) : ofertaData.value;
       if (o && o.active) {
         _seasonalOffer = o;
-        renderGrid();           // actualizar grilla con esfera de oferta
-        mostrarOfertaModal();   // mostrar notificación con estrellas
+        renderGrid(); // actualizar grilla con esfera de oferta
+        // Solo mostrar el modal si el welcome ya se cerró;
+        // si no, cerrarWelcome() lo disparará automáticamente
+        if (_welcomeClosed) mostrarOfertaModal();
       }
     }
   } catch(e) {}
@@ -4688,6 +4690,7 @@ let _seasonalOffer = null;
 
 // ─── WELCOME POPUP ────────────────────────────────────────────────────
 let _welcomeTimer = null;
+let _welcomeClosed = false;
 function mostrarWelcome() {
   const overlay = document.getElementById('welcomeOverlay');
   if (!overlay) return;
@@ -4705,7 +4708,13 @@ function cerrarWelcome() {
   const overlay = document.getElementById('welcomeOverlay');
   if (!overlay || overlay.style.display === 'none') return;
   overlay.style.animation = 'wPopOut 0.4s ease forwards';
-  setTimeout(() => { overlay.style.display = 'none'; overlay.style.animation = ''; }, 420);
+  setTimeout(() => {
+    overlay.style.display = 'none';
+    overlay.style.animation = '';
+    _welcomeClosed = true;
+    // Mostrar oferta de temporada después del welcome, nunca encima
+    if (_seasonalOffer && _seasonalOffer.active) mostrarOfertaModal();
+  }, 420);
 }
 
 // ─── OFERTA MODAL con estrellas flotantes ─────────────────────────────
