@@ -2,12 +2,15 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Pleaseme">
 <meta name="theme-color" content="#0A0804">
+<meta name="format-detection" content="telephone=no">
+<meta name="msapplication-tap-highlight" content="no">
+<meta name="apple-touch-fullscreen" content="yes">
 <title>Catálogo — Pleaseme Accessories</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="pleaseme.png" type="image/png">
@@ -34,12 +37,32 @@
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
+  /* ── COMPORTAMIENTO DE APP NATIVA ── */
+  html {
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    height: 100%;
+  }
+
   body {
     background: var(--bg-dark);
     color: var(--text-cream);
     font-family: 'Montserrat', sans-serif;
     min-height: 100vh;
+    min-height: 100dvh;
     overflow-x: hidden;
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* Permitir selección solo en inputs y áreas de texto */
+  input, textarea, [contenteditable] {
+    user-select: text;
+    -webkit-user-select: text;
   }
 
   /* Grain overlay */
@@ -133,13 +156,13 @@
 
   @media (max-width: 600px) {
     header {
-      padding: calc(14px + constant(safe-area-inset-top)) 20px 8px;
-      padding: calc(14px + env(safe-area-inset-top)) 20px 8px;
+      padding: calc(8px + constant(safe-area-inset-top)) 20px 4px;
+      padding: calc(8px + env(safe-area-inset-top)) 20px 4px;
     }
     .header-eyebrow { margin-bottom: 2px; font-size: 10px; letter-spacing: 6px; }
     .header-logo { font-size: 22px; line-height: 1; }
     .header-sub { margin-top: 2px; font-size: 8px; letter-spacing: 4px; }
-    .header-divider { margin: 6px auto 0; width: 180px; }
+    .header-divider { margin: 4px auto 0; width: 180px; }
   }
 
   /* ─── FILTERS ─── */
@@ -148,7 +171,7 @@
     justify-content: center;
     gap: 10px;
     flex-wrap: wrap;
-    padding: 12px 20px 16px;
+    padding: 6px 20px 8px;
     opacity: 0;
     animation: fadeUp 0.8s ease 1s forwards;
   }
@@ -1845,7 +1868,7 @@
     flex-direction: column;
     align-items: center;
     gap: 0;
-    padding: 14px 0 0;
+    padding: 4px 0 0;
     max-width: 480px;
     margin: 0 auto;
     position: relative;
@@ -1861,7 +1884,8 @@
     letter-spacing: 6px;
     color: var(--text-muted);
     text-transform: uppercase;
-    margin-bottom: 10px;
+    margin-top: 0;
+    margin-bottom: 4px;
     opacity: 0;
     animation: fadeUp 0.8s ease 0.4s forwards;
   }
@@ -4383,7 +4407,7 @@ function renderGrid() {
   if (_seasonalOffer && _seasonalOffer.active) {
     html += '<div class="catalog-section-label">Oferta especial</div>';
     html += ofertaCardHTML(_seasonalOffer);
-    html += '<div class="catalog-section-label" style="margin-top:2px;margin-bottom:6px;">Explorar por categoría</div>';
+    html += '<div class="catalog-section-label" style="margin-top:0;margin-bottom:4px;">Explorar por categoría</div>';
   } else {
     html += '<div class="catalog-section-label">Explorar por categoría</div>';
   }
