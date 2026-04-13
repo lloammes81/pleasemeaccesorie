@@ -12,7 +12,10 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="pleaseme.png" type="image/png">
 <link rel="apple-touch-icon" href="pleaseme.png">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Cinzel:wght@400;600&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Cinzel:wght@400;600&family=Montserrat:wght@300;400;500&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Cinzel:wght@400;600&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet"></noscript>
 <style>
   :root {
     --gold-deep: #8B6914;
@@ -1858,7 +1861,7 @@
     letter-spacing: 6px;
     color: var(--text-muted);
     text-transform: uppercase;
-    margin-bottom: 28px;
+    margin-bottom: 10px;
     opacity: 0;
     animation: fadeUp 0.8s ease 0.4s forwards;
   }
@@ -2487,7 +2490,7 @@
   }
 
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
@@ -3065,6 +3068,8 @@ try {
           appId:             '1:1003192303604:web:bfd1b608f1807af3e8c3a1'
         });
     _db = firebase.firestore();
+    // Caché offline: segunda visita carga instantáneo desde disco
+    _db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
   }
 } catch(e) { console.error('Firebase init error:', e); }
 
@@ -3096,18 +3101,37 @@ async function loadPhotosLazy() {}
 
 let products = [];
 
+// ── Carga desde caché localStorage para render instantáneo ──────────
+(function() {
+  try {
+    const cached = localStorage.getItem('pm_products_cache');
+    if (cached) {
+      const data = JSON.parse(cached);
+      if (Array.isArray(data) && data.length > 0) {
+        products = data.filter(p => p.active !== false);
+        renderFilters();
+        renderGrid();
+      }
+    }
+  } catch(e) {}
+})();
+
 // Mostrar categorías de inmediato (vacías) para que la página no salga en blanco
-renderGrid();
+if (products.length === 0) renderGrid();
 
 fetchProductsFromFirebase()
   .then(data => {
     products = data.filter(p => p.active !== false);
+    // Guardar en caché para próxima visita instantánea
+    try { localStorage.setItem('pm_products_cache', JSON.stringify(products)); } catch(e) {}
     renderFilters();
     renderGrid();
     loadPhotosLazy();
   })
   .catch(err => {
     console.error('Error cargando productos:', err);
+    // Si ya hay datos del caché, no mostrar error
+    if (products.length > 0) return;
     const grid = document.getElementById('catalogGrid');
     if (grid) grid.innerHTML = `
       <div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:rgba(201,151,58,0.7);">
@@ -3363,7 +3387,19 @@ function catProductHTML(p) {
 
 async function openCategoryPanel(category) {
   currentCategory = category;
-  const catProducts = products.filter(p => p.category === category);
+
+  // Si la categoría es "temporada", combinar productos de la oferta de temporada
+  // con los que tienen category === 'temporada', sin duplicados
+  let catProducts;
+  if (category === 'temporada' && _seasonalOffer && _seasonalOffer.active) {
+    const ofertaIds = new Set(_seasonalOffer.productIds || []);
+    const porCategoria = products.filter(p => p.category === 'temporada');
+    const porOferta    = products.filter(p => ofertaIds.has(p.id) && p.category !== 'temporada');
+    catProducts = [...porOferta, ...porCategoria];
+  } else {
+    catProducts = products.filter(p => p.category === category);
+  }
+
   const cat = categories.find(c => c.key === category);
   document.getElementById('catPanelTitle').textContent = cat ? cat.label : category;
   document.getElementById('catOverlay').classList.add('open');
@@ -4257,7 +4293,15 @@ function getCategoryIllustration(key) {
 
 // ─── CATEGORY CARD HTML ───────────────────────────────────────────────
 function categoryCardHTML(cat, i) {
-  const catProducts = products.filter(p => p.category === cat.key);
+  let catProducts;
+  if (cat.key === 'temporada' && _seasonalOffer && _seasonalOffer.active) {
+    const ofertaIds = new Set(_seasonalOffer.productIds || []);
+    const porCategoria = products.filter(p => p.category === 'temporada');
+    const porOferta    = products.filter(p => ofertaIds.has(p.id) && p.category !== 'temporada');
+    catProducts = [...porOferta, ...porCategoria];
+  } else {
+    catProducts = products.filter(p => p.category === cat.key);
+  }
   const count = catProducts.length;
   const illustration = getCategoryIllustration(cat.key);
   return `
@@ -4309,7 +4353,7 @@ function renderGrid() {
   if (_seasonalOffer && _seasonalOffer.active) {
     html += '<div class="catalog-section-label">Oferta especial</div>';
     html += ofertaCardHTML(_seasonalOffer);
-    html += '<div class="catalog-section-label" style="margin-top:18px;">Explorar por categoría</div>';
+    html += '<div class="catalog-section-label" style="margin-top:0;margin-bottom:8px;">Explorar por categoría</div>';
   } else {
     html += '<div class="catalog-section-label">Explorar por categoría</div>';
   }
@@ -4619,31 +4663,22 @@ function applyContactInfo(c) {
 }
 
 async function loadContactInfo() {
-  // 1. Mostrar desde localStorage de inmediato
+  // Mostrar desde localStorage de inmediato (sin esperar red)
   try {
     const local = JSON.parse(localStorage.getItem('pm_contact') || '{}');
     applyContactInfo(local);
   } catch(e) {}
-
-  // 2. Sincronizar desde Firebase
-  try {
-    const doc = await _db.collection('config').doc('pm_contact').get();
-    if (!doc.exists) return;
-    const remote = typeof doc.data().value === 'string'
-      ? JSON.parse(doc.data().value)
-      : doc.data().value;
-    localStorage.setItem('pm_contact', JSON.stringify(remote));
-    applyContactInfo(remote);
-  } catch(e) {}
+  // La sincronización desde Firebase ocurre en syncRemoteSettings (llamada única)
 }
 loadContactInfo();
 
-// ─── SYNC pm_discount, pm_banner y pm_seasonal_offers desde Firebase ─
+// ─── SYNC pm_discount, pm_banner, pm_seasonal_offers y pm_contact (1 sola llamada) ─
 
 (async function syncRemoteSettings() {
   try {
-    const keys = ['pm_discount', 'pm_banner', 'pm_seasonal_offers'];
+    const keys = ['pm_discount', 'pm_banner', 'pm_seasonal_offers', 'pm_contact', 'pm_catalog_info'];
     if (!_db) return;
+    // Una sola ronda de red para todos los configs
     const docs = await Promise.all(keys.map(k => _db.collection('config').doc(k).get()));
     const rows = docs.filter(d => d.exists).map(d => ({ key: d.id, value: d.data().value }));
     if (!rows.length) return;
@@ -4673,6 +4708,12 @@ loadContactInfo();
         }
       }
     }
+    // Refrescar contacto
+    const contactData = rows.find(r => r.key === 'pm_contact');
+    if (contactData) {
+      const c = typeof contactData.value === 'string' ? JSON.parse(contactData.value) : contactData.value;
+      applyContactInfo(c);
+    }
     // Cargar ofertas de temporada
     const ofertaData = rows.find(r => r.key === 'pm_seasonal_offers');
     if (ofertaData) {
@@ -4684,6 +4725,12 @@ loadContactInfo();
         // si no, cerrarWelcome() lo disparará automáticamente
         if (_welcomeClosed) mostrarOfertaModal();
       }
+    }
+    // Refrescar info de catálogo (título, subtítulo, footer)
+    const catalogData = rows.find(r => r.key === 'pm_catalog_info');
+    if (catalogData) {
+      const c = typeof catalogData.value === 'string' ? JSON.parse(catalogData.value) : catalogData.value;
+      applyCatalogInfo(c);
     }
   } catch(e) {}
 })();
@@ -4807,16 +4854,10 @@ function applyCatalogInfo(c) {
   } catch(e) {}
 }
 async function loadCatalogInfo() {
+  // Solo localStorage — Firebase sync ya ocurre en syncRemoteSettings
   try {
     const local = JSON.parse(localStorage.getItem('pm_catalog_info') || '{}');
     applyCatalogInfo(local);
-  } catch(e) {}
-  try {
-    const doc = await _db.collection('config').doc('pm_catalog_info').get();
-    if (!doc.exists) return;
-    const remote = typeof doc.data().value === 'string' ? JSON.parse(doc.data().value) : doc.data().value;
-    localStorage.setItem('pm_catalog_info', JSON.stringify(remote));
-    applyCatalogInfo(remote);
   } catch(e) {}
 }
 loadCatalogInfo();
@@ -4960,16 +5001,50 @@ renderInfoSections();
 
 // ─── FULLSCREEN EN MÓVIL ───────────────────────────────────────────────
 (function() {
-  if (!/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) return;
   function requestFS() {
     const el = document.documentElement;
     try {
-      if (el.requestFullscreen)            el.requestFullscreen();
+      if (el.requestFullscreen)            el.requestFullscreen().catch(function(){});
       else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      else if (el.mozRequestFullScreen)    el.mozRequestFullScreen();
     } catch(e) {}
   }
-  document.addEventListener('touchstart', requestFS, { once: true, passive: true });
+  // Si ya es PWA standalone, intentar directamente
+  if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
+    requestFS();
+  } else {
+    // En navegador normal: esperar primer toque o click del usuario
+    document.addEventListener('touchstart', requestFS, { once: true, passive: true });
+    document.addEventListener('click',      requestFS, { once: true });
+  }
 })();
+
+// ─── CERRAR PÁGINA ─────────────────────────────────────────────────────
+function cerrarPagina() {
+  // Salir de pantalla completa si aplica
+  try {
+    const exitFn = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen;
+    if (exitFn && (document.fullscreenElement || document.webkitFullscreenElement)) {
+      exitFn.call(document).catch(function(){});
+    }
+  } catch(e) {}
+  // Intentar cerrar la ventana/pestaña
+  try { window.close(); } catch(e) {}
+  // Fallback: si no se cerró (tab abierta por el usuario), navegar hacia atrás
+  setTimeout(function() {
+    if (!document.hidden) {
+      const btn = document.getElementById('closePageBtn');
+      try { history.go(-(history.length)); } catch(e) {}
+      if (btn) {
+        btn.innerHTML = '✕ &nbsp;Cierra esta pestaña manualmente';
+        btn.style.fontSize = '7.5px';
+        btn.style.letterSpacing = '1.5px';
+        btn.style.borderColor = 'rgba(201,151,58,0.7)';
+        btn.style.color = 'var(--gold-mid)';
+      }
+    }
+  }, 400);
+}
 
 </script>
 
@@ -5009,6 +5084,41 @@ renderInfoSections();
   </div>
 </div>
 
+
+<!-- BOTÓN CERRAR PÁGINA (fijo en la parte inferior) -->
+<button id="closePageBtn" onclick="cerrarPagina()" style="
+  position: fixed;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4000;
+  background: linear-gradient(135deg, rgba(15,12,6,0.95), rgba(25,18,6,0.95));
+  border: 1px solid rgba(201,151,58,0.55);
+  color: var(--gold-mid, #C9973A);
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 11px 28px;
+  border-radius: 50px;
+  cursor: pointer;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.6), 0 0 0 1px rgba(201,151,58,0.08), inset 0 1px 0 rgba(255,240,179,0.06);
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+" onmouseenter="this.style.borderColor='rgba(201,151,58,0.9)';this.style.background='linear-gradient(135deg,rgba(25,18,6,0.98),rgba(40,28,8,0.98))';this.style.boxShadow='0 6px 32px rgba(0,0,0,0.7),0 0 0 1px rgba(201,151,58,0.15),inset 0 1px 0 rgba(255,240,179,0.1)';"
+   onmouseleave="this.style.borderColor='rgba(201,151,58,0.55)';this.style.background='linear-gradient(135deg,rgba(15,12,6,0.95),rgba(25,18,6,0.95))';this.style.boxShadow='0 4px 24px rgba(0,0,0,0.6),0 0 0 1px rgba(201,151,58,0.08),inset 0 1px 0 rgba(255,240,179,0.06)';"
+   ontouchstart="this.style.borderColor='rgba(201,151,58,0.9)';this.style.transform='translateX(-50%) scale(0.97)';"
+   ontouchend="this.style.borderColor='rgba(201,151,58,0.55)';this.style.transform='translateX(-50%) scale(1)';">
+  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+  </svg>
+  Cerrar catálogo
+</button>
 
 <!-- FAB-VISUAL watermark -->
 <div id="fabVisualWrap" style="position:fixed;bottom:16px;right:16px;z-index:500;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;" onclick="toggleFabCard()">
