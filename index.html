@@ -1545,11 +1545,10 @@
     background: rgba(0,0,0,0.75);
     backdrop-filter: blur(8px);
     z-index: 9500;
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     padding: 20px;
-    animation: wPopBg 0.5s ease forwards;
     opacity: 1;
   }
 
@@ -2747,6 +2746,11 @@
 </div>
 
 <script>
+// ─── VARIABLES GLOBALES ───────────────────────────────────────────────
+let _seasonalOffer = null;
+let _welcomeTimer  = null;
+let _welcomeClosed = false;
+
 // ─── SVG JEWELRY ICONS ───────────────────────────────────────────────
 const svgs = {
   anillo: (c1, c2) => `<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -3047,17 +3051,25 @@ const categories = [
 
 // ─── SUPABASE CONFIG ─────────────────────────────────────────────────
 // ─── FIREBASE ─────────────────────────────────────────────────────────
-firebase.initializeApp({
-  apiKey:            'AIzaSyCqer7Y1lA9ciISWJ7FogszjGgZ8CCpTDg',
-  authDomain:        'pleasemecatalogo.firebaseapp.com',
-  projectId:         'pleasemecatalogo',
-  storageBucket:     'pleasemecatalogo.firebasestorage.app',
-  messagingSenderId: '1003192303604',
-  appId:             '1:1003192303604:web:bfd1b608f1807af3e8c3a1'
-});
-const _db = firebase.firestore();
+let _db = null;
+try {
+  if (typeof firebase !== 'undefined') {
+    const _fbApp = firebase.apps && firebase.apps.length
+      ? firebase.apps[0]
+      : firebase.initializeApp({
+          apiKey:            'AIzaSyCqer7Y1lA9ciISWJ7FogszjGgZ8CCpTDg',
+          authDomain:        'pleasemecatalogo.firebaseapp.com',
+          projectId:         'pleasemecatalogo',
+          storageBucket:     'pleasemecatalogo.firebasestorage.app',
+          messagingSenderId: '1003192303604',
+          appId:             '1:1003192303604:web:bfd1b608f1807af3e8c3a1'
+        });
+    _db = firebase.firestore();
+  }
+} catch(e) { console.error('Firebase init error:', e); }
 
 async function fetchProductsFromFirebase() {
+  if (!_db) return [];
   const snap = await _db.collection('catalogo_productos').get();
   return snap.docs.map(doc => {
     const p = doc.data();
@@ -4627,11 +4639,11 @@ async function loadContactInfo() {
 loadContactInfo();
 
 // ─── SYNC pm_discount, pm_banner y pm_seasonal_offers desde Firebase ─
-let _seasonalOffer = null;
 
 (async function syncRemoteSettings() {
   try {
     const keys = ['pm_discount', 'pm_banner', 'pm_seasonal_offers'];
+    if (!_db) return;
     const docs = await Promise.all(keys.map(k => _db.collection('config').doc(k).get()));
     const rows = docs.filter(d => d.exists).map(d => ({ key: d.id, value: d.data().value }));
     if (!rows.length) return;
@@ -4689,14 +4701,14 @@ let _seasonalOffer = null;
 })();
 
 // ─── WELCOME POPUP ────────────────────────────────────────────────────
-let _welcomeTimer = null;
-let _welcomeClosed = false;
 function mostrarWelcome() {
   const overlay = document.getElementById('welcomeOverlay');
   if (!overlay) return;
+  overlay.style.opacity = '1';
+  overlay.style.pointerEvents = '';
   overlay.style.display = 'flex';
   overlay.style.animation = '';
-  void overlay.offsetWidth; // fuerza reflow para reiniciar animación
+  void overlay.offsetWidth;
   overlay.style.animation = 'wPopBg 0.5s ease forwards';
   const box = overlay.querySelector('#welcomeBox');
   if (box) { box.style.animation = ''; void box.offsetWidth; box.style.animation = 'wPopBox 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.15s both'; }
@@ -4707,14 +4719,17 @@ function cerrarWelcome() {
   clearTimeout(_welcomeTimer);
   const overlay = document.getElementById('welcomeOverlay');
   if (!overlay || overlay.style.display === 'none') return;
-  overlay.style.animation = 'wPopOut 0.4s ease forwards';
+  // Forzar transición de salida limpia
+  overlay.style.transition = 'opacity 0.35s ease';
+  overlay.style.opacity = '0';
+  overlay.style.pointerEvents = 'none';
   setTimeout(() => {
     overlay.style.display = 'none';
-    overlay.style.animation = '';
+    overlay.style.opacity = '';
+    overlay.style.transition = '';
     _welcomeClosed = true;
-    // Mostrar oferta de temporada después del welcome, nunca encima
     if (_seasonalOffer && _seasonalOffer.active) mostrarOfertaModal();
-  }, 420);
+  }, 370);
 }
 
 // ─── OFERTA MODAL con estrellas flotantes ─────────────────────────────
@@ -4993,7 +5008,7 @@ renderInfoSections();
     <button class="wp-skip" onclick="cerrarWelcome()">Omitir</button>
   </div>
 </div>
-<script>setTimeout(function(){ if(typeof cerrarWelcome==='function') cerrarWelcome(); }, 6000);</script>
+
 
 <!-- FAB-VISUAL watermark -->
 <div id="fabVisualWrap" style="position:fixed;bottom:16px;right:16px;z-index:500;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;" onclick="toggleFabCard()">
@@ -5072,6 +5087,11 @@ document.addEventListener('click', function(e) {
     card.style.display = 'none';
   }
 });
+</script>
+
+<script>
+// Llamar al welcome al final, cuando todo el DOM y scripts están listos
+if (typeof mostrarWelcome === 'function') mostrarWelcome();
 </script>
 
 </body>
