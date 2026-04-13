@@ -3176,10 +3176,24 @@ function updateCartUI() {
   } else {
     badge.classList.add('hidden');
   }
-  const rawTotal = cartTotal();
+  // Productos de oferta de temporada: precio fijo, sin descuento mayorista
+  const ofertaIds = (_seasonalOffer && _seasonalOffer.active && _seasonalOffer.productIds)
+    ? new Set(_seasonalOffer.productIds) : new Set();
+
+  let regularTotal = 0;
+  let ofertaTotal  = 0;
+  cart.forEach(item => {
+    const p = products.find(x => String(x.id) === String(item.id));
+    if (!p) return;
+    const precio = Math.round(parseFloat(String(p.price))) || 0;
+    if (ofertaIds.has(item.id)) ofertaTotal  += precio * item.qty;
+    else                         regularTotal += precio * item.qty;
+  });
+  const rawTotal = regularTotal + ofertaTotal;
+
   const ds = getDiscountSettings();
-  const discountApplied = rawTotal > ds.min;
-  const finalTotal = discountApplied ? Math.round(rawTotal * (1 - ds.pct / 100)) : rawTotal;
+  const discountApplied = regularTotal > ds.min;
+  const finalTotal = (discountApplied ? Math.round(regularTotal * (1 - ds.pct / 100)) : regularTotal) + ofertaTotal;
 
   const totalEl     = document.getElementById('cartTotal');
   const amountEl    = document.getElementById('cartTotalAmount');
