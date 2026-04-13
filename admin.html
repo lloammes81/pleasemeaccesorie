@@ -1144,6 +1144,95 @@ textarea { resize: vertical; min-height: 80px; }
   margin-top: 12px;
 }
 
+/* ─── OFERTAS DE TEMPORADA ─── */
+.oferta-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.oferta-product-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.oferta-product-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  user-select: none;
+}
+
+.oferta-product-item:hover {
+  border-color: rgba(201,151,58,0.4);
+  background: rgba(201,151,58,0.04);
+}
+
+.oferta-product-item.selected {
+  border-color: rgba(201,151,58,0.6);
+  background: rgba(201,151,58,0.08);
+}
+
+.oferta-product-item input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--gold);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.oferta-product-thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.oferta-product-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+.oferta-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-family: 'Cinzel', serif;
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border-radius: 2px;
+}
+
+.oferta-status-badge.activa {
+  background: rgba(46,160,67,0.12);
+  border: 1px solid rgba(46,160,67,0.35);
+  color: #3fb950;
+}
+
+.oferta-status-badge.inactiva {
+  background: rgba(201,151,58,0.08);
+  border: 1px solid rgba(201,151,58,0.3);
+  color: var(--text-muted);
+}
+
 /* ─── ANIMATIONS ─── */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
@@ -1622,6 +1711,10 @@ textarea { resize: vertical; min-height: 80px; }
         <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
         Anuncio
       </button>
+      <button class="nav-item" onclick="goTo('ofertas')" id="nav-ofertas">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        Ofertas
+      </button>
       <button class="nav-item" onclick="goTo('contacto')" id="nav-contacto">
         <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.01 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
         Contacto
@@ -1792,6 +1885,91 @@ textarea { resize: vertical; min-height: 80px; }
         <div class="empty-table" id="visitEmpty" style="display:none;">
           <p>Aún no hay visitas registradas.</p>
         </div>
+      </div>
+    </div>
+
+    <!-- PAGE: OFERTAS DE TEMPORADA -->
+    <div class="page" id="page-ofertas">
+      <div class="gold-line"></div>
+      <div class="section-header" style="margin-bottom:28px">
+        <span class="section-title">Ofertas de temporada</span>
+        <span id="ofertaStatusBadge" class="oferta-status-badge inactiva">
+          <svg width="7" height="7" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="currentColor"/></svg>
+          Inactiva
+        </span>
+      </div>
+
+      <div style="max-width:620px;display:flex;flex-direction:column;gap:20px;">
+
+        <!-- Card principal -->
+        <div class="contact-card">
+          <div class="contact-card-title">
+            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            Configuración de la oferta
+          </div>
+
+          <!-- Toggle activa/inactiva -->
+          <div class="oferta-toggle-row">
+            <div>
+              <div style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;color:var(--text-mid);text-transform:uppercase;margin-bottom:3px;">Estado de la oferta</div>
+              <div style="font-size:11px;color:var(--text-muted);font-weight:300;">Cuando está activa aparece una esfera especial en el catálogo</div>
+            </div>
+            <label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;">
+              <input type="checkbox" id="ofertaActive" style="opacity:0;width:0;height:0;border:none;padding:0;" onchange="onOfertaToggle()">
+              <span id="ofertaToggleTrack" style="position:absolute;inset:0;background:var(--bg3);border-radius:12px;transition:background 0.3s;"></span>
+              <span id="ofertaToggleThumb" style="position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform 0.3s;box-shadow:0 1px 4px rgba(0,0,0,0.2);"></span>
+            </label>
+          </div>
+
+          <div class="contact-form">
+            <div class="field">
+              <label>Título de la oferta</label>
+              <input type="text" id="ofertaTitulo" placeholder="Ej: Ofertas de temporada · Hasta 30% OFF">
+            </div>
+
+            <div class="field">
+              <label>Mensaje para las clientas</label>
+              <textarea id="ofertaMensaje" rows="3" placeholder="Ej: ¡Aprovecha nuestras ofertas exclusivas de temporada! Solo por tiempo limitado." style="resize:vertical;"></textarea>
+            </div>
+
+            <div class="field-row">
+              <div class="field">
+                <label>Descuento (%) — opcional</label>
+                <input type="number" id="ofertaDescuento" placeholder="Ej: 20" min="0" max="99">
+              </div>
+              <div class="field" style="justify-content:flex-end;padding-top:18px;">
+                <div style="font-size:10px;color:var(--text-muted);font-weight:300;line-height:1.6;">Si ingresas un %, se mostrará en la esfera de oferta del catálogo como referencia visual.</div>
+              </div>
+            </div>
+
+            <div class="save-row">
+              <button class="btn btn-primary" onclick="saveOfertas()">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                Guardar y publicar oferta
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card selector de productos -->
+        <div class="contact-card">
+          <div class="contact-card-title">
+            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+            Productos en oferta
+          </div>
+          <p style="font-size:11px;color:var(--text-muted);font-weight:300;margin-bottom:16px;">
+            Selecciona cuáles productos aparecerán en la sección de ofertas.
+          </p>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <button class="btn btn-outline" style="font-size:9px;padding:5px 12px;" onclick="ofertaSelectAll(true)">Seleccionar todos</button>
+            <button class="btn btn-outline" style="font-size:9px;padding:5px 12px;" onclick="ofertaSelectAll(false)">Quitar todos</button>
+            <span id="ofertaSelCount" style="font-size:10px;color:var(--text-muted);margin-left:auto;"></span>
+          </div>
+          <div class="oferta-product-list" id="ofertaProductList">
+            <p style="color:var(--text-muted);font-size:11px;text-align:center;padding:20px 0;">Cargando productos...</p>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -2421,7 +2599,7 @@ let _cfgCache = {};
 
 async function _loadConfigs() {
   try {
-    const keys = ['pm_watermark','pm_banner','pm_catalog_info','pm_info_sections','pm_discount','pm_cloudinary'];
+    const keys = ['pm_watermark','pm_banner','pm_catalog_info','pm_info_sections','pm_discount','pm_cloudinary','pm_seasonal_offers'];
     const docs = await Promise.all(keys.map(k => _db.collection('config').doc(k).get()));
     docs.forEach(d => { if (d.exists) _cfgCache[d.id] = d.data().value; });
   } catch(e) { console.error('Error cargando configs:', e); }
@@ -2838,7 +3016,7 @@ function goTo(page) {
   document.getElementById('page-' + page).classList.add('active');
   document.getElementById('nav-' + page).classList.add('active');
 
-  const titles = { productos: 'Productos', contacto: 'Información de contacto', banner: 'Banner de anuncio', visitas: 'Visitas al catálogo', info: 'Información del catálogo', config: 'Configuración · API Keys', pedidos: 'Pedidos de clientes' };
+  const titles = { productos: 'Productos', contacto: 'Información de contacto', banner: 'Banner de anuncio', visitas: 'Visitas al catálogo', info: 'Información del catálogo', config: 'Configuración · API Keys', pedidos: 'Pedidos de clientes', ofertas: 'Ofertas de temporada' };
   document.getElementById('topbarTitle').textContent = titles[page] || '';
 
   const topAction = document.getElementById('topbarAction');
@@ -2847,6 +3025,7 @@ function goTo(page) {
   if (page === 'info') { loadCatalogInfo(); renderInfoTable(); loadWatermarkConfig(); }
   if (page === 'config') fillCloudinaryForm();
   if (page === 'pedidos') loadPedidos();
+  if (page === 'ofertas') loadOfertas();
   if (page === 'productos') {
     topAction.style.display = '';
   } else {
@@ -4087,6 +4266,110 @@ async function saveDiscount() {
   const error     = await _saveConfig('pm_discount', { threshold, pct });
   if (error) return showToast('Error al guardar: ' + error.message);
   showToast('✦ Descuento actualizado en el catálogo');
+}
+
+// ─── OFERTAS DE TEMPORADA ─────────────────────────────────────────────
+let _ofertaSelectedIds = new Set();
+
+function onOfertaToggle() {
+  const active = document.getElementById('ofertaActive').checked;
+  const track  = document.getElementById('ofertaToggleTrack');
+  const thumb  = document.getElementById('ofertaToggleThumb');
+  const badge  = document.getElementById('ofertaStatusBadge');
+  if (track) track.style.background = active ? 'var(--gold-deep)' : 'var(--bg3)';
+  if (thumb) thumb.style.transform  = active ? 'translateX(20px)' : 'translateX(0)';
+  if (badge) {
+    badge.className = 'oferta-status-badge ' + (active ? 'activa' : 'inactiva');
+    badge.innerHTML = `<svg width="7" height="7" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="currentColor"/></svg>${active ? 'Activa' : 'Inactiva'}`;
+  }
+}
+
+function renderOfertaProductList() {
+  const container = document.getElementById('ofertaProductList');
+  const counter   = document.getElementById('ofertaSelCount');
+  if (!container) return;
+
+  if (!products.length) {
+    container.innerHTML = '<p style="color:var(--text-muted);font-size:11px;text-align:center;padding:20px 0;">No hay productos. Agrega productos primero.</p>';
+    return;
+  }
+
+  container.innerHTML = products.map(p => {
+    const checked  = _ofertaSelectedIds.has(p.id);
+    const thumb    = p.photo
+      ? `<img src="${p.photo}" alt="${p.name}">`
+      : `<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
+    return `<label class="oferta-product-item${checked ? ' selected' : ''}" onclick="ofertaToggleItem('${p.id}', this)">
+      <input type="checkbox" ${checked ? 'checked' : ''} onchange="ofertaToggleItem('${p.id}', this.closest('.oferta-product-item'))" onclick="event.stopPropagation()">
+      <div class="oferta-product-thumb">${thumb}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</div>
+        <div style="font-size:10px;color:var(--text-muted);">${CAT_LABELS[p.category]||p.category} · $${Number(p.price).toLocaleString('es-CO')}</div>
+      </div>
+    </label>`;
+  }).join('');
+
+  if (counter) counter.textContent = `${_ofertaSelectedIds.size} seleccionados`;
+}
+
+function ofertaToggleItem(id, el) {
+  if (_ofertaSelectedIds.has(id)) {
+    _ofertaSelectedIds.delete(id);
+    if (el) el.classList.remove('selected');
+  } else {
+    _ofertaSelectedIds.add(id);
+    if (el) el.classList.add('selected');
+  }
+  const chk = el ? el.querySelector('input[type="checkbox"]') : null;
+  if (chk) chk.checked = _ofertaSelectedIds.has(id);
+  const counter = document.getElementById('ofertaSelCount');
+  if (counter) counter.textContent = `${_ofertaSelectedIds.size} seleccionados`;
+}
+
+function ofertaSelectAll(select) {
+  _ofertaSelectedIds = select ? new Set(products.map(p => p.id)) : new Set();
+  renderOfertaProductList();
+}
+
+async function loadOfertas() {
+  const cfg = _cfgCache['pm_seasonal_offers'];
+  const active    = cfg ? !!cfg.active : false;
+  const titulo    = cfg ? (cfg.titulo    || '') : '';
+  const mensaje   = cfg ? (cfg.mensaje   || '') : '';
+  const descuento = cfg ? (cfg.descuento || '') : '';
+  const ids       = cfg ? (cfg.productIds || []) : [];
+
+  _ofertaSelectedIds = new Set(ids);
+
+  const chk = document.getElementById('ofertaActive');
+  if (chk) { chk.checked = active; onOfertaToggle(); }
+
+  const tit = document.getElementById('ofertaTitulo');
+  const msg = document.getElementById('ofertaMensaje');
+  const dsc = document.getElementById('ofertaDescuento');
+  if (tit) tit.value = titulo;
+  if (msg) msg.value = mensaje;
+  if (dsc) dsc.value = descuento;
+
+  renderOfertaProductList();
+}
+
+async function saveOfertas() {
+  const active    = document.getElementById('ofertaActive').checked;
+  const titulo    = document.getElementById('ofertaTitulo').value.trim()  || 'Ofertas de temporada';
+  const mensaje   = document.getElementById('ofertaMensaje').value.trim() || '';
+  const descuento = parseInt(document.getElementById('ofertaDescuento').value) || 0;
+  const productIds = [..._ofertaSelectedIds];
+
+  if (active && productIds.length === 0) {
+    return showToast('Selecciona al menos un producto para la oferta');
+  }
+
+  const data = { active, titulo, mensaje, descuento, productIds };
+  const error = await _saveConfig('pm_seasonal_offers', data);
+  if (error) return showToast('Error al guardar: ' + error.message);
+  showToast(active ? '✦ Oferta publicada en el catálogo' : '✦ Oferta desactivada');
+  onOfertaToggle();
 }
 
 // ─── VERIFICAR FIREBASE MANUAL ───────────────────────────────────────

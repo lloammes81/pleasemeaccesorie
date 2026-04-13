@@ -2065,6 +2065,211 @@
     .cat-card-name { font-size: 10px; letter-spacing: 3px; }
   }
 
+  /* ─── OFERTA DE TEMPORADA CARD ─── */
+  .oferta-card {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    padding: 10px 28px;
+    border-radius: 80px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0;
+    transition: transform 0.32s cubic-bezier(.2,.8,.4,1);
+    animation: ofertaGlow 2.5s ease-in-out infinite;
+  }
+
+  @keyframes ofertaGlow {
+    0%,100% { filter: drop-shadow(0 0 8px rgba(201,151,58,0.35)); }
+    50%      { filter: drop-shadow(0 0 18px rgba(201,151,58,0.6)); }
+  }
+
+  .oferta-card:hover { transform: translateX(6px) scale(1.02); }
+
+  .oferta-card-bubble {
+    position: relative;
+    flex-shrink: 0;
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%,
+      rgba(255,200,50,0.22) 0%,
+      rgba(30,20,5,0.96) 55%,
+      #0a0804 100%);
+    border: 1.5px solid rgba(201,151,58,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow:
+      0 0 28px 6px rgba(201,151,58,0.3),
+      0 0 70px 14px rgba(201,151,58,0.12),
+      0 6px 22px rgba(0,0,0,0.6),
+      inset 0 1px 0 rgba(255,240,179,0.2);
+  }
+
+  .oferta-card-bubble::after {
+    content: '';
+    position: absolute;
+    top: 12%; left: 18%; width: 28%; height: 14%;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+    pointer-events: none;
+  }
+
+  .oferta-card-icon {
+    width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+
+  .oferta-card-info {
+    flex: 1;
+    padding: 0 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .oferta-card-accent {
+    width: 18px; height: 1.5px;
+    background: linear-gradient(90deg, var(--gold-mid), transparent);
+    margin-bottom: 4px;
+  }
+
+  .oferta-card-name {
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--gold-light);
+  }
+
+  .oferta-card-sub {
+    font-size: 8px;
+    letter-spacing: 2px;
+    color: var(--gold-mid);
+    text-transform: uppercase;
+  }
+
+  .oferta-card-arrow {
+    font-size: 22px;
+    color: var(--gold-mid);
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  /* ─── OFERTA NOTIFICATION MODAL ─── */
+  #ofertaModal {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.82);
+    backdrop-filter: blur(10px);
+    z-index: 9600;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  #ofertaModalBox {
+    background: linear-gradient(160deg, #0f0b05 0%, #1e1508 45%, #0f0b05 100%);
+    border: 1px solid rgba(201,151,58,0.5);
+    width: min(420px, 100%);
+    padding: 40px 32px 36px;
+    position: relative;
+    text-align: center;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.9), 0 0 80px rgba(201,151,58,0.12);
+    animation: ofertaBoxIn 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+
+  @keyframes ofertaBoxIn {
+    from { opacity: 0; transform: scale(0.8) translateY(30px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  #ofertaModalBox::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold-mid), var(--gold-light), var(--gold-mid), transparent);
+    animation: shimmer 2.5s linear infinite;
+  }
+
+  .oferta-modal-crown {
+    font-size: 36px; margin-bottom: 12px; display: block;
+    animation: ofertaPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes ofertaPulse {
+    0%,100% { transform: scale(1); }
+    50%      { transform: scale(1.12); }
+  }
+
+  .oferta-modal-eyebrow {
+    font-family: 'Cinzel', serif;
+    font-size: 7px; letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--gold-mid);
+    margin-bottom: 10px;
+  }
+
+  .oferta-modal-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 26px; font-weight: 600;
+    color: var(--text-cream);
+    line-height: 1.25;
+    margin-bottom: 14px;
+  }
+
+  .oferta-modal-msg {
+    font-size: 12px; font-weight: 300;
+    color: var(--text-muted);
+    line-height: 1.7;
+    margin-bottom: 28px;
+  }
+
+  .oferta-modal-btn {
+    display: inline-block;
+    padding: 14px 32px;
+    background: linear-gradient(135deg, var(--gold-mid), var(--gold-light));
+    color: #0a0804;
+    font-family: 'Cinzel', serif;
+    font-size: 9px; letter-spacing: 3px;
+    text-transform: uppercase;
+    border: none; cursor: pointer;
+    font-weight: 600;
+    transition: opacity 0.2s, transform 0.2s;
+    width: 100%;
+  }
+
+  .oferta-modal-btn:hover { opacity: 0.9; transform: scale(1.02); }
+
+  .oferta-modal-skip {
+    display: block; margin-top: 14px;
+    font-size: 10px; color: var(--text-muted);
+    cursor: pointer; background: none; border: none;
+    font-family: 'Montserrat', sans-serif;
+    transition: color 0.2s;
+  }
+  .oferta-modal-skip:hover { color: var(--gold-mid); }
+
+  /* ─── FLOATING STARS ─── */
+  .oferta-star {
+    position: absolute;
+    pointer-events: none;
+    animation: floatStar var(--dur, 3s) ease-in-out var(--delay, 0s) infinite;
+    opacity: 0;
+    font-size: var(--size, 14px);
+    color: var(--gold-light);
+  }
+
+  @keyframes floatStar {
+    0%   { opacity: 0; transform: translateY(0) scale(0.6) rotate(0deg); }
+    15%  { opacity: 0.9; }
+    85%  { opacity: 0.7; }
+    100% { opacity: 0; transform: translateY(-120px) scale(1.1) rotate(180deg); }
+  }
+
   /* ─── CATEGORY PANEL ─── */
   .cat-overlay {
     position: fixed; inset: 0;
@@ -2446,6 +2651,18 @@
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
       Enviar por WhatsApp
     </button>
+  </div>
+</div>
+
+<!-- OFERTA DE TEMPORADA MODAL -->
+<div id="ofertaModal">
+  <div id="ofertaModalBox">
+    <span class="oferta-modal-crown">✦</span>
+    <p class="oferta-modal-eyebrow">Pleaseme Accessories</p>
+    <h2 class="oferta-modal-title" id="ofertaModalTitle">Ofertas de temporada</h2>
+    <p class="oferta-modal-msg" id="ofertaModalMsg"></p>
+    <button class="oferta-modal-btn" onclick="cerrarOfertaModal(true)">Ver ofertas ahora</button>
+    <button class="oferta-modal-skip" onclick="cerrarOfertaModal(false)">Continuar al catálogo</button>
   </div>
 </div>
 
@@ -3188,6 +3405,55 @@ function closeCategoryPanel() {
   if (backFab) backFab.classList.remove('visible');
   const bubble = document.getElementById('catLoadingBubble');
   if (bubble) bubble.classList.remove('visible');
+}
+
+// ─── PANEL DE OFERTAS ────────────────────────────────────────────────
+async function openOffersPanel() {
+  if (!_seasonalOffer) return;
+  const ofertaProductIds = _seasonalOffer.productIds || [];
+  const ofertaProducts   = products.filter(p => ofertaProductIds.includes(p.id));
+  const titulo           = _seasonalOffer.titulo || 'Ofertas de temporada';
+
+  document.getElementById('catPanelTitle').textContent = titulo;
+  document.getElementById('catOverlay').classList.add('open');
+  document.getElementById('catPanel').classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  document.getElementById('catPanelBody').innerHTML = ofertaProducts.length
+    ? ofertaProducts.map(p => catProductHTML(p)).join('')
+    : '<p style="color:var(--text-muted);text-align:center;padding:40px 0;font-family:Cinzel,serif;font-size:10px;letter-spacing:3px;">Sin productos en esta oferta</p>';
+
+  const backFab = document.getElementById('catBackFab');
+  if (backFab) backFab.classList.add('visible');
+
+  // Cargar fotos en lotes
+  const sinFoto = ofertaProducts.filter(p => !p.photo);
+  if (sinFoto.length > 0) {
+    const bubble    = document.getElementById('catLoadingBubble');
+    const bubbleTxt = document.getElementById('catLoadingText');
+    const bubblePct = document.getElementById('catLoadingPct');
+    const bubbleBar = document.getElementById('catLoadingBarFill');
+    if (bubble) bubble.classList.add('visible');
+    const BATCH = 8;
+    for (let i = 0; i < sinFoto.length; i += BATCH) {
+      const lote = sinFoto.slice(i, i + BATCH);
+      try {
+        await Promise.all(lote.map(async p => {
+          const doc = await _db.collection('catalogo_productos').doc(p.id).get();
+          const foto = doc.exists ? doc.data().photo_data : null;
+          if (!p) return;
+          p.photo = foto;
+          const imgEl = document.querySelector(`#catPanelBody [data-pid="${p.id}"] .cat-product-img`);
+          if (imgEl && foto) imgEl.innerHTML = `<img src="${foto}" alt="${p.name}" style="width:100%;height:100%;object-fit:contain;object-position:center center;padding:8px;box-sizing:border-box;display:block;">`;
+        }));
+      } catch(e) {}
+      const pct = Math.round(((i + BATCH) / sinFoto.length) * 100);
+      if (bubbleBar) bubbleBar.style.width = pct + '%';
+      if (bubblePct) bubblePct.textContent = pct + '%';
+    }
+    if (bubbleBar) bubbleBar.style.width = '100%';
+    setTimeout(() => { if (bubble) bubble.classList.remove('visible'); }, 1800);
+  }
 }
 
 // ─── SHARE CATALOG ───────────────────────────────────────────────────
@@ -3982,6 +4248,29 @@ function categoryCardHTML(cat, i) {
     </div>`;
 }
 
+// ─── OFERTA CARD HTML ─────────────────────────────────────────────────
+function ofertaCardHTML(oferta) {
+  const pct = oferta.descuento ? ` · ${oferta.descuento}% OFF` : '';
+  const titulo = oferta.titulo || 'Ofertas de temporada';
+  return `
+    <div class="oferta-card card-enter" onclick="openOffersPanel()">
+      <div class="oferta-card-bubble">
+        <div class="oferta-card-icon">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+              fill="rgba(201,151,58,0.25)" stroke="#E8C96D" stroke-width="1.5"/>
+          </svg>
+        </div>
+      </div>
+      <div class="oferta-card-info">
+        <div class="oferta-card-accent"></div>
+        <div class="oferta-card-name">${titulo}</div>
+        <div class="oferta-card-sub">${oferta.productIds ? oferta.productIds.length : 0} piezas${pct}</div>
+      </div>
+      <span class="oferta-card-arrow">›</span>
+    </div>`;
+}
+
 // ─── RENDER GRID with section label ──────────────────────────────────
 
 // ─── RENDER GRID ─────────────────────────────────────────────────────
@@ -3989,7 +4278,15 @@ function renderGrid() {
   const grid = document.getElementById('catalogGrid');
   const empty = document.getElementById('emptyState');
 
-  let html = '<div class="catalog-section-label">Explorar por categoría</div>';
+  let html = '';
+  // Esfera de oferta de temporada al inicio si está activa
+  if (_seasonalOffer && _seasonalOffer.active) {
+    html += '<div class="catalog-section-label">Oferta especial</div>';
+    html += ofertaCardHTML(_seasonalOffer);
+    html += '<div class="catalog-section-label" style="margin-top:18px;">Explorar por categoría</div>';
+  } else {
+    html += '<div class="catalog-section-label">Explorar por categoría</div>';
+  }
   categories.forEach((cat, i) => {
     html += categoryCardHTML(cat, i);
   });
@@ -4315,10 +4612,12 @@ async function loadContactInfo() {
 }
 loadContactInfo();
 
-// ─── SYNC pm_discount y pm_banner desde Firebase ─────────────────────
+// ─── SYNC pm_discount, pm_banner y pm_seasonal_offers desde Firebase ─
+let _seasonalOffer = null;
+
 (async function syncRemoteSettings() {
   try {
-    const keys = ['pm_discount', 'pm_banner'];
+    const keys = ['pm_discount', 'pm_banner', 'pm_seasonal_offers'];
     const docs = await Promise.all(keys.map(k => _db.collection('config').doc(k).get()));
     const rows = docs.filter(d => d.exists).map(d => ({ key: d.id, value: d.data().value }));
     if (!rows.length) return;
@@ -4346,6 +4645,16 @@ loadContactInfo();
             document.getElementById('bannerText').innerHTML = d.text + sep + 'Oro laminado 14k · Calidad garantizada' + sep + 'Pedidos superiores a $10,000 obtienen el 35% de descuento mayorista' + sep + d.text + sep + 'Oro laminado 14k · Calidad garantizada';
           }
         }
+      }
+    }
+    // Cargar ofertas de temporada
+    const ofertaData = rows.find(r => r.key === 'pm_seasonal_offers');
+    if (ofertaData) {
+      const o = typeof ofertaData.value === 'string' ? JSON.parse(ofertaData.value) : ofertaData.value;
+      if (o && o.active) {
+        _seasonalOffer = o;
+        renderGrid();           // actualizar grilla con esfera de oferta
+        mostrarOfertaModal();   // mostrar notificación con estrellas
       }
     }
   } catch(e) {}
@@ -4383,6 +4692,70 @@ function cerrarWelcome() {
   if (!overlay || overlay.style.display === 'none') return;
   overlay.style.animation = 'wPopOut 0.4s ease forwards';
   setTimeout(() => { overlay.style.display = 'none'; overlay.style.animation = ''; }, 420);
+}
+
+// ─── OFERTA MODAL con estrellas flotantes ─────────────────────────────
+let _ofertaModalTimer = null;
+const _STARS_COUNT = 18;
+
+function crearEstrellasFlotantes(container) {
+  // Limpiar estrellas previas
+  container.querySelectorAll('.oferta-star').forEach(s => s.remove());
+
+  const shapes = ['✦', '★', '✧', '✶', '✸', '✹'];
+  for (let i = 0; i < _STARS_COUNT; i++) {
+    const star = document.createElement('span');
+    star.className = 'oferta-star';
+    const size   = 8 + Math.random() * 16;
+    const left   = 5  + Math.random() * 90;
+    const bottom = 5  + Math.random() * 60;
+    const dur    = 2  + Math.random() * 2.5;
+    const delay  = Math.random() * 3;
+    star.textContent = shapes[Math.floor(Math.random() * shapes.length)];
+    star.style.cssText = `
+      --dur:${dur.toFixed(2)}s;
+      --delay:${delay.toFixed(2)}s;
+      --size:${size.toFixed(0)}px;
+      left:${left.toFixed(1)}%;
+      bottom:${bottom.toFixed(1)}%;
+    `;
+    container.appendChild(star);
+  }
+}
+
+function mostrarOfertaModal() {
+  if (!_seasonalOffer || !_seasonalOffer.active) return;
+  const modal = document.getElementById('ofertaModal');
+  const box   = document.getElementById('ofertaModalBox');
+  if (!modal || !box) return;
+
+  // Rellenar contenido
+  const titulo  = _seasonalOffer.titulo  || 'Ofertas de temporada';
+  const mensaje = _seasonalOffer.mensaje || '¡Aprovecha nuestras ofertas exclusivas! Solo por tiempo limitado.';
+  document.getElementById('ofertaModalTitle').textContent = titulo;
+  document.getElementById('ofertaModalMsg').textContent   = mensaje;
+
+  // Mostrar y animar
+  modal.style.display = 'flex';
+  void box.offsetWidth;
+  box.style.animation = 'none';
+  void box.offsetWidth;
+  box.style.animation = 'ofertaBoxIn 0.6s cubic-bezier(0.34,1.56,0.64,1) both';
+
+  // Crear estrellas flotantes
+  crearEstrellasFlotantes(box);
+
+  // Auto-cerrar a los 10 s
+  clearTimeout(_ofertaModalTimer);
+  _ofertaModalTimer = setTimeout(() => cerrarOfertaModal(false), 10000);
+}
+
+function cerrarOfertaModal(abrirPanel) {
+  clearTimeout(_ofertaModalTimer);
+  const modal = document.getElementById('ofertaModal');
+  if (!modal) return;
+  modal.style.display = 'none';
+  if (abrirPanel) openOffersPanel();
 }
 
 // ─── CATALOG INFO (title, subtitle, tagline) ──────────────────────────
