@@ -4250,8 +4250,8 @@ function categoryCardHTML(cat, i) {
 
 // ─── OFERTA CARD HTML ─────────────────────────────────────────────────
 function ofertaCardHTML(oferta) {
-  const pct = oferta.descuento ? ` · ${oferta.descuento}% OFF` : '';
   const titulo = oferta.titulo || 'Ofertas de temporada';
+  const count  = oferta.productIds ? oferta.productIds.length : 0;
   return `
     <div class="oferta-card card-enter" onclick="openOffersPanel()">
       <div class="oferta-card-bubble">
@@ -4265,7 +4265,7 @@ function ofertaCardHTML(oferta) {
       <div class="oferta-card-info">
         <div class="oferta-card-accent"></div>
         <div class="oferta-card-name">${titulo}</div>
-        <div class="oferta-card-sub">${oferta.productIds ? oferta.productIds.length : 0} piezas${pct}</div>
+        <div class="oferta-card-sub">${count} ${count === 1 ? 'pieza' : 'piezas'}</div>
       </div>
       <span class="oferta-card-arrow">›</span>
     </div>`;
