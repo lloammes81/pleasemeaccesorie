@@ -4776,7 +4776,7 @@ loadContactInfo();
     const pctEl = document.querySelector('.wp-pct');
     const dscEl = document.querySelector('.wp-desc');
     if (pctEl) pctEl.textContent = ds.pct + '%';
-    if (dscEl) dscEl.innerHTML = `En pedidos que superen los <strong>$${ds.min.toLocaleString('es-CO')}</strong><br>se aplica automáticamente el <strong>descuento mayorista del ${ds.pct}%</strong><br>directo en tu carrito de selección.`;
+    if (dscEl) dscEl.innerHTML = `En pedidos que superen los <strong>$${ds.min.toLocaleString('en-US')}</strong><br>se aplica automáticamente el <strong>descuento mayorista del ${ds.pct}%</strong><br>directo en tu carrito de selección.`;
     // Refrescar banner
     const bannerData = rows.find(r => r.key === 'pm_banner');
     if (bannerData) {
@@ -4827,7 +4827,7 @@ loadContactInfo();
   const dscEl = document.querySelector('.wp-desc');
   if (pctEl) pctEl.textContent = ds.pct + '%';
   if (dscEl) dscEl.innerHTML =
-    `En pedidos que superen los <strong>$${ds.min.toLocaleString('es-CO')}</strong><br>` +
+    `En pedidos que superen los <strong>$${ds.min.toLocaleString('en-US')}</strong><br>` +
     `se aplica automáticamente el <strong>descuento mayorista del ${ds.pct}%</strong><br>` +
     `directo en tu carrito de selección.`;
 })();
