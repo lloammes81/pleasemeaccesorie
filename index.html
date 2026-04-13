@@ -2143,10 +2143,10 @@ function updateCartUI() {
   const badgeEl     = document.getElementById('cartDiscountBadge');
   const labelEl     = document.getElementById('cartTotalLabel');
 
-  totalEl.textContent = finalTotal.toLocaleString('es-CO');
+  totalEl.textContent = finalTotal.toLocaleString('en-US');
 
   if (discountApplied) {
-    originalEl.textContent  = '$' + rawTotal.toLocaleString('es-CO');
+    originalEl.textContent  = '$' + rawTotal.toLocaleString('en-US');
     originalEl.style.display  = 'block';
     badgeEl.style.display     = 'inline-block';
     amountEl.classList.add('discounted');
@@ -2249,11 +2249,11 @@ function sendWhatsApp() {
   const _disc = _raw >= ds.min;
   const _final = _disc ? Math.round(_raw * (1 - ds.pct / 100)) : _raw;
   if (_disc) {
-    msg += `\n💰 *Subtotal:* $${_raw.toLocaleString('es-CO')}`;
-    msg += `\n🎉 *Descuento mayorista ${ds.pct}%:* -$${(_raw - _final).toLocaleString('es-CO')}`;
-    msg += `\n✅ *Total con descuento:* $${_final.toLocaleString('es-CO')}`;
+    msg += `\n💰 *Subtotal:* $${_raw.toLocaleString('en-US')}`;
+    msg += `\n🎉 *Descuento mayorista ${ds.pct}%:* -$${(_raw - _final).toLocaleString('en-US')}`;
+    msg += `\n✅ *Total con descuento:* $${_final.toLocaleString('en-US')}`;
   } else {
-    msg += `\n💰 *Total estimado:* $${_final.toLocaleString('es-CO')}`;
+    msg += `\n💰 *Total estimado:* $${_final.toLocaleString('en-US')}`;
   }
   if (note) msg += `\n\n📝 *Nota:* ${note}`;
   msg += '\n\n_Catálogo Oro Laminado 14k — Pleaseme Accessories_';
@@ -2493,7 +2493,7 @@ function mostrarPopup(estado) {
     msg.innerHTML      = 'Se aplicó el <strong>' + ds.pct + '% de descuento</strong><br>automáticamente a tu pedido.';
     sub.textContent    = 'El precio ya aparece descontado en tu carrito.';
   } else {
-    const falta = (ds.min - cartTotalRaw()).toLocaleString('es-CO');
+    const falta = (ds.min - cartTotalRaw()).toLocaleString('en-US');
     icon.textContent   = '✦';
     title.textContent  = 'Descuento por volumen';
     msg.innerHTML      = 'Agrega <strong>$' + falta + '</strong> más<br>y obtén el <strong>' + ds.pct + '% mayorista</strong>.';
@@ -2657,7 +2657,7 @@ function loadContactInfo() {
   const dscEl = document.querySelector('.wp-desc');
   if (pctEl) pctEl.textContent = ds.pct + '%';
   if (dscEl) dscEl.innerHTML =
-    `En pedidos que superen los <strong>$${ds.min.toLocaleString('es-CO')}</strong><br>` +
+    `En pedidos que superen los <strong>$${ds.min.toLocaleString('en-US')}</strong><br>` +
     `se aplica automáticamente el <strong>descuento mayorista del ${ds.pct}%</strong><br>` +
     `directo en tu carrito de selección.`;
 })();
