@@ -3322,10 +3322,10 @@ function updateCartUI() {
   const badgeEl     = document.getElementById('cartDiscountBadge');
   const labelEl     = document.getElementById('cartTotalLabel');
 
-  totalEl.textContent = finalTotal.toLocaleString('es-CO');
+  totalEl.textContent = finalTotal.toLocaleString('en-US');
 
   if (discountApplied) {
-    originalEl.textContent  = '$' + rawTotal.toLocaleString('es-CO');
+    originalEl.textContent  = '$' + rawTotal.toLocaleString('en-US');
     originalEl.style.display  = 'block';
     badgeEl.style.display     = 'inline-block';
     amountEl.classList.add('discounted');
@@ -3658,11 +3658,11 @@ function buildOrderMsg() {
   const _final = _disc ? Math.round(_raw * (1 - ds.pct / 100)) : _raw;
   msg += '\n━━━━━━━━━━━━━━━━━━';
   if (_disc) {
-    msg += `\n💰 Subtotal: *$${_raw.toLocaleString('es-CO')}*`;
-    msg += `\n🎉 Descuento mayorista *${ds.pct}%:* *-$${(_raw - _final).toLocaleString('es-CO')}*`;
-    msg += `\n\n✅ *TOTAL: $${_final.toLocaleString('es-CO')}*`;
+    msg += `\n💰 Subtotal: *$${_raw.toLocaleString('en-US')}*`;
+    msg += `\n🎉 Descuento mayorista *${ds.pct}%:* *-$${(_raw - _final).toLocaleString('en-US')}*`;
+    msg += `\n\n✅ *TOTAL: $${_final.toLocaleString('en-US')}*`;
   } else {
-    msg += `\n\n✅ *TOTAL: $${_final.toLocaleString('es-CO')}*`;
+    msg += `\n\n✅ *TOTAL: $${_final.toLocaleString('en-US')}*`;
   }
   if (note) msg += `\n\n📝 *Nota:* ${note}`;
   msg += '\n\n_Catálogo Oro Laminado 14k — Pleaseme Accessories_';
@@ -3950,7 +3950,7 @@ async function generarFacturaPDF() {
     if (!isNaN(pNum)) {
       doc.setTextColor(255, 240, 180);
       doc.setFontSize(10);
-      doc.text('$' + (pNum * item.qty).toLocaleString('es-CO'), PW - PAD, y + 25, { align: 'right' });
+      doc.text('$' + (pNum * item.qty).toLocaleString('en-US'), PW - PAD, y + 25, { align: 'right' });
     }
 
     y += IMG_SZ + 8;
@@ -3985,11 +3985,11 @@ async function generarFacturaPDF() {
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.text('Subtotal:', PAD, y + 6);
-    doc.text('$' + raw.toLocaleString('es-CO'), PW - PAD, y + 6, { align: 'right' });
+    doc.text('$' + raw.toLocaleString('en-US'), PW - PAD, y + 6, { align: 'right' });
 
     doc.setTextColor(120, 200, 120);
     doc.text(`Descuento mayorista ${ds.pct}%:`, PAD, y + 13);
-    doc.text('-$' + (raw - fin).toLocaleString('es-CO'), PW - PAD, y + 13, { align: 'right' });
+    doc.text('-$' + (raw - fin).toLocaleString('en-US'), PW - PAD, y + 13, { align: 'right' });
     y += 10;
   }
 
@@ -3999,7 +3999,7 @@ async function generarFacturaPDF() {
   doc.text('TOTAL:', PAD, y + 12);
   doc.setTextColor(255, 240, 180);
   doc.setFontSize(15);
-  doc.text('$' + fin.toLocaleString('es-CO'), PW - PAD, y + 12, { align: 'right' });
+  doc.text('$' + fin.toLocaleString('en-US'), PW - PAD, y + 12, { align: 'right' });
 
   // Barra dorada inferior
   doc.setFillColor(201, 151, 58);
@@ -4102,7 +4102,7 @@ async function buildOrderCanvas() {
 
     const pNum = parseFloat(String(p.price).replace(/[^0-9.]/g,''));
     if(!isNaN(pNum)){ cx.fillStyle='#FFF0B3'; cx.font='bold 11px Arial'; cx.textAlign='right';
-      cx.fillText('$'+(pNum*item.qty).toLocaleString('es-CO'), W-PAD, y+PAD+72); cx.textAlign='left'; }
+      cx.fillText('$'+(pNum*item.qty).toLocaleString('en-US'), W-PAD, y+PAD+72); cx.textAlign='left'; }
 
     cx.strokeStyle='rgba(201,151,58,0.1)'; cx.lineWidth=1;
     cx.beginPath(); cx.moveTo(PAD,y+ITEM_H-1); cx.lineTo(W-PAD,y+ITEM_H-1); cx.stroke();
@@ -4119,13 +4119,13 @@ async function buildOrderCanvas() {
   let ty = FY+34;
   if(disc){
     cx.fillStyle='rgba(245,237,224,0.45)'; cx.font='11px Arial';
-    cx.fillText('Subtotal: $'+raw.toLocaleString('es-CO'), 18, ty);
+    cx.fillText('Subtotal: $'+raw.toLocaleString('en-US'), 18, ty);
     cx.fillStyle='#7dbf7d';
-    cx.fillText('Desc. mayorista '+ds.pct+'%: -$'+(raw-fin).toLocaleString('es-CO'), 18, ty+18);
+    cx.fillText('Desc. mayorista '+ds.pct+'%: -$'+(raw-fin).toLocaleString('en-US'), 18, ty+18);
     ty+=38;
   }
   cx.fillStyle='#C9973A'; cx.font='bold 20px Arial';
-  cx.fillText('TOTAL: $'+fin.toLocaleString('es-CO'), 18, ty+4);
+  cx.fillText('TOTAL: $'+fin.toLocaleString('en-US'), 18, ty+4);
 
   cx.fillStyle=grd; cx.fillRect(0,H-4,W,4);
   return cv;
@@ -4633,7 +4633,7 @@ function mostrarPopup(estado) {
     lanzarGlobos();
     tocarSonidoFelicitaciones();
   } else {
-    const falta = (ds.min - cartTotalRaw()).toLocaleString('es-CO');
+    const falta = (ds.min - cartTotalRaw()).toLocaleString('en-US');
     icon.textContent   = '✦';
     title.textContent  = 'Descuento por volumen';
     msg.innerHTML      = 'Agrega <strong>$' + falta + '</strong> más<br>y obtén el <strong>' + ds.pct + '% mayorista</strong>.';
