@@ -3100,6 +3100,15 @@ function openDrawer(id) {
   document.getElementById('photoPreview').style.display = 'none';
   document.getElementById('photoInput').value = '';
 
+  // Reactivar botones por si quedaron desactivados de una operación anterior
+  const btn     = document.getElementById('drawerSaveBtn');
+  const dasGuar = document.getElementById('dasGuardar');
+  const dasAct  = document.getElementById('dasActualizar');
+  const labelReset = id ? 'Actualizar prenda' : 'Guardar prenda';
+  if (btn)     { btn.disabled = false; btn.querySelector('#drawerSaveTxt').textContent = labelReset; }
+  if (dasGuar) dasGuar.disabled = false;
+  if (dasAct)  dasAct.disabled  = false;
+
   document.getElementById('drawerSaveTxt').textContent = id ? 'Actualizar prenda' : 'Guardar prenda';
 
   if (id) {
