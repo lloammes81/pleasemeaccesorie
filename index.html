@@ -3489,6 +3489,26 @@ function catProductHTML(p) {
     </div>`;
 }
 
+// ─── BODY SCROLL LOCK (iOS Safari chrome hide) ───────────────────────
+function _lockBodyScroll() {
+  const scrollY = window.scrollY || 0;
+  document.body.style.position  = 'fixed';
+  document.body.style.top       = `-${scrollY}px`;
+  document.body.style.left      = '0';
+  document.body.style.right     = '0';
+  document.body.style.overflow  = 'hidden';
+  document.body.dataset.scrollY = scrollY;
+}
+function _unlockBodyScroll() {
+  const scrollY = parseInt(document.body.dataset.scrollY || '0', 10);
+  document.body.style.position = '';
+  document.body.style.top      = '';
+  document.body.style.left     = '';
+  document.body.style.right    = '';
+  document.body.style.overflow = '';
+  window.scrollTo(0, scrollY);
+}
+
 function setSortOrder(order) {
   _currentSort = order || null;
   let sorted = [..._currentPanelProducts];
@@ -3529,11 +3549,9 @@ async function openCategoryPanel(category) {
 
   const cat = categories.find(c => c.key === category);
   document.getElementById('catPanelTitle').textContent = cat ? cat.label : category;
-  // Scroll 1px para que iOS Safari oculte sus barras de navegación antes de bloquear el scroll
-  if (window.scrollY === 0) window.scrollTo(0, 1);
   document.getElementById('catOverlay').classList.add('open');
   document.getElementById('catPanel').classList.add('open');
-  document.body.style.overflow = 'hidden';
+  _lockBodyScroll();
 
   // Mostrar tarjetas inmediatamente (con íconos si no hay foto aún)
   document.getElementById('catPanelBody').innerHTML = catProducts.length
@@ -3590,7 +3608,7 @@ async function openCategoryPanel(category) {
 function closeCategoryPanel() {
   document.getElementById('catOverlay').classList.remove('open');
   document.getElementById('catPanel').classList.remove('open');
-  document.body.style.overflow = '';
+  _unlockBodyScroll();
   currentCategory = null;
   const backFab = document.getElementById('catBackFab');
   if (backFab) backFab.classList.remove('visible');
@@ -3612,11 +3630,9 @@ async function openOffersPanel() {
   if (sel) sel.value = '';
 
   document.getElementById('catPanelTitle').textContent = titulo;
-  // Scroll 1px para que iOS Safari oculte sus barras de navegación antes de bloquear el scroll
-  if (window.scrollY === 0) window.scrollTo(0, 1);
   document.getElementById('catOverlay').classList.add('open');
   document.getElementById('catPanel').classList.add('open');
-  document.body.style.overflow = 'hidden';
+  _lockBodyScroll();
 
   document.getElementById('catPanelBody').innerHTML = ofertaProducts.length
     ? ofertaProducts.map(p => catProductHTML(p)).join('')
