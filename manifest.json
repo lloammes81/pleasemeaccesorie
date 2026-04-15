@@ -3,7 +3,7 @@
   "short_name": "Pleaseme",
   "description": "Catálogo oficial de Pleaseme Accessories · Oro Laminado",
   "start_url": "./index.html",
-  "display": "standalone",
+  "display": "fullscreen",
   "orientation": "portrait",
   "background_color": "#0A0804",
   "theme_color": "#0A0804",
