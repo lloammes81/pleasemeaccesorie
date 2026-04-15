@@ -449,6 +449,20 @@
 
   @media (max-width: 560px) {
     .modal-inner { grid-template-columns: 1fr; }
+    .modal-overlay {
+      align-items: flex-start;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 0;
+    }
+    .modal {
+      width: 100%;
+      min-height: 100%;
+      border-left: none;
+      border-right: none;
+    }
+    .modal-visual { min-height: 260px; max-height: 60vw; }
+    .modal-content { padding: 24px 20px 36px; }
   }
 
   .modal-visual {
@@ -4572,7 +4586,9 @@ function openModal(id) {
   `;
 
   updateModalBtn(id);
-  document.getElementById('modalOverlay').classList.add('open');
+  const overlay = document.getElementById('modalOverlay');
+  overlay.scrollTop = 0;
+  overlay.classList.add('open');
   document.body.style.overflow = 'hidden';
 }
 
@@ -4605,6 +4621,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal
 // ─── SWIPE PARA CERRAR MODAL ──────────────────────────────────────────
 (function() {
   const modal = document.getElementById('modal');
+  const overlay = document.getElementById('modalOverlay');
   let _sy = 0, _sx = 0, _dragging = false;
 
   modal.addEventListener('touchstart', e => {
@@ -4618,7 +4635,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal
     if (!_dragging) return;
     const dy = e.touches[0].clientY - _sy;
     const dx = Math.abs(e.touches[0].clientX - _sx);
-    if (Math.abs(dy) > dx) {
+    // Solo animar el modal si estamos en la parte superior del scroll y arrastrando hacia abajo
+    if (overlay.scrollTop === 0 && dy > 0 && Math.abs(dy) > dx) {
       modal.style.transform = `translateY(${dy * 0.4}px)`;
     }
   }, { passive: true });
@@ -4630,7 +4648,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal
     const dx = Math.abs(e.changedTouches[0].clientX - _sx);
     modal.style.transition = '';
     modal.style.transform = '';
-    if (Math.abs(dy) > 80 && Math.abs(dy) > dx) {
+    // Cerrar solo si: swipe hacia abajo, desde el tope del scroll, > 80px
+    if (dy > 80 && Math.abs(dy) > dx && overlay.scrollTop === 0) {
       closeModal();
     }
   }, { passive: true });
