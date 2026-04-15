@@ -873,6 +873,7 @@
     position: fixed;
     top: 0; right: 0;
     height: 100vh;
+    height: 100dvh;
     width: 380px;
     max-width: 100vw;
     background: var(--bg-card2);
@@ -1278,7 +1279,7 @@
 
   /* ─── CART FOOTER ─── */
   .cart-footer {
-    padding: 20px 22px 28px;
+    padding: 20px 22px calc(28px + env(safe-area-inset-bottom, 0px));
     border-top: 1px solid var(--border-gold);
   }
 
