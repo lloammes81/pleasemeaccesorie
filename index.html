@@ -1335,6 +1335,11 @@
     justify-content: space-between;
     flex-shrink: 0;
   }
+  .cart-detail-foot {
+    padding: 14px 22px;
+    border-top: 1px solid var(--border-gold);
+    flex-shrink: 0;
+  }
   .cart-detail-back {
     background: none; border: none;
     color: var(--gold-mid); cursor: pointer;
@@ -1346,7 +1351,7 @@
   .cart-detail-back:hover { color: var(--gold-light); }
 
   .cart-detail-img {
-    width: 100%; height: 260px; flex-shrink: 0;
+    width: 100%; height: 160px; flex-shrink: 0;
     background: radial-gradient(ellipse at center, #2a220f 0%, #0f0e0b 100%);
     display: flex; align-items: center; justify-content: center;
     position: relative; overflow: hidden;
@@ -3043,12 +3048,6 @@
 
   <!-- Vista detalle de producto -->
   <div class="cart-detail" id="cartDetail">
-    <div class="cart-detail-head">
-      <button class="cart-detail-back" onclick="hideCartDetail()">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-        Volver al carrito
-      </button>
-    </div>
     <div class="cart-detail-img" id="cartDetailImg"></div>
     <div class="cart-detail-body">
       <p class="cart-detail-cat" id="cartDetailCat"></p>
@@ -3058,6 +3057,12 @@
       <p class="cart-detail-desc" id="cartDetailDesc"></p>
       <div class="cart-detail-rows" id="cartDetailRows"></div>
       <div class="cart-detail-price" id="cartDetailPrice"></div>
+    </div>
+    <div class="cart-detail-foot">
+      <button class="cart-detail-back" onclick="hideCartDetail()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Volver al carrito
+      </button>
     </div>
   </div>
 
@@ -3635,27 +3640,28 @@ function cartTotal() {
   }, 0);
 }
 
-function addToCart(id) {
-  const existing = cart.find(i => String(i.id) === String(id));
+function addToCart(id, customMedida) {
+  const medida = customMedida || '';
+  const existing = cart.find(i => String(i.id) === String(id) && (i.customMedida || '') === medida);
   if (existing) existing.qty++;
-  else cart.push({ id, qty: 1 });
+  else cart.push({ uid: `${id}_${Date.now()}`, id, qty: 1, customMedida: medida });
   updateCartUI();
   showToast();
   checkDiscountQtyNotif();
   renderGrid();
 }
 
-function removeFromCart(id) {
-  cart = cart.filter(i => i.id !== id);
+function removeFromCart(uid) {
+  cart = cart.filter(i => i.uid !== uid);
   updateCartUI();
   renderGrid();
 }
 
-function changeQty(id, delta) {
-  const item = cart.find(i => String(i.id) === String(id));
+function changeQty(uid, delta) {
+  const item = cart.find(i => i.uid === uid);
   if (!item) return;
   item.qty += delta;
-  if (item.qty <= 0) removeFromCart(id);
+  if (item.qty <= 0) removeFromCart(uid);
   else updateCartUI();
 }
 
@@ -3748,22 +3754,19 @@ function renderCartItems() {
   container.innerHTML = cart.map(item => {
     const p = products.find(x => String(x.id) === String(item.id));
     if (!p) return '';
+    const uid = item.uid || item.id;
     const thumb = p.photo
       ? `<img src="${p.photo}" alt="${p.name}" style="width:100%;height:100%;object-fit:contain;display:block;">`
       : productIconHTML(p);
-    const cat = (p.category || '').toLowerCase();
-    const variantLines = [];
-    if (item.variant) variantLines.push(cat === 'anillos' ? `Talla ${item.variant}` : item.variant);
-    if (item.customMedida) variantLines.push(item.customMedida);
-    const variantLabel = variantLines.length
-      ? `<div class="cart-item-variant-label">${variantLines.map(l => `<span>${l}</span>`).join('')}</div>`
+    const medidaLabel = item.customMedida
+      ? `<div class="cart-item-variant-label"><span>${item.customMedida}</span></div>`
       : '';
     return `
-      <div class="cart-item" data-pid="${p.id}">
-        <div class="cart-item-left" onclick="showCartDetail('${p.id}')">
+      <div class="cart-item" data-uid="${uid}">
+        <div class="cart-item-left" onclick="showCartDetail('${uid}')">
           <div class="cart-item-photo-col">
             <div class="cart-item-icon">${thumb}</div>
-            ${variantLabel}
+            ${medidaLabel}
           </div>
           <div class="cart-item-info">
             <p class="cart-item-cat">${p.categoryLabel}</p>
@@ -3772,11 +3775,11 @@ function renderCartItems() {
           </div>
         </div>
         <div class="cart-item-controls">
-          <button class="qty-btn" onclick="changeQty('${p.id}', -1)">−</button>
+          <button class="qty-btn" onclick="changeQty('${uid}', -1)">−</button>
           <span class="qty-num">${item.qty}</span>
-          <button class="qty-btn" onclick="changeQty('${p.id}', 1)">+</button>
+          <button class="qty-btn" onclick="changeQty('${uid}', 1)">+</button>
         </div>
-        <button class="cart-remove" onclick="removeFromCart('${p.id}')" title="Quitar">×</button>
+        <button class="cart-remove" onclick="removeFromCart('${uid}')" title="Quitar">×</button>
       </div>`;
   }).join('');
 
@@ -3803,8 +3806,10 @@ function setCartCustomMedida(id, value) {
 }
 
 // ─── CART DETAIL ──────────────────────────────────────────────────────
-function showCartDetail(id) {
-  const p = products.find(x => String(x.id) === String(id));
+function showCartDetail(uid) {
+  const item = cart.find(i => (i.uid || i.id) === uid);
+  if (!item) return;
+  const p = products.find(x => String(x.id) === String(item.id));
   if (!p) return;
   document.getElementById('cartDetailImg').innerHTML = p.photo
     ? `<img src="${p.photo}" alt="${p.name}">`
@@ -3816,7 +3821,8 @@ function showCartDetail(id) {
   document.getElementById('cartDetailRows').innerHTML = `
     <div class="cart-detail-row"><span class="lbl">Material</span><span class="val">${p.material || '—'}</span></div>
     <div class="cart-detail-row"><span class="lbl">Medida</span><span class="val">${p.medida || '—'}</span></div>
-    <div class="cart-detail-row"><span class="lbl">Peso</span><span class="val">${p.peso || '—'}</span></div>`;
+    <div class="cart-detail-row"><span class="lbl">Peso</span><span class="val">${p.peso || '—'}</span></div>
+    ${item.customMedida ? `<div class="cart-detail-row"><span class="lbl">Tu medida</span><span class="val" style="color:var(--gold-light)">${item.customMedida}</span></div>` : ''}`;
   document.getElementById('cartDetailPrice').innerHTML = `<span class="currency">$</span>${p.price}`;
   document.getElementById('cartDetail').classList.add('open');
 }
@@ -3839,12 +3845,9 @@ let _currentPanelProducts = [];
 let _currentSort          = null; // 'asc' | 'desc' | null
 
 function addToCatCart(id) {
-  addToCart(id);
-  const item = cart.find(i => String(i.id) === String(id));
-  if (item) {
-    const medidaEl = document.getElementById(`catMedida-${id}`);
-    if (medidaEl) item.customMedida = medidaEl.value.trim();
-  }
+  const medidaEl = document.getElementById(`catMedida-${id}`);
+  const customMedida = medidaEl ? medidaEl.value.trim() : '';
+  addToCart(id, customMedida);
   refreshCatCard(id);
 }
 
@@ -3864,8 +3867,10 @@ function changeCatQty(id, delta) {
 }
 
 function catProductHTML(p) {
-  const cartItem = cart.find(c => String(c.id) === String(p.id));
-  const inCart = !!cartItem;
+  const cartItems = cart.filter(c => String(c.id) === String(p.id));
+  const cartItem = cartItems[0];
+  const totalQty = cartItems.reduce((s, c) => s + c.qty, 0);
+  const inCart = totalQty > 0;
   const cat = (p.category || '').toLowerCase();
   const imgContent = p.photo
     ? `<img src="${p.photo}" alt="${p.name}" style="width:100%;height:100%;object-fit:contain;object-position:center center;padding:8px;box-sizing:border-box;display:block;">`
@@ -3882,7 +3887,7 @@ function catProductHTML(p) {
          <button class="cat-detail-btn" onclick="openModal('${p.id}')">Ver detalle</button>
          <div class="cat-qty-control">
            <button class="cat-qty-btn" onclick="changeCatQty('${p.id}',-1)">−</button>
-           <span class="cat-qty-num">${cartItem.qty}</span>
+           <span class="cat-qty-num">${totalQty}</span>
            <button class="cat-qty-btn" onclick="changeCatQty('${p.id}',1)">+</button>
          </div>
        </div>`
@@ -5049,11 +5054,8 @@ function openModal(id) {
 
 function addFromModal() {
   if (!currentModalId) return;
-  addToCart(currentModalId);
-  const item = cart.find(i => String(i.id) === String(currentModalId));
-  if (item) {
-    item.customMedida = document.getElementById('modalCustomMedida').value.trim();
-  }
+  const customMedida = document.getElementById('modalCustomMedida').value.trim();
+  addToCart(currentModalId, customMedida);
 }
 
 function closeModal() {
