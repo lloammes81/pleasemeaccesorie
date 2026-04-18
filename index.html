@@ -2678,6 +2678,28 @@
     border-color: transparent; color: #fff;
   }
 
+  /* Quantity controls on cat product card */
+  .cat-qty-control {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .cat-qty-btn {
+    width: 30px; height: 30px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: transparent;
+    border: 1px solid rgba(201,151,58,0.5);
+    color: var(--gold-light); cursor: pointer;
+    font-size: 18px; line-height: 1;
+    transition: background 0.2s;
+  }
+  .cat-qty-btn:hover { background: rgba(201,151,58,0.15); }
+  .cat-qty-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px; font-weight: 600;
+    color: var(--gold-light);
+    min-width: 18px; text-align: center;
+    line-height: 1;
+  }
+
   @media (max-width: 500px) {
     .cat-panel-body { flex-direction: column; padding: 8px; gap: 8px; }
     .cat-product-name { font-size: 13px; }
@@ -3605,20 +3627,38 @@ let _currentSort          = null; // 'asc' | 'desc' | null
 
 function addToCatCart(id) {
   addToCart(id);
-  const b = document.getElementById('ccb-' + id);
-  if (b) {
-    b.classList.add('in-cart');
-    b.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
+  refreshCatCard(id);
+}
+
+function changeCatQty(id, delta) {
+  const item = cart.find(i => String(i.id) === String(id));
+  if (!item) return;
+  item.qty += delta;
+  if (item.qty <= 0) {
+    cart = cart.filter(i => String(i.id) !== String(id));
+    updateCartUI();
+    renderGrid();
+  } else {
+    updateCartUI();
+    if (delta > 0) checkDiscountQtyNotif();
   }
+  refreshCatCard(id);
 }
 
 function catProductHTML(p) {
-  const inCart = cart.some(c => String(c.id) === String(p.id));
+  const cartItem = cart.find(c => String(c.id) === String(p.id));
+  const inCart = !!cartItem;
   const imgContent = p.photo
     ? `<img src="${p.photo}" alt="${p.name}" style="width:100%;height:100%;object-fit:contain;object-position:center center;padding:8px;box-sizing:border-box;display:block;">`
     : `<div style="position:absolute;inset:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">${productIconHTML(p)}</div>`;
   const cartIcon = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>`;
-  const checkIcon = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>`;
+  const cartControls = inCart
+    ? `<div class="cat-qty-control">
+         <button class="cat-qty-btn" onclick="changeCatQty('${p.id}',-1)">−</button>
+         <span class="cat-qty-num">${cartItem.qty}</span>
+         <button class="cat-qty-btn" onclick="changeCatQty('${p.id}',1)">+</button>
+       </div>`
+    : `<button class="cat-cart-btn" id="ccb-${p.id}" onclick="addToCatCart('${p.id}')" title="Agregar al carrito">${cartIcon}</button>`;
   return `
     <div class="cat-product" data-pid="${p.id}">
       <div class="cat-product-img" onclick="openModal('${p.id}')">${imgContent}</div>
@@ -3629,15 +3669,21 @@ function catProductHTML(p) {
           <div class="cat-product-price"><span>$</span>${p.price}</div>
           <div style="display:flex;gap:6px;align-items:center;">
             <button class="cat-detail-btn" onclick="openModal('${p.id}')">Ver detalle</button>
-            <button class="cat-cart-btn ${inCart ? 'in-cart' : ''}" id="ccb-${p.id}"
-              onclick="addToCatCart('${p.id}')"
-              title="${inCart ? 'En tu selección' : 'Agregar al carrito'}">
-              ${inCart ? checkIcon : cartIcon}
-            </button>
+            ${cartControls}
           </div>
         </div>
       </div>
     </div>`;
+}
+
+function refreshCatCard(id) {
+  const card = document.querySelector(`.cat-product[data-pid="${id}"]`);
+  if (!card) return;
+  const p = products.find(x => String(x.id) === String(id));
+  if (!p) return;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = catProductHTML(p).trim();
+  card.replaceWith(tmp.firstElementChild);
 }
 
 // ─── BODY SCROLL LOCK (iOS Safari chrome hide) ───────────────────────
@@ -3844,7 +3890,7 @@ let _discountToastTimer;
 let _discountNotified = false;
 function checkDiscountQtyNotif() {
   if (_discountNotified) return;
-  if (cartCount() > 4) {
+  if (cartCount() >= 4) {
     _discountNotified = true;
     const t = document.getElementById('toastDiscount');
     t.classList.add('show');
@@ -4801,6 +4847,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal
 
   modal.addEventListener('touchmove', e => {
     if (!_dragging) return;
+    if (window._modalIsZoomed && window._modalIsZoomed()) return;
     const dy = e.touches[0].clientY - _sy;
     const dx = Math.abs(e.touches[0].clientX - _sx);
     // Solo animar el modal si estamos en la parte superior del scroll y arrastrando hacia abajo
@@ -4824,68 +4871,92 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal
 })();
 
 
-// ─── ZOOM DE IMAGEN EN MODAL ─────────────────────────────────────────
+// ─── ZOOM DE IMAGEN EN MODAL (pinch + pan) ───────────────────────────
 (function() {
   const visual = document.getElementById('modalVisual');
   let _scale = 1, _minScale = 1, _maxScale = 4;
+  let _tx = 0, _ty = 0;
   let _startDist = 0, _startScale = 1;
+  let _startTx = 0, _startTy = 0;
+  let _panStartX = 0, _panStartY = 0;
+  let _isPinching = false, _isPanning = false;
   let _lastTap = 0;
-  let _img = null;
 
   function getImg() { return visual.querySelector('img'); }
 
-  function applyScale(s) {
-    _scale = Math.min(_maxScale, Math.max(_minScale, s));
+  function applyTransform() {
     const img = getImg();
-    if (img) img.style.transform = `scale(${_scale})`;
+    if (!img) return;
+    // Clamp pan so image stays within bounds
+    const maxTx = ((_scale - 1) * img.offsetWidth)  / 2;
+    const maxTy = ((_scale - 1) * img.offsetHeight) / 2;
+    _tx = Math.min(maxTx, Math.max(-maxTx, _tx));
+    _ty = Math.min(maxTy, Math.max(-maxTy, _ty));
+    img.style.transform = `scale(${_scale}) translate(${_tx / _scale}px, ${_ty / _scale}px)`;
     const hint = document.getElementById('modalZoomHint');
     if (hint) hint.classList.toggle('hidden', _scale > 1);
   }
 
   function resetZoom() {
-    _scale = 1;
+    _scale = 1; _tx = 0; _ty = 0;
     const img = getImg();
     if (img) img.style.transform = '';
     const hint = document.getElementById('modalZoomHint');
     if (hint) hint.classList.remove('hidden');
   }
 
-  // Double-tap to toggle zoom
+  // Double-tap to toggle zoom 2.5x / reset
   visual.addEventListener('click', e => {
     if (!getImg()) return;
     const now = Date.now();
     if (now - _lastTap < 300) {
-      applyScale(_scale > 1 ? _minScale : 2.5);
+      if (_scale > 1) { resetZoom(); } else { _scale = 2.5; _tx = 0; _ty = 0; applyTransform(); }
       _lastTap = 0;
     } else {
       _lastTap = now;
     }
   });
 
-  // Pinch to zoom
   visual.addEventListener('touchstart', e => {
     if (e.touches.length === 2) {
       e.preventDefault();
+      _isPinching = true; _isPanning = false;
       const dx = e.touches[0].clientX - e.touches[1].clientX;
       const dy = e.touches[0].clientY - e.touches[1].clientY;
-      _startDist = Math.hypot(dx, dy);
+      _startDist  = Math.hypot(dx, dy);
       _startScale = _scale;
+      _startTx = _tx; _startTy = _ty;
+    } else if (e.touches.length === 1 && _scale > 1) {
+      _isPanning = true; _isPinching = false;
+      _panStartX = e.touches[0].clientX - _tx;
+      _panStartY = e.touches[0].clientY - _ty;
     }
   }, { passive: false });
 
   visual.addEventListener('touchmove', e => {
-    if (e.touches.length === 2) {
+    if (_isPinching && e.touches.length === 2) {
       e.preventDefault();
       const dx = e.touches[0].clientX - e.touches[1].clientX;
       const dy = e.touches[0].clientY - e.touches[1].clientY;
-      const dist = Math.hypot(dx, dy);
-      applyScale(_startScale * (dist / _startDist));
+      _scale = Math.min(_maxScale, Math.max(_minScale, _startScale * (Math.hypot(dx, dy) / _startDist)));
+      applyTransform();
+    } else if (_isPanning && e.touches.length === 1 && _scale > 1) {
+      e.preventDefault();
+      _tx = e.touches[0].clientX - _panStartX;
+      _ty = e.touches[0].clientY - _panStartY;
+      applyTransform();
     }
   }, { passive: false });
 
   visual.addEventListener('touchend', e => {
-    if (e.touches.length < 2 && _scale < 1.1) resetZoom();
+    if (e.touches.length === 0) {
+      _isPinching = false; _isPanning = false;
+      if (_scale < 1.1) resetZoom();
+    }
   }, { passive: true });
+
+  // Expose zoomed state so swipe-to-close can be blocked when zoomed
+  window._modalIsZoomed = () => _scale > 1;
 
   // Reset zoom when modal closes
   const origClose = window.closeModal;
