@@ -3642,6 +3642,7 @@ let currentModalId = null;
 
 // ─── CART STATE ──────────────────────────────────────────────────────
 let cart = []; // [{id, qty}]
+let _discountNotifShown = false;
 
 function cartCount() { return cart.reduce((s, i) => s + i.qty, 0); }
 
@@ -3744,6 +3745,14 @@ function updateCartUI() {
   document.getElementById('whatsappBtn').disabled = count === 0;
   const clearBtn = document.getElementById('cartClearBtn');
   if (clearBtn) clearBtn.classList.toggle('visible', count > 0);
+
+  // Notificación 15% descuento al llegar a 4 artículos
+  if (count >= 4 && !_discountNotifShown) {
+    _discountNotifShown = true;
+    setTimeout(() => showToast('¡Pregunta por el 15% de descuento! 🎉', 4000), 300);
+  }
+  if (count < 4) _discountNotifShown = false;
+
   renderCartItems();
   checkPopup();
   // Update modal button if open
@@ -3867,15 +3876,19 @@ function changeCatLocalQty(id, delta) {
   if (el) el.textContent = _catLocalQty[id];
 }
 
-function showSizeToast() {
+function showToast(msg, duration) {
   const t = document.getElementById('sizeToast');
   if (!t) return;
+  t.textContent = msg;
   clearTimeout(t._timer);
   t.style.display = 'block'; t.style.opacity = '1';
   t._timer = setTimeout(() => {
     t.style.opacity = '0';
     setTimeout(() => { t.style.display = 'none'; }, 400);
-  }, 2500);
+  }, duration || 2500);
+}
+function showSizeToast() {
+  showToast('Selecciona el tamaño antes de agregar');
 }
 
 function addToCatCartWithQty(id) {
