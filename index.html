@@ -1248,6 +1248,30 @@
   }
   .cart-item-left:hover .cart-item-name { color: var(--gold-light); }
 
+  .cart-item-photo-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+  }
+
+  .cart-item-variant-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .cart-item-variant-label span {
+    font-family: 'Cinzel', serif;
+    font-size: 7.5px;
+    letter-spacing: 1.5px;
+    color: var(--gold-mid);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
   .cart-item-variant {
     margin-top: 6px;
   }
@@ -3733,32 +3757,23 @@ function renderCartItems() {
       ? `<img src="${p.photo}" alt="${p.name}" style="width:100%;height:100%;object-fit:contain;display:block;">`
       : productIconHTML(p);
     const cat = (p.category || '').toLowerCase();
-    const ringOpts = ['4','6','8','10','12','14']
-      .map(v => `<option value="${v}"${item.variant===v?' selected':''}>Talla ${v}</option>`).join('');
-    const chainOpts = [['40cm','40 cm (16")'],['50cm','50 cm (20")'],['60cm','60 cm (24")']]
-      .map(([v,l]) => `<option value="${v}"${item.variant===v?' selected':''}>${l}</option>`).join('');
-    const variantHtml = cat === 'anillos'
-      ? `<div class="cart-item-variant" onclick="event.stopPropagation()">
-           <select class="cart-variant-select" onchange="setCartVariant('${p.id}',this.value)">
-             <option value="">— Talla —</option>${ringOpts}
-           </select>
-         </div>`
-      : cat === 'cadenas'
-        ? `<div class="cart-item-variant" onclick="event.stopPropagation()">
-             <select class="cart-variant-select" onchange="setCartVariant('${p.id}',this.value)">
-               <option value="">— Largo —</option>${chainOpts}
-             </select>
-           </div>`
-        : '';
+    const variantLines = [];
+    if (item.variant) variantLines.push(cat === 'anillos' ? `Talla ${item.variant}` : item.variant);
+    if (item.customMedida) variantLines.push(item.customMedida);
+    const variantLabel = variantLines.length
+      ? `<div class="cart-item-variant-label">${variantLines.map(l => `<span>${l}</span>`).join('')}</div>`
+      : '';
     return `
       <div class="cart-item" data-pid="${p.id}">
         <div class="cart-item-left" onclick="showCartDetail('${p.id}')">
-          <div class="cart-item-icon">${thumb}</div>
+          <div class="cart-item-photo-col">
+            <div class="cart-item-icon">${thumb}</div>
+            ${variantLabel}
+          </div>
           <div class="cart-item-info">
             <p class="cart-item-cat">${p.categoryLabel}</p>
             <p class="cart-item-name">${p.name}</p>
             <p class="cart-item-price">$${p.price}</p>
-            ${variantHtml}
           </div>
         </div>
         <div class="cart-item-controls">
