@@ -1253,7 +1253,7 @@
     transition: all 0.2s;
     display: none;
   }
-  .cart-clear-btn.visible { display: block; }
+  .cart-clear-btn.visible { display: inline-block; }
   .cart-clear-btn:hover { border-color: #e07070; color: #e07070; background: rgba(220,80,80,0.08); }
 
   /* ─── CART ITEM CLICKABLE ─── */
@@ -3068,7 +3068,6 @@
 
   <div class="cart-header">
     <span class="cart-title">Mi Selección</span>
-    <button class="cart-clear-btn" id="cartClearBtn" onclick="clearCart()">Limpiar</button>
     <button class="cart-close-btn" onclick="closeCart()">×</button>
   </div>
   <div class="cart-scroll-body">
@@ -3100,6 +3099,7 @@
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
       Catálogo
     </button>
+    <button class="cart-clear-btn" id="cartClearBtn" onclick="clearCart()" style="margin-left:auto;">Limpiar</button>
   </div>
 </div>
 <div id="ofertaModal">
