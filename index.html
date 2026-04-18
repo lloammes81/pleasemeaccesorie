@@ -3183,27 +3183,6 @@
         <div class="modal-divider"></div>
         <p class="modal-desc" id="modalDesc"></p>
         <div class="modal-details" id="modalDetails"></div>
-        <div class="modal-variant-selector" id="modalRingSize" style="display:none">
-          <label class="variant-label">Talla del anillo</label>
-          <select class="variant-select" id="ringSizeSelect">
-            <option value="">— Selecciona talla —</option>
-            <option value="4">Talla 4</option>
-            <option value="6">Talla 6</option>
-            <option value="8">Talla 8</option>
-            <option value="10">Talla 10</option>
-            <option value="12">Talla 12</option>
-            <option value="14">Talla 14</option>
-          </select>
-        </div>
-        <div class="modal-variant-selector" id="modalChainLength" style="display:none">
-          <label class="variant-label">Largo de cadena</label>
-          <select class="variant-select" id="chainLengthSelect">
-            <option value="">— Selecciona largo —</option>
-            <option value="40cm">40 cm (16")</option>
-            <option value="50cm">50 cm (20")</option>
-            <option value="60cm">60 cm (24")</option>
-          </select>
-        </div>
         <div class="modal-variant-selector" id="modalCustomMedidaWrap" style="display:none">
           <label class="variant-label">Agrega tu medida aquí</label>
           <input type="text" class="variant-input" id="modalCustomMedida" placeholder="Ej: 8, 42cm...">
@@ -3849,6 +3828,11 @@ let _currentSort          = null; // 'asc' | 'desc' | null
 
 function addToCatCart(id) {
   addToCart(id);
+  const item = cart.find(i => String(i.id) === String(id));
+  if (item) {
+    const medidaEl = document.getElementById(`catMedida-${id}`);
+    if (medidaEl) item.customMedida = medidaEl.value.trim();
+  }
   refreshCatCard(id);
 }
 
@@ -3870,10 +3854,17 @@ function changeCatQty(id, delta) {
 function catProductHTML(p) {
   const cartItem = cart.find(c => String(c.id) === String(p.id));
   const inCart = !!cartItem;
+  const cat = (p.category || '').toLowerCase();
   const imgContent = p.photo
     ? `<img src="${p.photo}" alt="${p.name}" style="width:100%;height:100%;object-fit:contain;object-position:center center;padding:8px;box-sizing:border-box;display:block;">`
     : `<div style="position:absolute;inset:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">${productIconHTML(p)}</div>`;
   const cartIcon = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>`;
+  const variantSelector = (cat === 'anillos' || cat === 'cadenas')
+    ? `<div class="cat-variant-wrap" onclick="event.stopPropagation()">
+         <label class="cat-custom-label">Agrega tu medida aquí</label>
+         <input type="text" class="cat-custom-input" id="catMedida-${p.id}" placeholder="${cat === 'anillos' ? 'Ej: 8, 9...' : 'Ej: 45cm, 50cm...'}">
+       </div>`
+    : '';
   const rightSection = inCart
     ? `<div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
          <button class="cat-detail-btn" onclick="openModal('${p.id}')">Ver detalle</button>
@@ -3893,6 +3884,7 @@ function catProductHTML(p) {
       <div class="cat-product-info">
         <p class="cat-product-cat">${p.categoryLabel}</p>
         <h3 class="cat-product-name">${p.name}</h3>
+        ${variantSelector}
         <div class="cat-product-footer">
           <div class="cat-product-price"><span>$</span>${p.price}</div>
           ${rightSection}
@@ -5032,14 +5024,8 @@ function openModal(id) {
   `;
 
   const cat = (p.category || '').toLowerCase();
-  const ringSizeEl = document.getElementById('modalRingSize');
-  const chainLengthEl = document.getElementById('modalChainLength');
   const customMedidaWrap = document.getElementById('modalCustomMedidaWrap');
-  document.getElementById('ringSizeSelect').value = '';
-  document.getElementById('chainLengthSelect').value = '';
   document.getElementById('modalCustomMedida').value = '';
-  ringSizeEl.style.display = cat === 'anillos' ? 'block' : 'none';
-  chainLengthEl.style.display = cat === 'cadenas' ? 'block' : 'none';
   customMedidaWrap.style.display = (cat === 'anillos' || cat === 'cadenas') ? 'block' : 'none';
 
   updateModalBtn(id);
@@ -5054,10 +5040,6 @@ function addFromModal() {
   addToCart(currentModalId);
   const item = cart.find(i => String(i.id) === String(currentModalId));
   if (item) {
-    const p = products.find(x => String(x.id) === String(currentModalId));
-    const cat = (p?.category || '').toLowerCase();
-    if (cat === 'anillos') item.variant = document.getElementById('ringSizeSelect').value;
-    if (cat === 'cadenas') item.variant = document.getElementById('chainLengthSelect').value;
     item.customMedida = document.getElementById('modalCustomMedida').value.trim();
   }
 }
