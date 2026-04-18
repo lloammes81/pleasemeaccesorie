@@ -1190,6 +1190,31 @@
   }
   .cart-item-left:hover .cart-item-name { color: var(--gold-light); }
 
+  .cart-item-variant {
+    margin-top: 6px;
+  }
+
+  .cart-variant-select {
+    background: rgba(201,151,58,0.08);
+    border: 1px solid var(--border-gold);
+    color: var(--text-cream);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 12px;
+    padding: 4px 24px 4px 8px;
+    cursor: pointer;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23c9973a'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    transition: border-color 0.2s;
+    max-width: 140px;
+  }
+
+  .cart-variant-select:focus { border-color: var(--gold-light); }
+  .cart-variant-select option { background: #1a1208; color: var(--text-cream); }
+
   /* ─── CART DETAIL VIEW ─── */
   .cart-detail {
     position: absolute;
@@ -3648,6 +3673,24 @@ function renderCartItems() {
     const thumb = p.photo
       ? `<img src="${p.photo}" alt="${p.name}" style="width:100%;height:100%;object-fit:contain;display:block;">`
       : productIconHTML(p);
+    const cat = (p.category || '').toLowerCase();
+    const ringOpts = ['5','5.5','6','6.5','7','7.5','8','8.5','9','9.5','10']
+      .map(v => `<option value="${v}"${item.variant===v?' selected':''}>Talla ${v}</option>`).join('');
+    const chainOpts = [['40cm','40 cm (16")'],['45cm','45 cm (18")'],['50cm','50 cm (20")'],['55cm','55 cm (22")'],['60cm','60 cm (24")']]
+      .map(([v,l]) => `<option value="${v}"${item.variant===v?' selected':''}>${l}</option>`).join('');
+    const variantHtml = cat === 'anillos'
+      ? `<div class="cart-item-variant" onclick="event.stopPropagation()">
+           <select class="cart-variant-select" onchange="setCartVariant('${p.id}',this.value)">
+             <option value="">— Talla —</option>${ringOpts}
+           </select>
+         </div>`
+      : cat === 'cadenas'
+        ? `<div class="cart-item-variant" onclick="event.stopPropagation()">
+             <select class="cart-variant-select" onchange="setCartVariant('${p.id}',this.value)">
+               <option value="">— Largo —</option>${chainOpts}
+             </select>
+           </div>`
+        : '';
     return `
       <div class="cart-item" data-pid="${p.id}">
         <div class="cart-item-left" onclick="showCartDetail('${p.id}')">
@@ -3656,6 +3699,7 @@ function renderCartItems() {
             <p class="cart-item-cat">${p.categoryLabel}</p>
             <p class="cart-item-name">${p.name}</p>
             <p class="cart-item-price">$${p.price}</p>
+            ${variantHtml}
           </div>
         </div>
         <div class="cart-item-controls">
@@ -3677,6 +3721,11 @@ function renderCartItems() {
       if (icon) icon.innerHTML = `<img src="${p.photo}" alt="" style="width:100%;height:100%;object-fit:contain;display:block;">`;
     });
   }
+}
+
+function setCartVariant(id, value) {
+  const item = cart.find(x => String(x.id) === String(id));
+  if (item) item.variant = value;
 }
 
 // ─── CART DETAIL ──────────────────────────────────────────────────────
@@ -4028,6 +4077,11 @@ function buildOrderMsg() {
     if (!p) return;
     msg += `▪️ *${p.name}*\n`;
     msg += `   🔢 Cantidad: *${item.qty}*   💲 Precio: *$${p.price}* c/u\n`;
+    if (item.variant) {
+      const cat = (p.category || '').toLowerCase();
+      const label = cat === 'anillos' ? '💍 Talla' : '📏 Largo';
+      msg += `   ${label}: *${item.variant}*\n`;
+    }
   });
   const _raw = cartTotal();
   const ds = getDiscountSettings();
