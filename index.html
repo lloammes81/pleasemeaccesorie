@@ -2855,16 +2855,15 @@
   .cat-cart-btn {
     width: 38px; height: 38px; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
-    background: transparent;
-    border: 1px solid rgba(201,151,58,0.4);
-    color: var(--gold-mid); cursor: pointer;
-    transition: all 0.2s;
+    background: linear-gradient(135deg, var(--gold-mid), var(--gold-light));
+    border: none;
+    border-radius: 50%;
+    color: var(--bg-dark); cursor: pointer;
+    transition: all 0.25s;
+    margin-left: auto;
+    box-shadow: 0 4px 14px rgba(201,151,58,0.35);
   }
-  .cat-cart-btn:hover { border-color: var(--gold-light); color: var(--gold-light); background: rgba(201,151,58,0.08); }
-  .cat-cart-btn.in-cart {
-    background: linear-gradient(135deg, #2d5a3d, #3a7a52);
-    border-color: transparent; color: #fff;
-  }
+  .cat-cart-btn:hover { background: linear-gradient(135deg, var(--gold-light), var(--gold-shine)); box-shadow: 0 6px 20px rgba(201,151,58,0.55); transform: scale(1.08); }
 
   /* Quantity controls on cat product card */
   .cat-qty-control {
@@ -2893,7 +2892,7 @@
     .cat-product-name { font-size: 13px; }
     .cat-product-price { font-size: 18px; }
     .cat-detail-btn { padding: 7px 8px; font-size: 6px; letter-spacing: 1px; }
-    .cat-cart-btn { width: 30px; height: 30px; }
+    .cat-cart-btn { width: 34px; height: 34px; }
   }
 
 </style>
