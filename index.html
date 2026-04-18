@@ -587,6 +587,69 @@
     box-shadow: 0 6px 24px rgba(201,151,58,0.35);
   }
 
+  /* Modal quantity control */
+  .modal-qty-control {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .modal-qty-btn {
+    width: 34px; height: 34px;
+    border: 1px solid var(--gold-mid);
+    background: transparent;
+    color: var(--gold-light);
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal-qty-btn:hover { background: rgba(201,151,58,0.15); }
+  .modal-qty-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--gold-light);
+    min-width: 24px;
+    text-align: center;
+    line-height: 1;
+  }
+
+  /* Zoom hint label on modal image */
+  .modal-zoom-hint {
+    position: absolute;
+    bottom: 8px; left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Cinzel', serif;
+    font-size: 8px; letter-spacing: 2px;
+    color: var(--gold-mid);
+    opacity: 0.7;
+    pointer-events: none;
+    z-index: 5;
+    white-space: nowrap;
+    transition: opacity 0.4s;
+  }
+  .modal-zoom-hint.hidden { opacity: 0; }
+
+  /* Image zoom wrapper inside modal */
+  .modal-zoom-wrap {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    touch-action: none;
+  }
+  .modal-zoom-wrap img {
+    width: 100%; height: 100%;
+    object-fit: contain;
+    display: block;
+    transform-origin: center center;
+    transition: transform 0.1s linear;
+    will-change: transform;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
   /* ─── FOOTER ─── */
   footer {
     text-align: center;
@@ -1261,6 +1324,49 @@
     margin-bottom: 28px;
   }
   .ty-msg strong { color: var(--gold-light); font-style: normal; }
+  /* WhatsApp button inside thank-you modal */
+  .ty-wa-btn {
+    font-family: 'Cinzel', serif;
+    font-size: 9px; letter-spacing: 2px;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, #1a7a3a, #25a850);
+    border: none;
+    color: #fff;
+    padding: 14px 24px;
+    cursor: pointer;
+    width: 100%;
+    margin-bottom: 10px;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    transition: filter 0.2s;
+  }
+  .ty-wa-btn:hover { filter: brightness(1.12); }
+
+  /* Discount quantity notification toast */
+  .toast-discount {
+    position: fixed;
+    bottom: 110px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: linear-gradient(135deg, #1E1608, #14100A);
+    border: 1px solid var(--gold-mid);
+    color: var(--gold-light);
+    font-family: 'Cinzel', serif;
+    font-size: 9px; letter-spacing: 1.5px;
+    padding: 12px 22px;
+    z-index: 800;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.35s ease;
+    white-space: nowrap;
+    text-align: center;
+    max-width: calc(100vw - 48px);
+    white-space: normal;
+    line-height: 1.6;
+  }
+  .toast-discount.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
   .ty-close-btn {
     font-family: 'Cinzel', serif;
     font-size: 9px; letter-spacing: 2.5px;
@@ -2848,16 +2954,22 @@
       <p class="ty-order-loading" id="tyImgLoading">Generando resumen visual…</p>
     </div>
     <p class="ty-msg" style="margin-bottom:14px;">
-      Gracias por elegirnos 💛<br>
-      WhatsApp se abrió con tu pedido.<br><br>
+      Gracias por elegirnos 💛<br><br>
       Guarda tu <strong>número de pedido</strong> para cualquier consulta.
     </p>
+    <button class="ty-wa-btn" id="tyWaBtn" onclick="abrirWhatsAppPedido()">
+      <svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px;flex-shrink:0"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      Enviar pedido por WhatsApp
+    </button>
     <button class="ty-close-btn" onclick="closeTyModal()">Continuar explorando</button>
   </div>
 </div>
 
 <!-- TOAST -->
 <div class="toast-cart" id="toastCart">✦ Agregado a tu selección</div>
+
+<!-- DISCOUNT NOTIFICATION TOAST -->
+<div class="toast-discount" id="toastDiscount">✦ ¡Tienes más de 4 artículos! Pregunta por nuestros descuentos especiales</div>
 
 <!-- MODAL -->
 <div class="modal-overlay" id="modalOverlay">
@@ -2874,7 +2986,14 @@
         <div class="modal-details" id="modalDetails"></div>
         <div class="modal-price-row">
           <div class="modal-price" id="modalPrice"></div>
-          <button class="modal-btn" id="modalAddBtn" onclick="addFromModal()">✦ Agregar a selección</button>
+          <div id="modalCartControl">
+            <button class="modal-btn" id="modalAddBtn" onclick="addFromModal()">✦ Agregar a selección</button>
+            <div class="modal-qty-control" id="modalQtyControl" style="display:none">
+              <button class="modal-qty-btn" onclick="changeModalQty(-1)">−</button>
+              <span class="modal-qty-num" id="modalQtyNum">1</span>
+              <button class="modal-qty-btn" onclick="changeModalQty(1)">+</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -3307,6 +3426,7 @@ function addToCart(id) {
   else cart.push({ id, qty: 1 });
   updateCartUI();
   showToast();
+  checkDiscountQtyNotif();
   renderGrid();
 }
 
@@ -3720,6 +3840,23 @@ function showToast() {
   toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
 }
 
+let _discountToastTimer;
+let _discountNotified = false;
+function checkDiscountQtyNotif() {
+  if (_discountNotified) return;
+  if (cartCount() > 4) {
+    _discountNotified = true;
+    const t = document.getElementById('toastDiscount');
+    t.classList.add('show');
+    clearTimeout(_discountToastTimer);
+    _discountToastTimer = setTimeout(() => t.classList.remove('show'), 5000);
+  }
+}
+
+function resetDiscountQtyNotif() {
+  _discountNotified = false;
+}
+
 // ─── CART PANEL ──────────────────────────────────────────────────────
 function openCart() {
   document.getElementById('cartPanel').classList.add('open');
@@ -3772,6 +3909,7 @@ function buildOrderMsg() {
 
 function limpiarCarritoPostPedido() {
   cart = [];
+  resetDiscountQtyNotif();
   updateCartUI();
   renderGrid();
   closeCart();
@@ -3795,7 +3933,6 @@ function mostrarModalGracias(canvas, numero) {
 
   document.getElementById('tyOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
-  setTimeout(() => closeTyModal(), 2000);
 }
 
 async function adjuntarImagenWhatsApp() {
@@ -3907,9 +4044,6 @@ async function sendWhatsApp() {
 
   if (btn) { btn.disabled = true; btn.textContent = 'Preparando pedido...'; }
 
-  // Abrir ventana ANTES de los await para evitar el bloqueador de popups
-  const waWin = window.open('', '_blank');
-
   const phone  = getWhatsAppNumber();
   const numero = await generarNumeroPedido();
 
@@ -3924,16 +4058,26 @@ async function sendWhatsApp() {
   // Guardar pedido + imagen en Firebase en segundo plano
   guardarPedidoFirebase(numero, canvas);
 
+  // Guardar URL de WhatsApp para abrir manualmente desde el modal
+  _pendingWaUrl = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+
   limpiarCarritoPostPedido();
 
   if (btn) { btn.disabled = false; btn.innerHTML = waIconHtml; }
 
-  // Redirigir la ventana ya abierta a WhatsApp
-  const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
-  if (waWin) { waWin.location.href = waUrl; } else { window.open(waUrl, '_blank'); }
-
   mostrarModalGracias(canvas, numero);
 }
+
+let _pendingWaUrl = null;
+
+function abrirWhatsAppPedido() {
+  if (_pendingWaUrl) {
+    window.open(_pendingWaUrl, '_blank');
+    _pendingWaUrl = null;
+  }
+  closeTyModal();
+}
+
 function closeTyModal() {
   document.getElementById('tyOverlay').classList.remove('open');
   document.body.style.overflow = '';
@@ -4557,13 +4701,34 @@ function renderGrid() {
 
 // ─── MODAL ───────────────────────────────────────────────────────────
 function updateModalBtn(id) {
-  const btn = document.getElementById('modalAddBtn');
+  const btn     = document.getElementById('modalAddBtn');
+  const qtyCtrl = document.getElementById('modalQtyControl');
+  const qtyNum  = document.getElementById('modalQtyNum');
   if (!btn) return;
-  const inCart = cart.some(c => String(c.id) === String(id));
-  btn.textContent = inCart ? '✓ En tu selección' : '✦ Agregar a selección';
-  btn.style.background = inCart
-    ? 'linear-gradient(135deg, #2d5a3d, #3a7a52)'
-    : 'linear-gradient(135deg, var(--gold-mid), var(--gold-light))';
+  const item = cart.find(c => String(c.id) === String(id));
+  if (item) {
+    btn.style.display = 'none';
+    qtyCtrl.style.display = 'flex';
+    qtyNum.textContent = item.qty;
+  } else {
+    btn.style.display = '';
+    qtyCtrl.style.display = 'none';
+  }
+}
+
+function changeModalQty(delta) {
+  if (!currentModalId) return;
+  const item = cart.find(i => String(i.id) === String(currentModalId));
+  if (!item) {
+    if (delta > 0) addToCart(currentModalId);
+    return;
+  }
+  item.qty += delta;
+  if (item.qty <= 0) removeFromCart(currentModalId);
+  else {
+    updateCartUI();
+    if (delta > 0) checkDiscountQtyNotif();
+  }
 }
 
 function openModal(id) {
@@ -4577,9 +4742,11 @@ function openModal(id) {
   document.getElementById('modalDesc').textContent = p.desc;
   document.getElementById('modalPrice').innerHTML = `<span class="currency">$</span>${p.price}`;
   document.getElementById('modalVisual').innerHTML = p.photo
-    ? `<img src="${p.photo}" alt="${p.name}" style="width:100%;height:100%;object-fit:contain;display:block;">`
+    ? `<div class="modal-zoom-wrap"><img src="${p.photo}" alt="${p.name}"></div>
+       <span class="modal-zoom-hint" id="modalZoomHint">✦ Pellizca para ampliar</span>`
     : `<div style="position:absolute;inset:0;background:${productBg(p)}"></div>
-       <div style="position:relative;z-index:1;filter:drop-shadow(0 12px 32px rgba(201,151,58,0.45))">${productIconHTML(p)}</div>`;
+       <div style="position:relative;z-index:1;filter:drop-shadow(0 12px 32px rgba(201,151,58,0.45))">${productIconHTML(p)}</div>
+       <span class="modal-zoom-hint hidden" id="modalZoomHint">✦ Pellizca para ampliar</span>`;
   document.getElementById('modalDetails').innerHTML = `
     <div class="modal-detail-row"><span class="label">Material</span><span class="value">${p.material}</span></div>
     <div class="modal-detail-row"><span class="label">Medida</span><span class="value">${p.medida}</span></div>
@@ -4656,6 +4823,77 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal
   }, { passive: true });
 })();
 
+
+// ─── ZOOM DE IMAGEN EN MODAL ─────────────────────────────────────────
+(function() {
+  const visual = document.getElementById('modalVisual');
+  let _scale = 1, _minScale = 1, _maxScale = 4;
+  let _startDist = 0, _startScale = 1;
+  let _lastTap = 0;
+  let _img = null;
+
+  function getImg() { return visual.querySelector('img'); }
+
+  function applyScale(s) {
+    _scale = Math.min(_maxScale, Math.max(_minScale, s));
+    const img = getImg();
+    if (img) img.style.transform = `scale(${_scale})`;
+    const hint = document.getElementById('modalZoomHint');
+    if (hint) hint.classList.toggle('hidden', _scale > 1);
+  }
+
+  function resetZoom() {
+    _scale = 1;
+    const img = getImg();
+    if (img) img.style.transform = '';
+    const hint = document.getElementById('modalZoomHint');
+    if (hint) hint.classList.remove('hidden');
+  }
+
+  // Double-tap to toggle zoom
+  visual.addEventListener('click', e => {
+    if (!getImg()) return;
+    const now = Date.now();
+    if (now - _lastTap < 300) {
+      applyScale(_scale > 1 ? _minScale : 2.5);
+      _lastTap = 0;
+    } else {
+      _lastTap = now;
+    }
+  });
+
+  // Pinch to zoom
+  visual.addEventListener('touchstart', e => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      _startDist = Math.hypot(dx, dy);
+      _startScale = _scale;
+    }
+  }, { passive: false });
+
+  visual.addEventListener('touchmove', e => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.hypot(dx, dy);
+      applyScale(_startScale * (dist / _startDist));
+    }
+  }, { passive: false });
+
+  visual.addEventListener('touchend', e => {
+    if (e.touches.length < 2 && _scale < 1.1) resetZoom();
+  }, { passive: true });
+
+  // Reset zoom when modal closes
+  const origClose = window.closeModal;
+  window.closeModal = function() {
+    resetZoom();
+    origClose && origClose();
+  };
+})();
 
 // ─── POPUP DESCUENTO MAYORISTA ────────────────────────────────────────
 let   popupTimer      = null;
