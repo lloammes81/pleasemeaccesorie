@@ -3950,6 +3950,7 @@ function setSortOrder(order) {
 }
 
 async function openCategoryPanel(category) {
+  if (document.getElementById('catPanel').classList.contains('open')) return;
   currentCategory = category;
 
   // Ordenar por precio de menor a mayor al abrir un nuevo panel
@@ -4043,6 +4044,7 @@ function closeCategoryPanel() {
 
 // ─── PANEL DE OFERTAS ────────────────────────────────────────────────
 async function openOffersPanel() {
+  if (document.getElementById('catPanel').classList.contains('open')) return;
   if (!_seasonalOffer) return;
   const ofertaProductIds = _seasonalOffer.productIds || [];
   const ofertaProducts   = products.filter(p => ofertaProductIds.includes(p.id));
