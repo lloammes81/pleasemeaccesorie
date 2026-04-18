@@ -162,11 +162,11 @@
   }
   .header-sub-char {
     display: inline;
-    animation: charGoldWave 10s ease infinite;
+    animation: charGoldWave 2s ease-in-out infinite;
   }
   @keyframes charGoldWave {
     0%, 100% { color: #9A8C76; text-shadow: none; }
-    50%       { color: #FFFBE8; text-shadow: 0 0 12px rgba(255,251,232,0.55); }
+    15%, 35%  { color: #FFFBE8; text-shadow: 0 0 14px rgba(255,251,232,0.6); }
   }
 
   .header-divider {
@@ -5974,12 +5974,12 @@ if (typeof mostrarWelcome === 'function') mostrarWelcome();
   const el = document.getElementById('headerSub');
   if (!el) return;
   const text = el.textContent;
-  const waveDuration = 10;
+  const waveSpread = 0.6;
   const nonSpace = text.replace(/\s/g, '').length;
   let idx = 0;
   el.innerHTML = text.split('').map(ch => {
     if (ch === ' ') return '<span style="display:inline"> </span>';
-    const delay = ((idx++) / nonSpace * waveDuration).toFixed(2);
+    const delay = ((idx++) / nonSpace * waveSpread).toFixed(2);
     return `<span class="header-sub-char" style="animation-delay:${delay}s">${ch}</span>`;
   }).join('');
 })();
