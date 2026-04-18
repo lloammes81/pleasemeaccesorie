@@ -3199,7 +3199,7 @@
 <div class="toast-cart" id="toastCart">✦ Agregado a tu selección</div>
 
 <!-- DISCOUNT NOTIFICATION TOAST -->
-<div class="toast-discount" id="toastDiscount">✦ ¡Tienes más de 4 artículos! Pregunta por nuestros descuentos especiales</div>
+<div class="toast-discount" id="toastDiscount">✦ ¡Tienes 4 artículos! Pregunta por el 15% de descuento</div>
 
 <!-- MODAL -->
 <div class="modal-overlay" id="modalOverlay">
@@ -3642,7 +3642,6 @@ let currentModalId = null;
 
 // ─── CART STATE ──────────────────────────────────────────────────────
 let cart = []; // [{id, qty}]
-let _discountNotifShown = false;
 
 function cartCount() { return cart.reduce((s, i) => s + i.qty, 0); }
 
@@ -3662,6 +3661,7 @@ function addToCart(id, customMedida, qty) {
   if (existing) existing.qty += n;
   else cart.push({ uid: `${id}_${Date.now()}`, id, qty: n, customMedida: medida });
   updateCartUI();
+  showToast();
   checkDiscountQtyNotif();
   renderGrid();
 }
@@ -3744,13 +3744,6 @@ function updateCartUI() {
   document.getElementById('whatsappBtn').disabled = count === 0;
   const clearBtn = document.getElementById('cartClearBtn');
   if (clearBtn) clearBtn.classList.toggle('visible', count > 0);
-
-  // Notificación 15% descuento al llegar a 4 artículos
-  if (count >= 4 && !_discountNotifShown) {
-    _discountNotifShown = true;
-    setTimeout(() => showToast('¡Pregunta por el 15% de descuento! 🎉', 4000), 300);
-  }
-  if (count < 4) _discountNotifShown = false;
 
   renderCartItems();
   checkPopup();
@@ -3875,19 +3868,16 @@ function changeCatLocalQty(id, delta) {
   if (el) el.textContent = _catLocalQty[id];
 }
 
-function showToast(msg, duration) {
+function showSizeToast() {
   const t = document.getElementById('sizeToast');
   if (!t) return;
-  t.textContent = msg;
+  t.textContent = 'Selecciona el tamaño antes de agregar';
   clearTimeout(t._timer);
   t.style.display = 'block'; t.style.opacity = '1';
   t._timer = setTimeout(() => {
     t.style.opacity = '0';
     setTimeout(() => { t.style.display = 'none'; }, 400);
-  }, duration || 2500);
-}
-function showSizeToast() {
-  showToast('Selecciona el tamaño antes de agregar');
+  }, 2500);
 }
 
 function addToCatCartWithQty(id) {
