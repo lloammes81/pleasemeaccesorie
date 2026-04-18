@@ -5653,7 +5653,7 @@ function applyCatalogInfo(c) {
   try {
     if (c.eyebrow !== undefined)  document.getElementById('headerEyebrow').textContent = c.eyebrow  || 'Catálogo';
     if (c.title !== undefined)    document.getElementById('headerLogo').textContent    = c.title    || 'Pleaseme';
-    if (c.subtitle !== undefined) document.getElementById('headerSub').textContent     = c.subtitle || 'Accessories · Oro Laminado';
+    if (c.subtitle !== undefined) { document.getElementById('headerSub').textContent = c.subtitle || 'Accessories · Oro Laminado'; if (typeof initHeaderWave === 'function') initHeaderWave(); }
     if (c.footerLogo !== undefined)  document.getElementById('footerLogo').textContent    = c.footerLogo  || 'Pleaseme Accessories';
     if (c.footerText !== undefined)  document.getElementById('footerTagline').textContent = c.footerText  || 'Cada pieza, una historia · Oro laminado de alta calidad';
   } catch(e) {}
@@ -5983,7 +5983,7 @@ document.addEventListener('click', function(e) {
 if (typeof mostrarWelcome === 'function') mostrarWelcome();
 
 // Ola letra a letra en el subtítulo del header
-(function initHeaderWave() {
+function initHeaderWave() {
   const el = document.getElementById('headerSub');
   if (!el) return;
   const text = el.textContent;
@@ -5995,7 +5995,8 @@ if (typeof mostrarWelcome === 'function') mostrarWelcome();
     const delay = ((idx++) / nonSpace * waveSpread).toFixed(2);
     return `<span class="header-sub-char" style="animation-delay:${delay}s">${ch}</span>`;
   }).join('');
-})();
+}
+initHeaderWave();
 </script>
 
 </body>
