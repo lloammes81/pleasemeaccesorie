@@ -3837,6 +3837,7 @@ function clearCart() {
   cart = [];
   updateCartUI();
   renderGrid();
+  _currentPanelProducts.forEach(p => refreshCatCard(p.id));
 }
 
 // ─── CATEGORY PANEL ──────────────────────────────────────────────────
