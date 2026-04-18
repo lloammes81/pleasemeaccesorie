@@ -4995,6 +4995,7 @@ function changeModalQty(delta) {
 }
 
 function openModal(id) {
+  if (document.getElementById('modalOverlay').classList.contains('open')) return;
   const p = products.find(x => String(x.id) === String(id));
   if (!p) return;
   currentModalId = id;
