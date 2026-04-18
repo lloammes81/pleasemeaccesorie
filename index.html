@@ -3737,22 +3737,17 @@ function renderCartItems() {
       .map(v => `<option value="${v}"${item.variant===v?' selected':''}>Talla ${v}</option>`).join('');
     const chainOpts = [['40cm','40 cm (16")'],['50cm','50 cm (20")'],['60cm','60 cm (24")']]
       .map(([v,l]) => `<option value="${v}"${item.variant===v?' selected':''}>${l}</option>`).join('');
-    const customMedidaVal = (item.customMedida || '').replace(/"/g, '&quot;');
     const variantHtml = cat === 'anillos'
       ? `<div class="cart-item-variant" onclick="event.stopPropagation()">
            <select class="cart-variant-select" onchange="setCartVariant('${p.id}',this.value)">
              <option value="">— Talla —</option>${ringOpts}
            </select>
-           <label class="cart-custom-label">Agrega tu medida aquí</label>
-           <input type="text" class="cart-custom-input" value="${customMedidaVal}" placeholder="Ej: 8, 9..." oninput="setCartCustomMedida('${p.id}',this.value)">
          </div>`
       : cat === 'cadenas'
         ? `<div class="cart-item-variant" onclick="event.stopPropagation()">
              <select class="cart-variant-select" onchange="setCartVariant('${p.id}',this.value)">
                <option value="">— Largo —</option>${chainOpts}
              </select>
-             <label class="cart-custom-label">Agrega tu medida aquí</label>
-             <input type="text" class="cart-custom-input" value="${customMedidaVal}" placeholder="Ej: 45cm, 48cm..." oninput="setCartCustomMedida('${p.id}',this.value)">
            </div>`
         : '';
     return `
