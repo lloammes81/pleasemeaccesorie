@@ -155,10 +155,24 @@
     font-family: 'Cinzel', serif;
     font-size: 11px;
     letter-spacing: 8px;
-    color: var(--text-muted);
     margin-top: 4px;
     opacity: 0;
-    animation: fadeUp 1s ease 0.6s forwards, goldTextShimmer 7s ease 3s infinite;
+    background: linear-gradient(
+      90deg,
+      #9A8C76 0%,
+      #9A8C76 30%,
+      #E8C96D 43%,
+      #FFFBE8 50%,
+      #E8C96D 57%,
+      #9A8C76 70%,
+      #9A8C76 100%
+    );
+    background-size: 300% 100%;
+    background-position: -200% center;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: fadeUp 1s ease 0.6s forwards, goldWaveShimmer 6s ease 2.5s infinite;
   }
 
   .header-divider {
@@ -858,19 +872,9 @@
     to   { opacity: 1; transform: translateY(0); }
   }
 
-  @keyframes goldTextShimmer {
-    0%, 70%, 100% {
-      color: var(--text-muted);
-      text-shadow: none;
-    }
-    80% {
-      color: #f0d060;
-      text-shadow: 0 0 18px rgba(240,208,80,0.7), 0 0 40px rgba(212,168,60,0.35);
-    }
-    90% {
-      color: #c9973a;
-      text-shadow: 0 0 10px rgba(201,151,58,0.5);
-    }
+  @keyframes goldWaveShimmer {
+    0%, 55%, 100% { background-position: -200% center; }
+    80%           { background-position: 250% center;  }
   }
 
   @keyframes spin {
