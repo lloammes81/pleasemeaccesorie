@@ -628,6 +628,26 @@
     font-size: 11px !important;
     padding: 5px 28px 5px 10px !important;
   }
+  .cat-medida-input.size-empty,
+  .variant-select.size-empty {
+    animation: sizeRequiredBlink 1.2s ease-in-out infinite;
+  }
+  @keyframes sizeRequiredBlink {
+    0%, 100% { border-color: rgba(201,151,58,0.25); box-shadow: none; }
+    50%       { border-color: rgba(201,151,58,1);    box-shadow: 0 0 8px rgba(201,151,58,0.35); }
+  }
+  #sizeToast {
+    position: fixed; bottom: 90px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15,11,5,0.96);
+    border: 1px solid rgba(201,151,58,0.65);
+    color: var(--gold-light);
+    font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 1.5px;
+    padding: 10px 22px; z-index: 9999;
+    text-align: center; pointer-events: none;
+    text-transform: uppercase; white-space: nowrap;
+    display: none; opacity: 1; transition: opacity 0.4s;
+  }
 
   .cart-custom-label {
     display: block;
@@ -3196,7 +3216,7 @@
         <div class="modal-details" id="modalDetails"></div>
         <div class="modal-variant-selector" id="modalCustomMedidaWrap" style="display:none">
           <label class="variant-label">Size</label>
-          <select class="variant-select" id="modalCustomMedida"></select>
+          <select class="variant-select" id="modalCustomMedida" onchange="this.classList.toggle('size-empty',!this.value)"></select>
         </div>
         <div class="modal-price-row">
           <div class="modal-price" id="modalPrice"></div>
@@ -3847,16 +3867,31 @@ function changeCatLocalQty(id, delta) {
   if (el) el.textContent = _catLocalQty[id];
 }
 
+function showSizeToast() {
+  const t = document.getElementById('sizeToast');
+  if (!t) return;
+  clearTimeout(t._timer);
+  t.style.display = 'block'; t.style.opacity = '1';
+  t._timer = setTimeout(() => {
+    t.style.opacity = '0';
+    setTimeout(() => { t.style.display = 'none'; }, 400);
+  }, 2500);
+}
+
 function addToCatCartWithQty(id) {
   const qty = _catLocalQty[id] || 1;
   const medidaEl = document.getElementById(`catMedida-${id}`);
   const customMedida = medidaEl ? medidaEl.value.trim() : '';
+  if (medidaEl && !customMedida) {
+    medidaEl.classList.add('size-empty');
+    showSizeToast();
+    return;
+  }
   addToCart(id, customMedida, qty);
-  // Reset local qty y textbox
   _catLocalQty[id] = 1;
   const qtyEl = document.getElementById(`catQtyNum-${id}`);
   if (qtyEl) qtyEl.textContent = '1';
-  if (medidaEl) medidaEl.selectedIndex = 0;
+  if (medidaEl) { medidaEl.selectedIndex = 0; medidaEl.classList.add('size-empty'); }
 }
 
 function catProductHTML(p) {
@@ -3867,14 +3902,14 @@ function catProductHTML(p) {
     : `<div style="position:absolute;inset:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">${productIconHTML(p)}</div>`;
   const cartIcon = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>`;
   const hasVariant = cat === 'anillos' || cat === 'collares';
-  const anilloOpts = [5,6,7,8,9,10,11,12,13].map(n => `<option value="${n}">${n}</option>`).join('');
-  const collarOpts = ['18"','20"','22"','24"','26"'].map(n => `<option value="${n}">${n}</option>`).join('');
+  const anilloOpts = `<option value="">Talla</option>` + [5,6,7,8,9,10,11,12,13].map(n => `<option value="${n}">${n}</option>`).join('');
+  const collarOpts = `<option value="">Talla</option>` + ['18"','20"','22"','24"','26"'].map(n => `<option value="${n}">${n}</option>`).join('');
   const variantOpts = cat === 'anillos' ? anilloOpts : collarOpts;
   const variantRow = hasVariant
     ? `<div class="cat-variant-wrap" onclick="event.stopPropagation()">
          <label class="variant-label">Size</label>
          <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
-           <select class="variant-select cat-medida-input" id="catMedida-${p.id}">${variantOpts}</select>
+           <select class="variant-select cat-medida-input size-empty" id="catMedida-${p.id}" onchange="this.classList.toggle('size-empty',!this.value)">${variantOpts}</select>
            <button class="cat-cart-btn" onclick="event.stopPropagation();addToCatCartWithQty('${p.id}')" title="Agregar al carrito">${cartIcon}</button>
          </div>
        </div>`
@@ -5038,11 +5073,13 @@ function openModal(id) {
   const customMedidaWrap = document.getElementById('modalCustomMedidaWrap');
   const medidaEl = document.getElementById('modalCustomMedida');
   if (cat === 'anillos') {
-    medidaEl.innerHTML = [5,6,7,8,9,10,11,12,13].map(n => `<option value="${n}">${n}</option>`).join('');
+    medidaEl.innerHTML = `<option value="">Talla</option>` + [5,6,7,8,9,10,11,12,13].map(n => `<option value="${n}">${n}</option>`).join('');
   } else if (cat === 'collares') {
-    medidaEl.innerHTML = ['18"','20"','22"','24"','26"'].map(n => `<option value="${n}">${n}</option>`).join('');
+    medidaEl.innerHTML = `<option value="">Talla</option>` + ['18"','20"','22"','24"','26"'].map(n => `<option value="${n}">${n}</option>`).join('');
   }
-  customMedidaWrap.style.display = (cat === 'anillos' || cat === 'collares') ? 'block' : 'none';
+  const hasVariantModal = (cat === 'anillos' || cat === 'collares');
+  customMedidaWrap.style.display = hasVariantModal ? 'block' : 'none';
+  if (hasVariantModal) medidaEl.classList.add('size-empty'); else medidaEl.classList.remove('size-empty');
 
   updateModalBtn(id);
   const overlay = document.getElementById('modalOverlay');
@@ -5053,7 +5090,14 @@ function openModal(id) {
 
 function addFromModal() {
   if (!currentModalId) return;
-  const customMedida = document.getElementById('modalCustomMedida').value.trim();
+  const medidaEl = document.getElementById('modalCustomMedida');
+  const wrap = document.getElementById('modalCustomMedidaWrap');
+  const customMedida = medidaEl ? medidaEl.value.trim() : '';
+  if (medidaEl && wrap && wrap.style.display !== 'none' && !customMedida) {
+    medidaEl.classList.add('size-empty');
+    showSizeToast();
+    return;
+  }
   addToCart(currentModalId, customMedida);
 }
 
@@ -5918,6 +5962,8 @@ document.addEventListener('click', function(e) {
   }
 });
 </script>
+
+<div id="sizeToast">Selecciona el tamaño antes de agregar</div>
 
 <script>
 // Llamar al welcome al final, cuando todo el DOM y scripts están listos
