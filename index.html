@@ -3872,8 +3872,8 @@ function catProductHTML(p) {
     : `<div style="position:absolute;inset:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">${productIconHTML(p)}</div>`;
   const cartIcon = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>`;
   const hasVariant = cat === 'anillos' || cat === 'collares';
-  const anilloOpts = [4,6,8,10,12,14,16,18,20].map(n => `<option value="${n}">${n}</option>`).join('');
-  const collarOpts = ['14"','16"','18"','20"','22"','24"','26"','28"','30"'].map(n => `<option value="${n}">${n}</option>`).join('');
+  const anilloOpts = [5,6,7,8,9,10,11,12,13].map(n => `<option value="${n}">${n}</option>`).join('');
+  const collarOpts = ['18"','20"','22"','24"','26"'].map(n => `<option value="${n}">${n}</option>`).join('');
   const variantOpts = cat === 'anillos' ? anilloOpts : collarOpts;
   const variantRow = hasVariant
     ? `<div class="cat-variant-wrap" onclick="event.stopPropagation()">
@@ -5042,9 +5042,9 @@ function openModal(id) {
   const customMedidaWrap = document.getElementById('modalCustomMedidaWrap');
   const medidaEl = document.getElementById('modalCustomMedida');
   if (cat === 'anillos') {
-    medidaEl.innerHTML = [4,6,8,10,12,14,16,18,20].map(n => `<option value="${n}">${n}</option>`).join('');
+    medidaEl.innerHTML = [5,6,7,8,9,10,11,12,13].map(n => `<option value="${n}">${n}</option>`).join('');
   } else if (cat === 'collares') {
-    medidaEl.innerHTML = ['14"','16"','18"','20"','22"','24"','26"','28"','30"'].map(n => `<option value="${n}">${n}</option>`).join('');
+    medidaEl.innerHTML = ['18"','20"','22"','24"','26"'].map(n => `<option value="${n}">${n}</option>`).join('');
   }
   customMedidaWrap.style.display = (cat === 'anillos' || cat === 'collares') ? 'block' : 'none';
 
