@@ -415,8 +415,10 @@
   .modal {
     background: var(--bg-card2);
     border: 1px solid var(--border-gold);
-    max-width: 680px;
+    max-width: 560px;
     width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
     position: relative;
     transform: translateY(20px) scale(0.97);
     transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -444,7 +446,7 @@
 
   .modal-inner {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
   }
 
   @media (max-width: 560px) {
@@ -470,15 +472,16 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 380px;
+    min-height: 260px;
+    max-height: 260px;
     overflow: hidden;
   }
 
   .modal-content {
-    padding: 36px 32px 36px 24px;
+    padding: 20px 24px 24px 24px;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
   }
 
   .modal-category {
@@ -546,6 +549,48 @@
   .modal-detail-row .value {
     color: var(--text-cream);
     font-weight: 300;
+  }
+
+  .modal-variant-selector {
+    margin-bottom: 16px;
+  }
+
+  .variant-label {
+    display: block;
+    font-family: 'Cinzel', serif;
+    font-size: 8px;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .variant-select {
+    width: 100%;
+    background: rgba(201,151,58,0.08);
+    border: 1px solid var(--border-gold);
+    color: var(--text-cream);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13px;
+    padding: 8px 12px;
+    cursor: pointer;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23c9973a'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 30px;
+    transition: border-color 0.2s;
+  }
+
+  .variant-select:focus {
+    border-color: var(--gold-light);
+  }
+
+  .variant-select option {
+    background: #1a1208;
+    color: var(--text-cream);
   }
 
   .modal-price-row {
@@ -3023,6 +3068,34 @@
         <div class="modal-divider"></div>
         <p class="modal-desc" id="modalDesc"></p>
         <div class="modal-details" id="modalDetails"></div>
+        <div class="modal-variant-selector" id="modalRingSize" style="display:none">
+          <label class="variant-label">Talla del anillo</label>
+          <select class="variant-select" id="ringSizeSelect">
+            <option value="">— Selecciona talla —</option>
+            <option value="5">Talla 5</option>
+            <option value="5.5">Talla 5½</option>
+            <option value="6">Talla 6</option>
+            <option value="6.5">Talla 6½</option>
+            <option value="7">Talla 7</option>
+            <option value="7.5">Talla 7½</option>
+            <option value="8">Talla 8</option>
+            <option value="8.5">Talla 8½</option>
+            <option value="9">Talla 9</option>
+            <option value="9.5">Talla 9½</option>
+            <option value="10">Talla 10</option>
+          </select>
+        </div>
+        <div class="modal-variant-selector" id="modalChainLength" style="display:none">
+          <label class="variant-label">Largo de cadena</label>
+          <select class="variant-select" id="chainLengthSelect">
+            <option value="">— Selecciona largo —</option>
+            <option value="40cm">40 cm (16")</option>
+            <option value="45cm">45 cm (18")</option>
+            <option value="50cm">50 cm (20")</option>
+            <option value="55cm">55 cm (22")</option>
+            <option value="60cm">60 cm (24")</option>
+          </select>
+        </div>
         <div class="modal-price-row">
           <div class="modal-price" id="modalPrice"></div>
           <div id="modalCartControl">
@@ -4818,6 +4891,14 @@ function openModal(id) {
     <div class="modal-detail-row"><span class="label">Medida</span><span class="value">${p.medida}</span></div>
     <div class="modal-detail-row"><span class="label">Peso</span><span class="value">${p.peso}</span></div>
   `;
+
+  const cat = (p.category || '').toLowerCase();
+  const ringSizeEl = document.getElementById('modalRingSize');
+  const chainLengthEl = document.getElementById('modalChainLength');
+  document.getElementById('ringSizeSelect').value = '';
+  document.getElementById('chainLengthSelect').value = '';
+  ringSizeEl.style.display = cat === 'anillos' ? 'block' : 'none';
+  chainLengthEl.style.display = cat === 'cadenas' ? 'block' : 'none';
 
   updateModalBtn(id);
   const overlay = document.getElementById('modalOverlay');
