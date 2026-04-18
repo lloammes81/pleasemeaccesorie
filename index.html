@@ -3640,11 +3640,12 @@ function cartTotal() {
   }, 0);
 }
 
-function addToCart(id, customMedida) {
+function addToCart(id, customMedida, qty) {
   const medida = customMedida || '';
+  const n = qty || 1;
   const existing = cart.find(i => String(i.id) === String(id) && (i.customMedida || '') === medida);
-  if (existing) existing.qty++;
-  else cart.push({ uid: `${id}_${Date.now()}`, id, qty: 1, customMedida: medida });
+  if (existing) existing.qty += n;
+  else cart.push({ uid: `${id}_${Date.now()}`, id, qty: n, customMedida: medida });
   updateCartUI();
   showToast();
   checkDiscountQtyNotif();
@@ -3844,57 +3845,44 @@ function clearCart() {
 let currentCategory       = null;
 let _currentPanelProducts = [];
 let _currentSort          = null; // 'asc' | 'desc' | null
+const _catLocalQty        = {};   // qty local por producto (antes de agregar al carrito)
 
-function addToCatCart(id) {
-  const medidaEl = document.getElementById(`catMedida-${id}`);
-  const customMedida = medidaEl ? medidaEl.value.trim() : '';
-  addToCart(id, customMedida);
-  refreshCatCard(id);
+function changeCatLocalQty(id, delta) {
+  _catLocalQty[id] = Math.max(1, (_catLocalQty[id] || 1) + delta);
+  const el = document.getElementById(`catQtyNum-${id}`);
+  if (el) el.textContent = _catLocalQty[id];
 }
 
-function changeCatQty(id, delta) {
-  const item = cart.find(i => String(i.id) === String(id));
-  if (!item) return;
-  item.qty += delta;
-  if (item.qty <= 0) {
-    cart = cart.filter(i => String(i.id) !== String(id));
-    updateCartUI();
-    renderGrid();
-  } else {
-    updateCartUI();
-    if (delta > 0) checkDiscountQtyNotif();
-  }
-  refreshCatCard(id);
+function addToCatCartWithQty(id) {
+  const qty = _catLocalQty[id] || 1;
+  const medidaEl = document.getElementById(`catMedida-${id}`);
+  const customMedida = medidaEl ? medidaEl.value.trim() : '';
+  addToCart(id, customMedida, qty);
+  // Reset local qty y textbox
+  _catLocalQty[id] = 1;
+  const qtyEl = document.getElementById(`catQtyNum-${id}`);
+  if (qtyEl) qtyEl.textContent = '1';
+  if (medidaEl) medidaEl.value = '';
 }
 
 function catProductHTML(p) {
-  const cartItems = cart.filter(c => String(c.id) === String(p.id));
-  const cartItem = cartItems[0];
-  const totalQty = cartItems.reduce((s, c) => s + c.qty, 0);
-  const inCart = totalQty > 0;
   const cat = (p.category || '').toLowerCase();
+  const localQty = _catLocalQty[p.id] || 1;
   const imgContent = p.photo
     ? `<img src="${p.photo}" alt="${p.name}" style="width:100%;height:100%;object-fit:contain;object-position:center center;padding:8px;box-sizing:border-box;display:block;">`
     : `<div style="position:absolute;inset:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">${productIconHTML(p)}</div>`;
   const cartIcon = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>`;
-  const variantSelector = (cat === 'anillos' || cat === 'collares')
+  const hasVariant = cat === 'anillos' || cat === 'collares';
+  const variantRow = hasVariant
     ? `<div class="cat-variant-wrap" onclick="event.stopPropagation()">
          <label class="variant-label">Agrega tu medida aquí</label>
-         <input type="text" class="variant-input cat-medida-input" id="catMedida-${p.id}" placeholder="${cat === 'anillos' ? 'Ej: 8, 9...' : 'Ej: 45cm...'}">
-       </div>`
-    : '';
-  const rightSection = inCart
-    ? `<div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
-         <button class="cat-detail-btn" onclick="openModal('${p.id}')">Ver detalle</button>
-         <div class="cat-qty-control">
-           <button class="cat-qty-btn" onclick="changeCatQty('${p.id}',-1)">−</button>
-           <span class="cat-qty-num">${totalQty}</span>
-           <button class="cat-qty-btn" onclick="changeCatQty('${p.id}',1)">+</button>
+         <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+           <input type="text" class="variant-input cat-medida-input" id="catMedida-${p.id}" placeholder="${cat === 'anillos' ? 'Ej: 8, 9...' : 'Ej: 45cm...'}">
+           <button class="cat-cart-btn" onclick="event.stopPropagation();addToCatCartWithQty('${p.id}')" title="Agregar al carrito">${cartIcon}</button>
          </div>
        </div>`
-    : `<div style="display:flex;gap:6px;align-items:center;">
-         <button class="cat-detail-btn" onclick="openModal('${p.id}')">Ver detalle</button>
-         <button class="cat-cart-btn" id="ccb-${p.id}" onclick="addToCatCart('${p.id}')" title="Agregar al carrito">${cartIcon}</button>
+    : `<div class="cat-variant-wrap" onclick="event.stopPropagation()" style="display:flex;justify-content:flex-end;margin-top:8px;">
+         <button class="cat-cart-btn" onclick="event.stopPropagation();addToCatCartWithQty('${p.id}')" title="Agregar al carrito">${cartIcon}</button>
        </div>`;
   return `
     <div class="cat-product" data-pid="${p.id}">
@@ -3904,9 +3892,16 @@ function catProductHTML(p) {
         <h3 class="cat-product-name">${p.name}</h3>
         <div class="cat-product-footer">
           <div class="cat-product-price"><span>$</span>${p.price}</div>
-          ${rightSection}
+          <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
+            <button class="cat-detail-btn" onclick="openModal('${p.id}')">Ver detalle</button>
+            <div class="cat-qty-control" onclick="event.stopPropagation()">
+              <button class="cat-qty-btn" onclick="changeCatLocalQty('${p.id}',-1)">−</button>
+              <span class="cat-qty-num" id="catQtyNum-${p.id}">${localQty}</span>
+              <button class="cat-qty-btn" onclick="changeCatLocalQty('${p.id}',1)">+</button>
+            </div>
+          </div>
         </div>
-        ${variantSelector}
+        ${variantRow}
       </div>
     </div>`;
 }
