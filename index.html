@@ -153,26 +153,20 @@
 
   .header-sub {
     font-family: 'Cinzel', serif;
-    font-size: 11px;
+    font-size: 14px;
     letter-spacing: 8px;
     margin-top: 4px;
     opacity: 0;
-    background: linear-gradient(
-      90deg,
-      #9A8C76 0%,
-      #9A8C76 30%,
-      #E8C96D 43%,
-      #FFFBE8 50%,
-      #E8C96D 57%,
-      #9A8C76 70%,
-      #9A8C76 100%
-    );
-    background-size: 300% 100%;
-    background-position: -200% center;
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: fadeUp 1s ease 0.6s forwards, goldWaveShimmer 6s ease 2.5s infinite;
+    color: #9A8C76;
+    animation: fadeUp 1s ease 0.6s forwards;
+  }
+  .header-sub-char {
+    display: inline;
+    animation: charGoldWave 10s ease infinite;
+  }
+  @keyframes charGoldWave {
+    0%, 100% { color: #9A8C76; text-shadow: none; }
+    50%       { color: #FFFBE8; text-shadow: 0 0 12px rgba(255,251,232,0.55); }
   }
 
   .header-divider {
@@ -206,7 +200,7 @@
     }
     .header-eyebrow { margin-bottom: 2px; font-size: 10px; letter-spacing: 6px; }
     .header-logo { font-size: 22px; line-height: 1; }
-    .header-sub { margin-top: 2px; font-size: 8px; letter-spacing: 4px; }
+    .header-sub { margin-top: 2px; font-size: 11px; letter-spacing: 4px; }
     .header-divider { margin: 4px auto 0; width: 180px; }
   }
 
@@ -3956,6 +3950,7 @@ function setSortOrder(order) {
 }
 
 async function openCategoryPanel(category) {
+  if (document.getElementById('catPanel').classList.contains('open')) return;
   currentCategory = category;
 
   // Ordenar por precio de menor a mayor al abrir un nuevo panel
@@ -4049,6 +4044,7 @@ function closeCategoryPanel() {
 
 // ─── PANEL DE OFERTAS ────────────────────────────────────────────────
 async function openOffersPanel() {
+  if (document.getElementById('catPanel').classList.contains('open')) return;
   if (!_seasonalOffer) return;
   const ofertaProductIds = _seasonalOffer.productIds || [];
   const ofertaProducts   = products.filter(p => ofertaProductIds.includes(p.id));
@@ -4356,11 +4352,10 @@ async function sendWhatsApp() {
 let _pendingWaUrl = null;
 
 function abrirWhatsAppPedido() {
-  if (_pendingWaUrl) {
-    window.open(_pendingWaUrl, '_blank');
-    _pendingWaUrl = null;
-  }
+  const url = _pendingWaUrl;
+  _pendingWaUrl = null;
   closeTyModal();
+  if (url) window.location.href = url;
 }
 
 function closeTyModal() {
@@ -5927,6 +5922,21 @@ document.addEventListener('click', function(e) {
 <script>
 // Llamar al welcome al final, cuando todo el DOM y scripts están listos
 if (typeof mostrarWelcome === 'function') mostrarWelcome();
+
+// Ola letra a letra en el subtítulo del header
+(function initHeaderWave() {
+  const el = document.getElementById('headerSub');
+  if (!el) return;
+  const text = el.textContent;
+  const waveDuration = 10;
+  const nonSpace = text.replace(/\s/g, '').length;
+  let idx = 0;
+  el.innerHTML = text.split('').map(ch => {
+    if (ch === ' ') return '<span style="display:inline"> </span>';
+    const delay = ((idx++) / nonSpace * waveDuration).toFixed(2);
+    return `<span class="header-sub-char" style="animation-delay:${delay}s">${ch}</span>`;
+  }).join('');
+})();
 </script>
 
 </body>
