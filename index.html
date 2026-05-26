@@ -14,7 +14,7 @@
 <title>Catálogo — Pleaseme Accessories</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="pleaseme.png" type="image/png">
-<link rel="apple-touch-icon" href="pleaseme.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Cinzel:wght@400;600&family=Montserrat:wght@300;400;500&display=swap" onload="this.onload=null;this.rel='stylesheet'">
@@ -400,6 +400,123 @@
     transform: translateY(-1px);
     box-shadow: 0 4px 16px rgba(201,151,58,0.3);
   }
+
+  /* ─── PWA INSTALL PROMPT ─── */
+  #pwaPrompt {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 9900;
+    padding: 0 16px 16px;
+    transform: translateY(110%);
+    transition: transform 0.4s cubic-bezier(0.22,1,0.36,1);
+    pointer-events: none;
+  }
+  #pwaPrompt.show {
+    transform: translateY(0);
+    pointer-events: all;
+  }
+  .pwa-card {
+    background: #181208;
+    border: 1px solid rgba(201,151,58,0.35);
+    border-radius: 14px;
+    padding: 18px 20px;
+    box-shadow: 0 -4px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(201,151,58,0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  .pwa-top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .pwa-icon {
+    width: 52px; height: 52px;
+    border-radius: 12px;
+    background: linear-gradient(135deg,#110e08,#1e1608);
+    border: 1px solid rgba(201,151,58,0.4);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px;
+    font-weight: 300;
+    background: linear-gradient(135deg,#8B6914,#E8C96D);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .pwa-icon-wrap {
+    width: 52px; height: 52px;
+    border-radius: 12px;
+    border: 1px solid rgba(201,151,58,0.4);
+    background: #110e08;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 0 16px rgba(201,151,58,0.15);
+  }
+  .pwa-text { flex: 1; min-width: 0; }
+  .pwa-title {
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    letter-spacing: 2.5px;
+    color: var(--gold-light);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .pwa-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.55;
+    letter-spacing: 0.2px;
+  }
+  .pwa-actions {
+    display: flex;
+    gap: 10px;
+  }
+  .pwa-btn-yes {
+    flex: 1;
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    background: linear-gradient(135deg,var(--gold-mid),var(--gold-light));
+    color: var(--bg-dark);
+    border: none;
+    padding: 12px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: opacity 0.2s;
+  }
+  .pwa-btn-yes:hover { opacity: 0.88; }
+  .pwa-btn-no {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid rgba(154,140,118,0.25);
+    padding: 12px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .pwa-btn-no:hover { color: var(--text-cream); border-color: rgba(154,140,118,0.5); }
+  /* iOS instructions */
+  .pwa-ios-steps {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    border-top: 1px solid rgba(201,151,58,0.12);
+    padding-top: 12px;
+    display: none;
+  }
+  .pwa-ios-steps.show { display: block; }
+  .pwa-ios-steps strong { color: var(--gold-mid); }
 
   /* ─── IMAGE VIEWER ─── */
   #imgViewerOverlay {
@@ -6152,6 +6269,39 @@ function cerrarPagina() {
   <p id="imgViewerHint">Pellizca para ampliar · Doble toque para restablecer</p>
 </div>
 
+<!-- PWA INSTALL PROMPT -->
+<div id="pwaPrompt">
+  <div class="pwa-card">
+    <div class="pwa-top">
+      <div class="pwa-icon-wrap">
+        <svg width="30" height="30" viewBox="0 0 60 60" fill="none">
+          <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle"
+            font-family="Georgia,serif" font-size="38" font-weight="300"
+            fill="url(#pg)">P</text>
+          <defs>
+            <linearGradient id="pg" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#8B6914"/>
+              <stop offset="100%" stop-color="#E8C96D"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div class="pwa-text">
+        <p class="pwa-title">Pleaseme Accessories</p>
+        <p class="pwa-sub" id="pwaSubText">Instala el catálogo en tu dispositivo para acceder rápido y recibir novedades.</p>
+      </div>
+    </div>
+    <div class="pwa-ios-steps" id="pwaIosSteps">
+      Toca <strong>Compartir</strong> <strong>⎙</strong> en la barra de Safari,
+      luego selecciona <strong>"Agregar a pantalla de inicio"</strong> y confirma.
+    </div>
+    <div class="pwa-actions" id="pwaActions">
+      <button class="pwa-btn-yes" id="pwaBtnYes" onclick="doInstall()">✦ Instalar</button>
+      <button class="pwa-btn-no" onclick="dismissInstall()">Ahora no</button>
+    </div>
+  </div>
+</div>
+
 <!-- FAB-VISUAL watermark -->
 <div id="fabVisualWrap" style="position:fixed;bottom:16px;right:16px;z-index:500;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;" onclick="toggleFabCard()">
   <div style="opacity:0.38;display:flex;flex-direction:column;align-items:center;gap:3px;pointer-events:none;">
@@ -6252,6 +6402,81 @@ function initHeaderWave() {
   }).join('');
 }
 initHeaderWave();
+</script>
+
+<script>
+// ─── PWA: SERVICE WORKER + INSTALL PROMPT ────────────────────────────
+(function(){
+  const PROMPT_KEY = 'pm_pwa_dismissed';
+  let deferredPrompt = null;
+
+  // Detectar iOS Safari
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isInStandalone = ('standalone' in navigator && navigator.standalone) ||
+                          window.matchMedia('(display-mode: standalone)').matches;
+
+  function showPrompt() {
+    if (isInStandalone) return;           // ya está instalada
+    if (localStorage.getItem(PROMPT_KEY)) return; // ya la descartó
+    setTimeout(() => {
+      document.getElementById('pwaPrompt').classList.add('show');
+    }, 3500);
+  }
+
+  function dismiss() {
+    document.getElementById('pwaPrompt').classList.remove('show');
+  }
+
+  window.dismissInstall = function() {
+    localStorage.setItem(PROMPT_KEY, '1');
+    dismiss();
+  };
+
+  window.doInstall = async function() {
+    if (isIos) {
+      // Mostrar instrucciones manuales para iOS
+      document.getElementById('pwaIosSteps').classList.add('show');
+      document.getElementById('pwaActions').style.display = 'none';
+      document.getElementById('pwaSubText').style.display = 'none';
+      return;
+    }
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    dismiss();
+    if (outcome === 'accepted') {
+      localStorage.setItem(PROMPT_KEY, '1');
+    }
+  };
+
+  // Capturar el evento de instalación del navegador
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    showPrompt();
+  });
+
+  // Si ya fue instalada, no mostrar el prompt
+  window.addEventListener('appinstalled', () => {
+    localStorage.setItem(PROMPT_KEY, '1');
+    dismiss();
+  });
+
+  // iOS: mostrar prompt manual si no está instalada
+  if (isIos && !isInStandalone) {
+    showPrompt();
+  }
+
+  // Registrar el Service Worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => console.log('SW registrado:', reg.scope))
+        .catch(err => console.warn('SW error:', err));
+    });
+  }
+})();
 </script>
 
 </body>
