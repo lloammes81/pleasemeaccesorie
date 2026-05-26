@@ -2022,8 +2022,8 @@ textarea { resize: vertical; min-height: 80px; }
         Pedidos
       </button>
       <button class="nav-item" onclick="goTo('realizados')" id="nav-realizados">
-        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        Pedidos Realizados
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        Pedidos a Crédito
       </button>
       <button class="nav-item" onclick="goTo('facturas')" id="nav-facturas">
         <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
@@ -2727,12 +2727,12 @@ textarea { resize: vertical; min-height: 80px; }
       <div id="pedidosLista"><p class="pedidos-empty">Cargando pedidos…</p></div>
     </div>
 
-    <!-- PAGE: PEDIDOS REALIZADOS -->
+    <!-- PAGE: PEDIDOS A CRÉDITO -->
     <div class="page" id="page-realizados">
       <div class="realizados-filtros">
-        <span class="realizados-badge">
-          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-          Pedidos completados
+        <span class="realizados-badge" style="background:rgba(230,126,34,0.12);border-color:rgba(230,126,34,0.4);color:#e67e22;">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+          Facturas pendientes de pago
         </span>
         <button class="btn" onclick="loadRealizados()" style="white-space:nowrap">↺ Actualizar</button>
       </div>
@@ -3441,7 +3441,7 @@ function goTo(page) {
   document.getElementById('page-' + page).classList.add('active');
   document.getElementById('nav-' + page).classList.add('active');
 
-  const titles = { productos: 'Productos', contacto: 'Información de contacto', banner: 'Banner de anuncio', visitas: 'Visitas al catálogo', info: 'Información del catálogo', config: 'Configuración · API Keys', pedidos: 'Pedidos de clientes', realizados: 'Pedidos Realizados', facturas: 'Facturas Procesadas', ofertas: 'Ofertas de temporada' };
+  const titles = { productos: 'Productos', contacto: 'Información de contacto', banner: 'Banner de anuncio', visitas: 'Visitas al catálogo', info: 'Información del catálogo', config: 'Configuración · API Keys', pedidos: 'Pedidos de clientes', realizados: 'Pedidos a Crédito', facturas: 'Facturas Procesadas', ofertas: 'Ofertas de temporada' };
   document.getElementById('topbarTitle').textContent = titles[page] || '';
 
   const topAction = document.getElementById('topbarAction');
@@ -3573,52 +3573,53 @@ let _realizados = [];
 async function loadRealizados() {
   const lista = document.getElementById('realizadosLista');
   if (!lista) return;
-  lista.innerHTML = '<p class="pedidos-empty">Cargando pedidos realizados…</p>';
+  lista.innerHTML = '<p class="pedidos-empty">Cargando pedidos a crédito…</p>';
   try {
-    const snap = await _db.collection('pedidos').where('realizado','==',true).orderBy('fecha','desc').limit(200).get();
+    const snap = await _db.collection('facturas_procesadas')
+      .where('estado', '==', 'pendiente')
+      .orderBy('fecha', 'desc').limit(200).get();
     _realizados = snap.docs.map(doc => ({ _docId: doc.id, ...doc.data() }));
     if (!_realizados.length) {
-      lista.innerHTML = '<p class="pedidos-empty">Aún no hay pedidos marcados como realizados.</p>';
+      lista.innerHTML = '<p class="pedidos-empty">No hay facturas pendientes de pago.</p>';
       return;
     }
-    lista.innerHTML = _realizados.map(p => {
-      const fecha = p.fecha ? new Date(p.fecha.seconds * 1000).toLocaleString('es-CO', { dateStyle:'short', timeStyle:'short' }) : '—';
-      const totalFinal = Number(p.total_final || p.total || 0).toLocaleString('es-CO');
-      const itemsRows = (p.items || []).map(it =>
+    lista.innerHTML = _realizados.map(f => {
+      const fecha = f.fecha ? new Date(f.fecha.seconds * 1000).toLocaleString('es-CO', { dateStyle:'short', timeStyle:'short' }) : '—';
+      const total = Number(f.total || 0).toLocaleString('es-CO');
+      const cliente = (f.cliente && f.cliente.nombre) ? f.cliente.nombre : '<em style="color:#888">Sin nombre</em>';
+      const tel   = (f.cliente && f.cliente.tel) ? f.cliente.tel : '';
+      const dir   = (f.cliente && f.cliente.direccion) ? f.cliente.direccion : '';
+      const itemsRows = (f.items || []).map(it =>
         `<tr>
           <td><div class="pedido-item-cell">${it.photo ? `<img class="pedido-item-thumb" src="${it.photo}" alt="${it.name||''}" onclick="abrirLightbox('${it.photo}')">` : ''}<span>${it.name||'—'}</span></div></td>
           <td>${it.category||''}</td>
           <td style="text-align:center">${it.qty}</td>
           <td style="text-align:right">$${it.price||'—'}</td>
         </tr>`).join('');
-      const imgHtml = p.img_url
-        ? `<div class="pedido-img"><img src="${p.img_url}" alt="Resumen" onclick="abrirLightbox('${p.img_url}')" title="Ver imagen completa"></div>`
-        : `<div class="pedido-sin-img">Sin imagen</div>`;
-      const descHtml = (p.subtotal && p.subtotal !== p.total_final)
-        ? `<p style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Subtotal: $${Number(p.subtotal).toLocaleString('es-CO')} · Desc. ${p.descuento||0}%</p>` : '';
       return `
-        <div class="pedido-card" id="rcard-${p._docId}" style="border-color:rgba(46,160,67,0.3);">
-          <div class="pedido-card-head" onclick="toggleRealizado('${p._docId}')">
-            <span class="pedido-numero">${p.numero||'—'}</span>
-            <span style="font-size:9px;letter-spacing:1px;color:#2ea043;background:rgba(46,160,67,0.1);border:1px solid rgba(46,160,67,0.3);padding:2px 8px;border-radius:10px;">✓ Realizado</span>
+        <div class="pedido-card" id="rcard-${f._docId}" style="border-color:rgba(230,126,34,0.35);">
+          <div class="pedido-card-head" onclick="toggleRealizado('${f._docId}')">
+            <span class="pedido-numero">${f.pedido_numero || f.numero || '—'}</span>
+            <span style="font-size:9px;letter-spacing:1px;color:#e67e22;background:rgba(230,126,34,0.1);border:1px solid rgba(230,126,34,0.3);padding:2px 8px;border-radius:10px;">⏳ Pendiente</span>
             <span class="pedido-fecha">${fecha}</span>
-            <span class="pedido-total-head">$${totalFinal}</span>
-            <svg class="pedido-arrow" id="rarrow-${p._docId}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
+            <span class="pedido-total-head">$${total}</span>
+            <svg class="pedido-arrow" id="rarrow-${f._docId}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
-          <div class="pedido-body" id="rbody-${p._docId}">
-            ${imgHtml}
+          <div class="pedido-body" id="rbody-${f._docId}">
             <div>
+              <p style="font-size:12px;color:var(--text-mid);margin-bottom:10px;">
+                <strong>${cliente}</strong>${tel ? ' · ' + tel : ''}
+                ${dir ? `<br><span style="font-size:11px;color:var(--text-muted);">${dir}</span>` : ''}
+              </p>
               <table class="pedido-items-table">
                 <thead><tr><th>Artículo</th><th>Categoría</th><th style="text-align:center">Cant.</th><th style="text-align:right">Precio</th></tr></thead>
                 <tbody>${itemsRows}</tbody>
               </table>
-              ${descHtml}
-              <p class="pedido-total-row">Total: $${totalFinal}</p>
-              ${p.nota ? `<p class="pedido-nota"><strong>Nota:</strong> ${p.nota}</p>` : ''}
+              <p class="pedido-total-row">Total: $${total}</p>
               <div class="pedido-actions">
-                <button class="btn btn-primary" style="font-size:11px;padding:5px 14px;display:flex;align-items:center;gap:6px;" onclick="abrirFactura('${p._docId}')">
-                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                  Crear Factura
+                <button class="btn btn-primary" style="font-size:11px;padding:5px 16px;display:flex;align-items:center;gap:6px;background:linear-gradient(135deg,#2ea043,#25863a);" onclick="marcarCreditoPagado('${f._docId}')">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                  Marcar como Pagada
                 </button>
               </div>
             </div>
@@ -3628,6 +3629,23 @@ async function loadRealizados() {
   } catch(e) {
     lista.innerHTML = '<p class="pedidos-empty">Error al cargar: ' + e.message + '</p>';
   }
+}
+
+async function marcarCreditoPagado(docId) {
+  if (!confirm('¿Marcar esta factura como pagada? Se eliminará de Pedidos a Crédito.')) return;
+  try {
+    await _db.collection('facturas_procesadas').doc(docId).update({ estado: 'pagada' });
+    const f = _facturas.find(x => x._docId === docId);
+    if (f) f.estado = 'pagada';
+    _realizados = _realizados.filter(r => r._docId !== docId);
+    const card = document.getElementById('rcard-' + docId);
+    if (card) card.remove();
+    const lista = document.getElementById('realizadosLista');
+    if (lista && !lista.querySelector('.pedido-card')) {
+      lista.innerHTML = '<p class="pedidos-empty">No hay facturas pendientes de pago.</p>';
+    }
+    showToast('✓ Factura marcada como pagada');
+  } catch(e) { showToast('Error: ' + e.message); }
 }
 
 function toggleRealizado(docId) {
@@ -5511,7 +5529,7 @@ function mobGoTo(page) {
     <div class="factura-footer-bar">
       <button class="btn-fct-cancel" onclick="cerrarFactura()">Cancelar</button>
       <button class="btn-fct-print" onclick="imprimirFactura()">
-        &#128438; Imprimir / Guardar PDF
+        &#128438; Imprimir
       </button>
     </div>
   </div>
@@ -5691,6 +5709,7 @@ async function imprimirFactura() {
   _poblarBloquePrint();
   await guardarFacturaProcesada();
   window.print();
+  cerrarFactura();
 }
 
 function _poblarBloquePrint() {
@@ -5864,9 +5883,19 @@ async function _marcarPedidoFacturado(docId) {
   if (!docId) return;
   try {
     await _db.collection('pedidos').doc(docId).update({ facturado: true });
-  } catch(e) { /* puede ser de _realizados, ignorar */ }
+  } catch(e) { /* ignorar si no existe en pedidos */ }
   _pedidos = _pedidos.filter(p => p._docId !== docId);
   if (typeof renderPedidos === 'function') renderPedidos(_pedidos);
+  // Eliminar también de la vista Pedidos a Crédito si estaba ahí
+  const cardR = document.getElementById('rcard-' + docId);
+  if (cardR) {
+    cardR.remove();
+    _realizados = _realizados.filter(r => r._docId !== docId);
+    const lista = document.getElementById('realizadosLista');
+    if (lista && !lista.querySelector('.pedido-card')) {
+      lista.innerHTML = '<p class="pedidos-empty">No hay facturas pendientes de pago.</p>';
+    }
+  }
 }
 
 // ─── ANULAR FACTURA — MODAL CON NOTA ─────────────────────────────────────────
