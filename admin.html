@@ -1633,7 +1633,82 @@ textarea { resize: vertical; min-height: 80px; }
 .pedido-item-cell { display:flex; align-items:center; gap:8px; }
 .pedido-total-row { font-size:14px; font-weight:600; color:var(--gold); margin-top:8px; }
 .pedido-nota { font-size:11px; color:var(--text-muted); margin-top:6px; }
-.pedido-actions { display:flex; gap:8px; margin-top:12px; }
+.pedido-actions { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+
+/* ─── MODAL FACTURA ─────────────────────────────────────────────────────── */
+.factura-overlay {
+  display:none; position:fixed; inset:0; z-index:9000;
+  background:rgba(0,0,0,0.72); backdrop-filter:blur(4px);
+  align-items:flex-start; justify-content:center;
+  overflow-y:auto; padding:20px 12px 40px;
+}
+.factura-overlay.open { display:flex; }
+.factura-modal {
+  background:#fff; color:#1a1a1a; width:100%; max-width:720px;
+  border-radius:6px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.4);
+  font-family:'Montserrat',sans-serif; font-size:13px;
+}
+.factura-topbar {
+  background:#1a1a1a; padding:14px 20px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.factura-topbar-title { color:#E8C96D; font-family:'Cinzel',serif; font-size:13px; letter-spacing:3px; }
+.factura-topbar button { background:none; border:1px solid rgba(201,151,58,0.4); color:#E8C96D;
+  font-size:11px; padding:5px 12px; cursor:pointer; border-radius:3px; letter-spacing:1px;
+  font-family:'Cinzel',serif; transition:background 0.2s; }
+.factura-topbar button:hover { background:rgba(201,151,58,0.15); }
+.factura-body { padding:28px 28px 20px; }
+.factura-head-row { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:24px; gap:16px; flex-wrap:wrap; }
+.factura-empresa { flex:1; min-width:180px; }
+.factura-empresa-nombre { font-family:'Cinzel',serif; font-size:18px; font-weight:600; color:#1a1a1a; letter-spacing:1px; }
+.factura-empresa-sub { font-size:10px; color:#888; letter-spacing:2px; text-transform:uppercase; margin-top:2px; }
+.factura-empresa-info { margin-top:10px; font-size:11px; color:#555; line-height:1.8; }
+.factura-num-bloque { text-align:right; min-width:160px; }
+.factura-num-label { font-size:10px; letter-spacing:2px; text-transform:uppercase; color:#888; }
+.factura-num-val { font-family:'Cinzel',serif; font-size:20px; color:#C9973A; font-weight:600; margin-top:2px; }
+.factura-fecha-val { font-size:11px; color:#888; margin-top:4px; }
+.factura-divider { border:none; border-top:2px solid #C9973A; margin:0 0 20px; }
+.factura-cols { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+@media(max-width:500px){ .factura-cols { grid-template-columns:1fr; } }
+.factura-seccion-title { font-size:9px; letter-spacing:2.5px; text-transform:uppercase; color:#C9973A;
+  font-weight:600; margin-bottom:10px; padding-bottom:4px; border-bottom:1px solid #f0e8d4; }
+.factura-field { margin-bottom:10px; }
+.factura-field label { display:block; font-size:10px; color:#888; margin-bottom:3px; letter-spacing:0.5px; }
+.factura-field input { width:100%; border:1px solid #ddd; border-radius:3px; padding:6px 9px;
+  font-size:12px; font-family:'Montserrat',sans-serif; color:#1a1a1a; box-sizing:border-box;
+  transition:border-color 0.2s; }
+.factura-field input:focus { outline:none; border-color:#C9973A; }
+.factura-field input[readonly] { background:#f7f7f7; color:#555; cursor:default; }
+.factura-confirm-row { display:flex; align-items:center; gap:8px; margin-top:6px; }
+.factura-confirm-row input[type=checkbox] { width:14px; height:14px; accent-color:#C9973A; cursor:pointer; }
+.factura-confirm-row label { font-size:11px; color:#555; cursor:pointer; }
+.factura-items-table { width:100%; border-collapse:collapse; margin:20px 0 12px; font-size:12px; }
+.factura-items-table th { background:#f5f0e8; padding:7px 10px; text-align:left;
+  font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:#888; font-weight:600; }
+.factura-items-table td { padding:8px 10px; border-bottom:1px solid #f0ece4; color:#333; }
+.factura-items-table tr:last-child td { border-bottom:none; }
+.factura-totales { border-top:2px solid #f0e8d4; padding-top:12px; }
+.factura-total-fila { display:flex; justify-content:space-between; font-size:12px;
+  padding:3px 0; color:#555; }
+.factura-total-fila.grande { font-size:17px; font-weight:700; color:#1a1a1a;
+  padding-top:8px; margin-top:4px; border-top:1px solid #ddd; }
+.factura-footer-bar { background:#f7f3ec; border-top:1px solid #e8dfc8;
+  padding:14px 20px; display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; }
+.factura-footer-bar button { font-family:'Cinzel',serif; font-size:10px; letter-spacing:1.5px;
+  padding:8px 18px; border-radius:3px; cursor:pointer; transition:all 0.2s; }
+.btn-fct-print { background:#C9973A; color:#fff; border:none; }
+.btn-fct-print:hover { background:#b08530; }
+.btn-fct-cancel { background:transparent; color:#888; border:1px solid #ccc; }
+.btn-fct-cancel:hover { border-color:#999; color:#555; }
+
+@media print {
+  body > *:not(#facturaOverlay) { display:none !important; }
+  .factura-overlay { display:block !important; background:none; padding:0; position:static; }
+  .factura-modal { box-shadow:none; border-radius:0; max-width:100%; }
+  .factura-topbar, .factura-footer-bar, .factura-field input { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .factura-topbar button, .factura-footer-bar { display:none; }
+  .factura-field input { border:none; padding:0; font-size:12px; }
+}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -3150,6 +3225,10 @@ function renderPedidos(lista) {
             <p class="pedido-total-row">Total: $${totalFinal}</p>
             ${p.nota ? `<p class="pedido-nota"><strong>Nota:</strong> ${p.nota}</p>` : ''}
             <div class="pedido-actions">
+              <button class="btn btn-primary" style="font-size:11px;padding:5px 14px;display:flex;align-items:center;gap:6px;" onclick="abrirFactura('${p._docId}')">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                Crear Factura
+              </button>
               <button class="btn" style="font-size:11px;padding:5px 12px" onclick="eliminarPedido('${p._docId}')">Eliminar</button>
             </div>
           </div>
@@ -4783,6 +4862,115 @@ function mobGoTo(page) {
 })();
 </script>
 
+<!-- MODAL FACTURA -->
+<div class="factura-overlay" id="facturaOverlay">
+  <div class="factura-modal" id="facturaModal">
+    <div class="factura-topbar">
+      <span class="factura-topbar-title">FACTURA · RECIBO</span>
+      <button onclick="cerrarFactura()">✕ Cerrar</button>
+    </div>
+    <div class="factura-body" id="facturaBody">
+      <!-- Cabecera empresa + número -->
+      <div class="factura-head-row">
+        <div class="factura-empresa">
+          <div class="factura-empresa-nombre">Pleaseme Accessories</div>
+          <div class="factura-empresa-sub">Accesorios en Oro Laminado</div>
+          <div class="factura-empresa-info" id="fct-empresa-info"></div>
+        </div>
+        <div class="factura-num-bloque">
+          <div class="factura-num-label">Factura N°</div>
+          <div class="factura-num-val" id="fct-numero">—</div>
+          <div class="factura-fecha-val" id="fct-fecha"></div>
+        </div>
+      </div>
+      <hr class="factura-divider">
+
+      <!-- Datos cliente + envío -->
+      <div class="factura-cols">
+        <div>
+          <div class="factura-seccion-title">Datos del cliente</div>
+          <div class="factura-field">
+            <label>Nombre completo</label>
+            <input type="text" id="fct-cli-nombre" placeholder="Nombre del cliente">
+          </div>
+          <div class="factura-field">
+            <label>Teléfono</label>
+            <input type="text" id="fct-cli-tel" placeholder="+57 300 000 0000">
+          </div>
+          <div class="factura-field">
+            <label>Dirección</label>
+            <input type="text" id="fct-cli-dir" placeholder="Calle / Carrera / Av.">
+          </div>
+          <div class="factura-field">
+            <label>N° de Locker / Apartamento</label>
+            <input type="text" id="fct-cli-locker" placeholder="Locker #123 / Apto 4B">
+          </div>
+          <div class="factura-field">
+            <label>País</label>
+            <input type="text" id="fct-cli-pais" placeholder="Colombia">
+          </div>
+        </div>
+        <div>
+          <div class="factura-seccion-title">Dirección de envío</div>
+          <div class="factura-field">
+            <label>Ciudad <span style="font-size:9px;color:#C9973A;">(auto)</span></label>
+            <input type="text" id="fct-env-ciudad" placeholder="Detectando…">
+          </div>
+          <div class="factura-field">
+            <label>Departamento / Estado <span style="font-size:9px;color:#C9973A;">(auto)</span></label>
+            <input type="text" id="fct-env-estado" placeholder="Detectando…">
+          </div>
+          <div class="factura-field">
+            <label>Referencia adicional</label>
+            <input type="text" id="fct-env-ref" placeholder="Barrio, edificio, referencia…">
+          </div>
+          <div class="factura-confirm-row" style="margin-top:14px;">
+            <input type="checkbox" id="fct-confirm-internet">
+            <label for="fct-confirm-internet">Pedido confirmado vía internet</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla de artículos -->
+      <div class="factura-seccion-title" style="margin-top:8px;">Artículos del pedido</div>
+      <table class="factura-items-table">
+        <thead>
+          <tr>
+            <th style="width:45%">Artículo</th>
+            <th>Categoría</th>
+            <th style="text-align:center">Cant.</th>
+            <th style="text-align:right">Precio unit.</th>
+            <th style="text-align:right">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody id="fct-items-body"></tbody>
+      </table>
+
+      <!-- Totales -->
+      <div class="factura-totales">
+        <div class="factura-total-fila" id="fct-subtotal-row">
+          <span>Subtotal</span>
+          <span id="fct-subtotal-val">—</span>
+        </div>
+        <div class="factura-total-fila" id="fct-desc-row" style="display:none;">
+          <span>Descuento (<span id="fct-descuento-pct">0</span>%)</span>
+          <span id="fct-desc-val">—</span>
+        </div>
+        <div class="factura-total-fila grande">
+          <span>TOTAL</span>
+          <span id="fct-total">—</span>
+        </div>
+      </div>
+    </div>
+    <div class="factura-footer-bar">
+      <button class="btn-fct-cancel" onclick="cerrarFactura()">Cancelar</button>
+      <button class="btn-fct-print" onclick="imprimirFactura()">
+        &#128438; Imprimir / Guardar PDF
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- LIGHTBOX IMAGEN PEDIDO -->
 <div id="pedidoLightbox" onclick="cerrarLightbox()">
   <button id="pedidoLightboxBack" onclick="cerrarLightbox()">
@@ -4793,6 +4981,101 @@ function mobGoTo(page) {
 </div>
 
 <script>
+// ─── FACTURA ─────────────────────────────────────────────────────────────────
+function abrirFactura(docId) {
+  const p = _pedidos.find(x => x._docId === docId);
+  if (!p) return;
+  const loc = 'es-CO';
+  const c = contact || {};
+
+  // Empresa
+  const infoLines = [
+    c.whatsapp ? '📱 ' + c.whatsapp : '',
+    c.email    ? '✉ '  + c.email    : '',
+    c.web      ? '🌐 ' + c.web      : '',
+    c.city     ? '📍 ' + c.city     : '',
+    c.address  ? c.address           : '',
+    c.hours    ? '🕐 ' + c.hours    : ''
+  ].filter(Boolean);
+  document.getElementById('fct-empresa-info').innerHTML = infoLines.join('<br>');
+
+  // Número y fecha
+  document.getElementById('fct-numero').textContent = p.numero || '—';
+  const fechaStr = p.fecha
+    ? new Date(p.fecha.seconds * 1000).toLocaleDateString('es-CO', { day:'2-digit', month:'long', year:'numeric' })
+    : new Date().toLocaleDateString('es-CO', { day:'2-digit', month:'long', year:'numeric' });
+  document.getElementById('fct-fecha').textContent = fechaStr;
+
+  // Items
+  const rows = (p.items || []).map(it => {
+    const unit  = Math.round(parseFloat(it.price)) || 0;
+    const sub   = unit * (it.qty || 1);
+    return `<tr>
+      <td>${it.name || '—'}</td>
+      <td>${it.category || ''}</td>
+      <td style="text-align:center">${it.qty}</td>
+      <td style="text-align:right">$${unit.toLocaleString(loc)}</td>
+      <td style="text-align:right">$${sub.toLocaleString(loc)}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('fct-items-body').innerHTML = rows;
+
+  // Totales
+  const totalFinal = Number(p.total_final || p.total || 0);
+  document.getElementById('fct-total').textContent = '$' + totalFinal.toLocaleString(loc);
+  if (p.subtotal && p.subtotal !== p.total_final && p.descuento) {
+    document.getElementById('fct-subtotal-row').style.display = '';
+    document.getElementById('fct-subtotal-val').textContent = '$' + Number(p.subtotal).toLocaleString(loc);
+    document.getElementById('fct-desc-row').style.display = '';
+    document.getElementById('fct-descuento-pct').textContent = p.descuento;
+    const descAmt = Number(p.subtotal) - totalFinal;
+    document.getElementById('fct-desc-val').textContent = '-$' + descAmt.toLocaleString(loc);
+  } else {
+    document.getElementById('fct-subtotal-row').style.display = 'none';
+    document.getElementById('fct-desc-row').style.display = 'none';
+  }
+
+  // Limpiar campos de cliente
+  ['fct-cli-nombre','fct-cli-tel','fct-cli-dir','fct-cli-locker','fct-cli-pais',
+   'fct-env-ciudad','fct-env-estado','fct-env-ref'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('fct-confirm-internet').checked = false;
+
+  // Auto-detectar ciudad/estado/país vía IP
+  _detectarUbicacion();
+
+  document.getElementById('facturaOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+async function _detectarUbicacion() {
+  try {
+    const res  = await fetch('https://ipapi.co/json/');
+    const data = await res.json();
+    if (data.city)         document.getElementById('fct-env-ciudad').value = data.city;
+    if (data.region)       document.getElementById('fct-env-estado').value = data.region;
+    if (data.country_name) {
+      const pais = document.getElementById('fct-cli-pais');
+      if (pais && !pais.value) pais.value = data.country_name;
+    }
+  } catch(e) {}
+}
+
+function cerrarFactura() {
+  document.getElementById('facturaOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function imprimirFactura() {
+  window.print();
+}
+
+document.getElementById('facturaOverlay').addEventListener('click', function(e) {
+  if (e.target === this) cerrarFactura();
+});
+
 function abrirLightbox(src) {
   document.getElementById('pedidoLightboxImg').src = src;
   document.getElementById('pedidoLightbox').classList.add('open');
