@@ -5359,6 +5359,26 @@ function cerrarFactura() {
 }
 
 async function imprimirFactura() {
+  const nombre = document.getElementById('fct-cli-nombre').value.trim();
+  const dir    = document.getElementById('fct-cli-dir').value.trim();
+
+  if (!nombre) {
+    const inp = document.getElementById('fct-cli-nombre');
+    inp.focus();
+    inp.style.borderColor = 'crimson';
+    inp.placeholder = '⚠ Nombre requerido';
+    setTimeout(() => { inp.style.borderColor = ''; inp.placeholder = 'Nombre del cliente'; }, 2500);
+    return showToast('⚠ El nombre del cliente es obligatorio');
+  }
+  if (!dir) {
+    const inp = document.getElementById('fct-cli-dir');
+    inp.focus();
+    inp.style.borderColor = 'crimson';
+    inp.placeholder = '⚠ Dirección requerida';
+    setTimeout(() => { inp.style.borderColor = ''; inp.placeholder = 'Calle / Av. / Número'; }, 2500);
+    return showToast('⚠ La dirección es obligatoria');
+  }
+
   _poblarBloquePrint();
   await guardarFacturaProcesada();
   window.print();
