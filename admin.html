@@ -1905,6 +1905,22 @@ textarea { resize: vertical; min-height: 80px; }
 .btn-anular-cancel:hover { border-color:#bbb;color:#666; }
 .btn-anular-confirm { background:#c0392b;border:none;color:#fff;box-shadow:0 2px 8px rgba(192,57,43,0.3); }
 .btn-anular-confirm:hover { background:#a93226; }
+
+/* ─── RESPONSIVE PANTALLAS GRANDES ─── */
+@media (min-width: 1200px) {
+  :root { --sidebar-w: 260px; }
+  .page { padding: 28px 40px; }
+  .topbar { padding: 0 40px; }
+  .login-box { width: 400px; padding: 60px 56px; }
+}
+
+@media (min-width: 1600px) {
+  :root { --sidebar-w: 280px; }
+  .page { padding: 36px 56px; }
+  .topbar { padding: 0 56px; }
+  body { font-size: 14px; }
+  .nav-item { font-size: 13.5px; }
+}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
