@@ -5125,7 +5125,7 @@ function mobGoTo(page) {
           </div>
           <div class="factura-field">
             <label>Teléfono</label>
-            <input type="text" id="fct-cli-tel" placeholder="+1 000 000 0000">
+            <input type="tel" id="fct-cli-tel" placeholder="+1 000 000 0000" inputmode="tel" oninput="_fctTelInput(this)">
           </div>
           <div class="factura-field">
             <label>País</label>
@@ -5143,8 +5143,16 @@ function mobGoTo(page) {
         <div>
           <div class="factura-seccion-title">Dirección de envío</div>
           <div class="factura-field">
-            <label>Ciudad</label>
-            <input type="text" id="fct-env-ciudad" placeholder="Ciudad">
+            <div style="display:flex;gap:8px;align-items:flex-end;">
+              <div style="flex:1;">
+                <label style="display:block;font-size:9.5px;color:#999;margin-bottom:3px;letter-spacing:0.5px;text-transform:uppercase;">Ciudad</label>
+                <input type="text" id="fct-env-ciudad" placeholder="Ciudad" style="width:100%;border:1px solid #e5e5e5;border-radius:4px;padding:7px 10px;font-size:12px;font-family:'Montserrat',sans-serif;color:#1a1a1a;box-sizing:border-box;background:#fafafa;">
+              </div>
+              <div style="width:82px;">
+                <label style="display:block;font-size:9.5px;color:#999;margin-bottom:3px;letter-spacing:0.5px;text-transform:uppercase;">ZIP Code</label>
+                <input type="text" id="fct-env-zip" placeholder="00000" maxlength="5" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'');_fctZipInput(this)" style="width:100%;border:1px solid #e5e5e5;border-radius:4px;padding:7px 8px;font-size:12px;font-family:'Montserrat',sans-serif;color:#1a1a1a;box-sizing:border-box;background:#fafafa;text-align:center;letter-spacing:2px;">
+              </div>
+            </div>
           </div>
           <div class="factura-field" id="fct-estado-wrap">
             <label>Estado</label>
@@ -5309,7 +5317,7 @@ function abrirFactura(docId) {
 
   // Limpiar campos de cliente
   ['fct-cli-nombre','fct-cli-tel','fct-cli-dir','fct-cli-locker',
-   'fct-env-ciudad','fct-env-estado','fct-env-ref'].forEach(id => {
+   'fct-env-ciudad','fct-env-zip','fct-env-estado','fct-env-ref'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -5333,7 +5341,8 @@ async function _detectarUbicacion() {
   try {
     const res  = await fetch('https://ipapi.co/json/');
     const data = await res.json();
-    if (data.city) document.getElementById('fct-env-ciudad').value = data.city;
+    if (data.city)   document.getElementById('fct-env-ciudad').value = data.city;
+    if (data.postal) document.getElementById('fct-env-zip').value   = data.postal;
     const paisSel = document.getElementById('fct-cli-pais');
     if (!paisSel.value && data.country_code) {
       if (data.country_code === 'US') {
@@ -5390,6 +5399,7 @@ function _poblarBloquePrint() {
   const dir     = document.getElementById('fct-cli-dir').value.trim();
   const lock    = document.getElementById('fct-cli-locker').value.trim();
   const ciudad  = document.getElementById('fct-env-ciudad').value.trim();
+  const zip     = document.getElementById('fct-env-zip').value.trim();
   const estado  = _fctGetEstadoValor();
   const pais    = document.getElementById('fct-cli-pais').value.trim();
   const ref     = document.getElementById('fct-env-ref').value.trim();
@@ -5398,7 +5408,7 @@ function _poblarBloquePrint() {
   s('fctPrintTel').innerHTML       = tel  ? '<strong>Tel:</strong> ' + tel : '';
   s('fctPrintDir').innerHTML       = dir  ? '<strong>Dir:</strong> ' + dir : '';
   s('fctPrintLock').innerHTML      = lock ? '<strong>Lock Num:</strong> ' + lock : '';
-  s('fctPrintCiudad').innerHTML    = ciudad  ? '<strong>Ciudad:</strong> ' + ciudad : '';
+  s('fctPrintCiudad').innerHTML    = ciudad ? '<strong>Ciudad:</strong> ' + ciudad + (zip ? '  <strong>ZIP:</strong> ' + zip : '') : '';
   s('fctPrintEstado').innerHTML    = estado  ? '<strong>Estado:</strong> ' + estado : '';
   s('fctPrintPais').innerHTML      = pais    ? '<strong>País:</strong> ' + pais : '';
   s('fctPrintRef').innerHTML       = ref     ? '<strong>Ref:</strong> ' + ref : '';
@@ -5428,6 +5438,7 @@ async function guardarFacturaProcesada() {
       },
       envio: {
         ciudad:    document.getElementById('fct-env-ciudad').value.trim(),
+        zip:       document.getElementById('fct-env-zip').value.trim(),
         estado:    _fctGetEstadoValor(),
         referencia: document.getElementById('fct-env-ref').value.trim(),
         confirmado_internet: document.getElementById('fct-confirm-internet').checked
@@ -5642,6 +5653,7 @@ function reabrirFactura(docId) {
   document.getElementById('fct-cli-pais').value = paisVal;
   _fctPaisChange();
   document.getElementById('fct-env-ciudad').value = (f.envio && f.envio.ciudad) || '';
+  document.getElementById('fct-env-zip').value    = (f.envio && f.envio.zip) || '';
   const estadoVal = (f.envio && f.envio.estado) || '';
   if (paisVal === 'USA') {
     document.getElementById('fct-env-estado-sel').value = estadoVal;
@@ -5770,6 +5782,7 @@ function _fctLlenarDesdeFactura(f) {
     _fctPaisChange();
   }
   if (env.ciudad) document.getElementById('fct-env-ciudad').value = env.ciudad;
+  if (env.zip)    document.getElementById('fct-env-zip').value    = env.zip;
   if (env.estado) {
     if (cli.pais === 'USA') {
       document.getElementById('fct-env-estado-sel').value = env.estado;
@@ -5778,6 +5791,58 @@ function _fctLlenarDesdeFactura(f) {
     }
   }
   if (env.referencia) document.getElementById('fct-env-ref').value = env.referencia;
+}
+
+// ─── TELÉFONO: formato y detección de país ────────────────────────────────────
+function _fctTelInput(inp) {
+  let raw = inp.value.replace(/[^\d+]/g, '');
+
+  // Detectar país desde prefijo
+  const paisSel = document.getElementById('fct-cli-pais');
+  if (raw.startsWith('+')) {
+    const digits = raw.slice(1);
+    // DOM REP: +1 seguido de 809, 829, 849
+    if (/^1(809|829|849)/.test(digits)) {
+      if (paisSel.value !== 'DOM REP') { paisSel.value = 'DOM REP'; _fctPaisChange(); }
+    } else if (/^1/.test(digits)) {
+      if (paisSel.value !== 'USA') { paisSel.value = 'USA'; _fctPaisChange(); }
+    }
+  }
+
+  // Formatear +1 XXXXXXXXXX → +1 XXX XXX XXXX
+  if (raw.startsWith('+1')) {
+    const nums = raw.slice(2).replace(/\D/g,'').slice(0,10);
+    let fmt = '+1';
+    if (nums.length > 0) fmt += ' ' + nums.slice(0,3);
+    if (nums.length > 3) fmt += ' ' + nums.slice(3,6);
+    if (nums.length > 6) fmt += ' ' + nums.slice(6,10);
+    inp.value = fmt;
+  }
+}
+
+// ─── ZIP CODE: auto-relleno de Ciudad y Estado ────────────────────────────────
+async function _fctZipInput(inp) {
+  const zip = inp.value;
+  if (zip.length !== 5) return;
+  const pais = document.getElementById('fct-cli-pais').value;
+  if (pais !== 'USA') return;           // Solo funciona para USA
+
+  inp.style.borderColor = '#C9973A';
+  try {
+    const res  = await fetch(`https://api.zippopotam.us/us/${zip}`);
+    if (!res.ok) { inp.style.borderColor = 'crimson'; return; }
+    const data = await res.json();
+    const place = data.places && data.places[0];
+    if (!place) { inp.style.borderColor = 'crimson'; return; }
+    document.getElementById('fct-env-ciudad').value = place['place name'] || '';
+    const stateEl = document.getElementById('fct-env-estado-sel');
+    const stateName = place.state || '';
+    // Buscar en el select el estado que coincida
+    const opt = Array.from(stateEl.options).find(o => o.value === stateName || o.textContent === stateName);
+    if (opt) stateEl.value = opt.value;
+    inp.style.borderColor = 'limegreen';
+    setTimeout(() => { inp.style.borderColor = ''; }, 1500);
+  } catch(e) { inp.style.borderColor = ''; }
 }
 
 function _buscarYLlenarClientePorTel(tel) {
