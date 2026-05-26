@@ -261,12 +261,14 @@
     background: var(--bg-card);
     overflow: hidden;
     aspect-ratio: 3/4;
-    transition: transform 0.4s ease;
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
+    box-shadow: 0 0 18px rgba(201,151,58,0.11), 0 4px 14px rgba(0,0,0,0.45);
   }
 
   .product-card:hover {
     z-index: 2;
     transform: scale(1.02);
+    box-shadow: 0 0 30px rgba(201,151,58,0.22), 0 6px 20px rgba(0,0,0,0.55);
   }
 
   /* Jewelry illustration area */
@@ -397,6 +399,79 @@
     background: linear-gradient(135deg, var(--gold-light), var(--gold-shine));
     transform: translateY(-1px);
     box-shadow: 0 4px 16px rgba(201,151,58,0.3);
+  }
+
+  /* ─── IMAGE VIEWER ─── */
+  #imgViewerOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(5,4,2,0.97);
+    z-index: 9800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.28s ease;
+  }
+  #imgViewerOverlay.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+  #imgViewerClose {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    background: rgba(201,151,58,0.12);
+    border: 1px solid rgba(201,151,58,0.35);
+    color: var(--gold-light);
+    font-size: 22px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9801;
+    line-height: 1;
+    transition: background 0.2s;
+  }
+  #imgViewerClose:hover { background: rgba(201,151,58,0.28); }
+  #imgViewerWrap {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    touch-action: none;
+  }
+  #imgViewerImg {
+    max-width: 92vw;
+    max-height: 88vh;
+    object-fit: contain;
+    user-select: none;
+    -webkit-user-drag: none;
+    will-change: transform;
+    transform-origin: center center;
+    cursor: grab;
+    display: block;
+    border-radius: 3px;
+  }
+  #imgViewerImg:active { cursor: grabbing; }
+  #imgViewerHint {
+    position: fixed;
+    bottom: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Cinzel', serif;
+    font-size: 8.5px;
+    letter-spacing: 2px;
+    color: rgba(201,151,58,0.38);
+    pointer-events: none;
+    white-space: nowrap;
+    text-transform: uppercase;
   }
 
   /* ─── MODAL ─── */
@@ -2831,6 +2906,27 @@
   }
   .cat-product:hover .cat-product-img img { transform: scale(1.05); }
 
+  .sold-out-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(5,4,2,0.62);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 6;
+    pointer-events: none;
+  }
+  .sold-out-label {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 5px;
+    color: #f0e6d0;
+    text-transform: uppercase;
+    border: 1px solid rgba(240,230,208,0.55);
+    padding: 7px 16px;
+    background: rgba(10,8,4,0.45);
+  }
+
   .cat-product-info {
     flex: 1;
     padding: 18px 16px;
@@ -3577,6 +3673,7 @@ async function fetchProductsFromFirebase() {
       peso:          p.peso           || '',
       badge:         p.badge          || null,
       photo:         p.photo_data     || null,
+      sold_out:      p.sold_out === true,
       active:        p.active !== false,
     };
   });
@@ -3701,19 +3798,8 @@ function updateCartUI() {
   } else {
     badge.classList.add('hidden');
   }
-  // Productos de oferta de temporada: precio fijo, sin descuento mayorista
-  const ofertaIds = (_seasonalOffer && _seasonalOffer.active && _seasonalOffer.productIds)
-    ? new Set(_seasonalOffer.productIds) : new Set();
-
-  let regularTotal = 0;
-  let ofertaTotal  = 0;
-  cart.forEach(item => {
-    const p = products.find(x => String(x.id) === String(item.id));
-    if (!p) return;
-    const precio = Math.round(parseFloat(String(p.price))) || 0;
-    if (ofertaIds.has(item.id)) ofertaTotal  += precio * item.qty;
-    else                         regularTotal += precio * item.qty;
-  });
+  // Temporada y ofertas especiales: precio fijo, sin descuento mayorista
+  const { regular: regularTotal, fixed: ofertaTotal } = cartSplit();
   const rawTotal = regularTotal + ofertaTotal;
 
   const ds = getDiscountSettings();
@@ -3920,7 +4006,10 @@ function catProductHTML(p) {
        </div>`;
   return `
     <div class="cat-product" data-pid="${p.id}">
-      <div class="cat-product-img" onclick="openModal('${p.id}')">${imgContent}</div>
+      <div class="cat-product-img" data-id="${p.id}" onclick="_catImgClick(this)">
+        ${imgContent}
+        ${p.sold_out ? '<div class="sold-out-overlay"><span class="sold-out-label">Sold Out</span></div>' : ''}
+      </div>
       <div class="cat-product-info">
         <p class="cat-product-cat">${p.categoryLabel}</p>
         <h3 class="cat-product-name">${p.name}</h3>
@@ -4208,10 +4297,11 @@ function buildOrderMsg() {
     }
     if (item.customMedida) msg += `   📐 Medida: *${item.customMedida}*\n`;
   });
-  const _raw = cartTotal();
+  const { regular: _reg, fixed: _fix } = cartSplit();
+  const _raw = _reg + _fix;
   const ds = getDiscountSettings();
-  const _disc = _raw > ds.min;
-  const _final = _disc ? Math.round(_raw * (1 - ds.pct / 100)) : _raw;
+  const _disc = _reg > ds.min;
+  const _final = (_disc ? Math.round(_reg * (1 - ds.pct / 100)) : _reg) + _fix;
   msg += '\n━━━━━━━━━━━━━━━━━━';
   if (_disc) {
     msg += `\n💰 Subtotal: *$${_raw.toLocaleString('en-US')}*`;
@@ -4325,10 +4415,11 @@ async function generarNumeroPedido() {
 async function guardarPedidoFirebase(numero, canvas) {
   try {
     const note    = document.getElementById('cartNote') ? document.getElementById('cartNote').value.trim() : '';
-    const raw     = cartTotal();
+    const { regular: _fbReg, fixed: _fbFix } = cartSplit();
+    const raw     = _fbReg + _fbFix;
     const ds      = getDiscountSettings();
-    const disc    = raw > ds.min;
-    const final   = disc ? Math.round(raw * (1 - ds.pct / 100)) : raw;
+    const disc    = _fbReg > ds.min;
+    const final   = (disc ? Math.round(_fbReg * (1 - ds.pct / 100)) : _fbReg) + _fbFix;
     const items   = cart.map(item => {
       const p = products.find(x => String(x.id) === String(item.id));
       return p ? { name: p.name, category: p.categoryLabel, qty: item.qty, price: p.price } : null;
@@ -4539,8 +4630,10 @@ async function generarFacturaPDF() {
   doc.setLineWidth(0.4);
   doc.line(PAD, y - 2, PW - PAD, y - 2);
 
-  const ds = getDiscountSettings(), raw = cartTotalRaw();
-  const disc = raw > ds.min, fin = disc ? Math.round(raw * (1 - ds.pct / 100)) : raw;
+  const { regular: _pdfReg, fixed: _pdfFix } = cartSplit();
+  const ds = getDiscountSettings();
+  const raw = _pdfReg + _pdfFix;
+  const disc = _pdfReg > ds.min, fin = (disc ? Math.round(_pdfReg * (1 - ds.pct / 100)) : _pdfReg) + _pdfFix;
 
   if (disc) {
     doc.setTextColor(200, 200, 200);
@@ -4676,8 +4769,9 @@ async function buildOrderCanvas() {
   cx.strokeStyle='rgba(201,151,58,0.35)'; cx.lineWidth=1;
   cx.beginPath(); cx.moveTo(16,FY+1); cx.lineTo(W-16,FY+1); cx.stroke();
 
-  const ds=getDiscountSettings(), raw=cartTotalRaw();
-  const disc=raw>ds.min, fin=disc?Math.round(raw*(1-ds.pct/100)):raw;
+  const {regular:_cvReg,fixed:_cvFix}=cartSplit();
+  const ds=getDiscountSettings(), raw=_cvReg+_cvFix;
+  const disc=_cvReg>ds.min, fin=(disc?Math.round(_cvReg*(1-ds.pct/100)):_cvReg)+_cvFix;
   let ty = FY+34;
   if(disc){
     cx.fillStyle='rgba(245,237,224,0.45)'; cx.font='11px Arial';
@@ -5373,14 +5467,117 @@ function cerrarPopup() {
   clearTimeout(popupTimer);
 }
 
-function cartTotalRaw() {
-  return cart.reduce((s, item) => {
+function cartSplit() {
+  const ofertaIds = (_seasonalOffer && _seasonalOffer.active && _seasonalOffer.productIds)
+    ? new Set(_seasonalOffer.productIds) : new Set();
+  let regular = 0, fixed = 0;
+  cart.forEach(item => {
     const p = products.find(x => String(x.id) === String(item.id));
-    if (!p) return s;
-    const num = Math.round(parseFloat(String(p.price))) || 0;
-    return s + num * item.qty;
-  }, 0);
+    if (!p) return;
+    const monto = (Math.round(parseFloat(String(p.price))) || 0) * item.qty;
+    if (p.category === 'temporada' || ofertaIds.has(item.id)) fixed += monto;
+    else regular += monto;
+  });
+  return { regular, fixed };
 }
+
+function cartTotalRaw() {
+  return cartSplit().regular;
+}
+
+// ─── IMAGE VIEWER ─────────────────────────────────────────────────────
+(function(){
+  let scale=1, panX=0, panY=0;
+  let pointers=[], startDist=0, lastScale=1;
+  let panStartX=0, panStartY=0, startMidX=0, startMidY=0;
+  let lastTap=0, isPanning=false;
+
+  function clamp(v,mn,mx){ return Math.min(mx,Math.max(mn,v)); }
+  function applyT(){
+    const img=document.getElementById('imgViewerImg');
+    if(img) img.style.transform=`translate(${panX}px,${panY}px) scale(${scale})`;
+  }
+  function resetT(){ scale=1; panX=0; panY=0; applyT(); }
+
+  window.openImgViewer=function(src){
+    if(!src) return;
+    const img=document.getElementById('imgViewerImg');
+    const ov=document.getElementById('imgViewerOverlay');
+    img.src=src; resetT();
+    ov.classList.add('open');
+    document.body.style.overflow='hidden';
+  };
+  window.closeImgViewer=function(){
+    const ov=document.getElementById('imgViewerOverlay');
+    if(ov) ov.classList.remove('open');
+    document.body.style.overflow='';
+    const img=document.getElementById('imgViewerImg');
+    if(img){ resetT(); setTimeout(()=>{ img.src=''; },300); }
+  };
+  window._catImgClick=function(el){
+    const img=el.querySelector('img');
+    if(img&&img.src) openImgViewer(img.src);
+    else openModal(el.dataset.id);
+  };
+
+  document.addEventListener('DOMContentLoaded',function(){
+    const wrap=document.getElementById('imgViewerWrap');
+    const ov=document.getElementById('imgViewerOverlay');
+    if(!wrap) return;
+
+    ov.addEventListener('click',function(e){ if(e.target===ov) closeImgViewer(); });
+    document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&ov.classList.contains('open')) closeImgViewer(); });
+
+    wrap.addEventListener('pointerdown',function(e){
+      e.preventDefault();
+      wrap.setPointerCapture(e.pointerId);
+      pointers.push({id:e.pointerId,x:e.clientX,y:e.clientY});
+      if(pointers.length===1){
+        const now=Date.now();
+        if(now-lastTap<280){ scale>1?resetT():(()=>{scale=2.5;applyT();})(); }
+        lastTap=now;
+        panStartX=panX; panStartY=panY;
+        startMidX=e.clientX; startMidY=e.clientY;
+        isPanning=true;
+      } else if(pointers.length===2){
+        isPanning=false;
+        startDist=Math.hypot(pointers[1].x-pointers[0].x,pointers[1].y-pointers[0].y);
+        lastScale=scale;
+      }
+    });
+
+    wrap.addEventListener('pointermove',function(e){
+      e.preventDefault();
+      const idx=pointers.findIndex(p=>p.id===e.pointerId);
+      if(idx<0) return;
+      pointers[idx]={id:e.pointerId,x:e.clientX,y:e.clientY};
+      if(pointers.length===2){
+        const d=Math.hypot(pointers[1].x-pointers[0].x,pointers[1].y-pointers[0].y);
+        scale=clamp(lastScale*(d/startDist),1,6);
+        if(scale===1){panX=0;panY=0;}
+        applyT();
+      } else if(pointers.length===1&&isPanning&&scale>1){
+        panX=panStartX+(e.clientX-startMidX);
+        panY=panStartY+(e.clientY-startMidY);
+        applyT();
+      }
+    });
+
+    function onUp(e){
+      pointers=pointers.filter(p=>p.id!==e.pointerId);
+      if(pointers.length<2){ lastScale=scale; startDist=0; panStartX=panX; panStartY=panY; isPanning=pointers.length===1; }
+    }
+    wrap.addEventListener('pointerup',onUp);
+    wrap.addEventListener('pointercancel',onUp);
+
+    wrap.addEventListener('wheel',function(e){
+      e.preventDefault();
+      scale=clamp(scale*(e.deltaY<0?1.15:0.87),1,6);
+      if(scale===1){panX=0;panY=0;}
+      applyT();
+    },{passive:false});
+  });
+})();
 
 function checkPopup() {
   const total = cartTotalRaw();
@@ -5895,6 +6092,15 @@ function cerrarPagina() {
 </div>
 
 
+
+<!-- IMAGE VIEWER -->
+<div id="imgViewerOverlay">
+  <button id="imgViewerClose" onclick="closeImgViewer()">×</button>
+  <div id="imgViewerWrap">
+    <img id="imgViewerImg" src="" alt="" draggable="false">
+  </div>
+  <p id="imgViewerHint">Pellizca para ampliar · Doble toque para restablecer</p>
+</div>
 
 <!-- FAB-VISUAL watermark -->
 <div id="fabVisualWrap" style="position:fixed;bottom:16px;right:16px;z-index:500;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;" onclick="toggleFabCard()">

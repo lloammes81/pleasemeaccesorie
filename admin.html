@@ -857,6 +857,10 @@ tr:hover td { background: rgba(201,151,58,0.03); }
 
 .badge-gold { background: rgba(201,151,58,0.12); color: var(--gold-deep); border: 1px solid rgba(201,151,58,0.3); }
 .badge-cat { background: var(--bg2); color: var(--text-mid); border: 1px solid var(--border); }
+.badge-soldout { background: rgba(220,50,47,0.1); color: #dc322f; border: 1px solid rgba(220,50,47,0.35); }
+.soldout-toggle { display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-family:'Cinzel',serif;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;padding:5px 10px;border-radius:4px;border:1px solid var(--border);background:none;color:var(--text-muted);transition:all 0.2s; }
+.soldout-toggle.on { color:#dc322f;border-color:rgba(220,50,47,0.4);background:rgba(220,50,47,0.07); }
+.soldout-toggle:hover { opacity:0.8; }
 
 .price-cell {
   font-family: 'Cormorant Garamond', serif;
@@ -2576,10 +2580,23 @@ textarea { resize: vertical; min-height: 80px; }
           <option value="Nuevo">Nuevo</option>
           <option value="Más vendido">Más vendido</option>
           <option value="Premium">Premium</option>
-          <option value="Agotado">Agotado</option>
           <option value="Oferta">Oferta</option>
         </select>
       </div>
+    </div>
+
+    <div class="field" style="margin-top:4px;">
+      <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="document.getElementById('f_soldout').click()">
+        <span>Sold Out</span>
+        <div style="display:flex;align-items:center;gap:10px;" onclick="event.stopPropagation()">
+          <input type="checkbox" id="f_soldout" style="opacity:0;width:0;height:0;border:none;padding:0;" onchange="_updateSoldOutUI(this.checked)">
+          <div id="soTrack" onclick="var c=document.getElementById('f_soldout');c.checked=!c.checked;_updateSoldOutUI(c.checked)" style="position:relative;width:44px;height:24px;border-radius:12px;background:var(--bg3);cursor:pointer;transition:background 0.3s;flex-shrink:0;">
+            <span id="soThumb" style="position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform 0.3s;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></span>
+          </div>
+          <span id="soLabel" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:1.5px;color:var(--text-muted);min-width:60px;">Disponible</span>
+        </div>
+      </label>
+      <p style="font-size:10px;color:var(--text-muted);margin-top:6px;">Al activarlo aparece el letrero <strong>SOLD OUT</strong> sobre la imagen del artículo en el catálogo.</p>
     </div>
 
   </div>
@@ -2853,6 +2870,7 @@ async function loadProducts() {
         medida:        p.medida        || '',
         peso:          p.peso          || '',
         badge:         p.badge         || null,
+        sold_out:      p.sold_out === true,
         photo:         p.photo_data    || null,
         createdAt:     p.createdAt     || null,
       };
@@ -3279,9 +3297,14 @@ function renderTable() {
       </td>
       <td><span class="badge badge-cat">${CAT_LABELS[p.category] || p.category}</span></td>
       <td><span class="price-cell">$${Number(p.price).toLocaleString('es-CO')}</span></td>
-      <td>${p.badge ? `<span class="badge badge-gold">${p.badge}</span>` : '<span style="color:var(--text-muted);font-size:11px">—</span>'}</td>
+      <td>
+        ${p.sold_out ? '<span class="badge badge-soldout">Sold Out</span>' : (p.badge ? `<span class="badge badge-gold">${p.badge}</span>` : '<span style="color:var(--text-muted);font-size:11px">—</span>')}
+      </td>
       <td>
         <div class="actions-cell">
+          <button class="icon-btn ${p.sold_out ? 'on' : ''}" onclick="quickToggleSoldOut('${p.id}')" title="${p.sold_out ? 'Quitar sold out' : 'Marcar sold out'}" style="color:${p.sold_out ? '#dc322f' : 'var(--text-muted)'};">
+            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+          </button>
           <button class="icon-btn" onclick="editProduct('${p.id}')" title="Editar">
             <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </button>
@@ -3335,9 +3358,10 @@ function renderMobileQuickView() {
           ${p.badge ? `<div style="font-size:9px;font-family:'Cinzel',serif;color:var(--gold);margin-top:3px;letter-spacing:1px;">${p.badge}</div>` : ''}
         </div>
       </div>
-      <div style="display:flex;gap:8px;width:100%;justify-content:center;padding-top:4px;">
+      <div style="display:flex;gap:8px;width:100%;justify-content:center;padding-top:4px;flex-wrap:wrap;">
         <button class="mob-update-btn" onclick="editProduct('${p.id}')" style="background:rgba(201,151,58,0.12);">✎ Editar</button>
         <button class="mob-update-btn" onclick="editProduct('${p.id}')">↑ Actualizar</button>
+        <button class="mob-update-btn ${p.sold_out ? '' : ''}" onclick="quickToggleSoldOut('${p.id}')" style="${p.sold_out ? 'color:#dc322f;border-color:rgba(220,50,47,0.4);background:rgba(220,50,47,0.07);' : ''}">⊘ ${p.sold_out ? 'Quitar sold out' : 'Sold out'}</button>
         <button class="mob-del-btn" onclick="askDelete('${p.id}')" title="Eliminar">🗑</button>
       </div>
     </div>
@@ -3381,6 +3405,8 @@ function openDrawer(id) {
     document.getElementById('f_medida').value   = p.medida   || '';
     document.getElementById('f_peso').value     = p.peso     || '';
     document.getElementById('f_badge').value    = p.badge    || '';
+    const _soEl = document.getElementById('f_soldout');
+    if (_soEl) { _soEl.checked = !!p.sold_out; _updateSoldOutUI(!!p.sold_out); }
     if (p.photo) {
       photoData    = p.photo;
       rawPhotoData = p.photo; // permitir reprocesar imagen existente
@@ -3394,6 +3420,8 @@ function openDrawer(id) {
     });
     document.getElementById('f_category').value = '';
     document.getElementById('f_badge').value = '';
+    const _soElN = document.getElementById('f_soldout');
+    if (_soElN) { _soElN.checked = false; _updateSoldOutUI(false); }
     document.getElementById('f_material').value = 'Oro laminado 14k';
   }
 
@@ -3774,6 +3802,7 @@ async function saveProduct() {
     medida:         document.getElementById('f_medida').value.trim(),
     peso:           document.getElementById('f_peso').value.trim(),
     badge:          document.getElementById('f_badge').value || null,
+    sold_out:       !!(document.getElementById('f_soldout')?.checked),
     active:         true,
   };
   if (finalPhotoUrl) data.photo_data = finalPhotoUrl;
@@ -4204,6 +4233,28 @@ function updateBannerPreview() {
   updateToggleUI(active);
   prev.style.opacity = active ? '1' : '0.35';
   prevTxt.textContent = text + '  ✦  Oro laminado 14k · Calidad garantizada  ✦  Descuento mayorista 35%  ✦  ' + text;
+}
+
+function _updateSoldOutUI(checked) {
+  const track = document.getElementById('soTrack');
+  const thumb = document.getElementById('soThumb');
+  const label = document.getElementById('soLabel');
+  if (!track) return;
+  track.style.background = checked ? 'linear-gradient(135deg,#a32020,#dc322f)' : 'var(--bg3)';
+  if (thumb) thumb.style.transform = checked ? 'translateX(20px)' : 'translateX(0)';
+  if (label) { label.textContent = checked ? 'Agotado' : 'Disponible'; label.style.color = checked ? '#dc322f' : 'var(--text-muted)'; }
+}
+
+async function quickToggleSoldOut(id) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  const newVal = !p.sold_out;
+  try {
+    await _db.collection('catalogo_productos').doc(String(id)).update({ sold_out: newVal });
+    p.sold_out = newVal;
+    renderTable();
+    showToast(newVal ? '⊘ Marcado como Sold Out' : '✓ Disponible nuevamente');
+  } catch(e) { showToast('Error: ' + e.message); }
 }
 
 function updateToggleUI(checked) {
