@@ -4381,7 +4381,7 @@ function catProductHTML(p) {
           </div>`}
         </div>
         ${p.sold_out
-          ? `<div onclick="event.stopPropagation()" style="margin-top:8px;display:flex;align-items:center;gap:10px;"><button class="cat-detail-btn" onclick="openModal('${p.id}')">${_t[_lang].viewDetail}</button><span class="sold-out-msg">${_t[_lang].notAvailable}</span></div>`
+          ? `<div onclick="event.stopPropagation()" style="margin-top:8px;display:flex;align-items:center;gap:10px;"><span class="sold-out-msg">${_t[_lang].notAvailable}</span></div>`
           : variantRow}
       </div>
     </div>`;
