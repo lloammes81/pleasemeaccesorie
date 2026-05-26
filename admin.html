@@ -1811,6 +1811,37 @@ textarea { resize: vertical; min-height: 80px; }
   font-size:9px;letter-spacing:1px;color:#c0392b;background:rgba(192,57,43,0.1);
   border:1px solid rgba(192,57,43,0.3);padding:2px 8px;border-radius:10px;font-weight:600;
 }
+/* ─── NOTIFICACIONES ─── */
+.notif-bell-wrap { position:relative; }
+.notif-badge {
+  position:absolute; top:-4px; right:-4px;
+  background:#e74c3c; color:#fff; font-size:9px; font-weight:700;
+  border-radius:50%; width:16px; height:16px;
+  display:none; align-items:center; justify-content:center;
+  font-family:'Montserrat',sans-serif; border:1.5px solid var(--bg);
+}
+.notif-badge.visible { display:flex; }
+/* Toast de nuevo pedido (más prominente) */
+.toast-pedido {
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+  background:linear-gradient(135deg,#1a472a,#145a32); color:#fff;
+  border:1px solid rgba(46,160,67,0.4); border-radius:10px;
+  padding:14px 20px; z-index:9999; font-family:'Montserrat',sans-serif;
+  box-shadow:0 8px 30px rgba(0,0,0,0.4); min-width:300px; max-width:480px;
+  display:flex; flex-direction:column; gap:8px;
+  animation:toastIn 0.35s ease;
+}
+.toast-pedido-title { font-family:'Cinzel',serif; font-size:12px; color:#2ecc71; letter-spacing:1px; }
+.toast-pedido-body { font-size:11.5px; color:#ccc; line-height:1.4; }
+.toast-pedido-btns { display:flex; gap:8px; margin-top:4px; }
+.toast-pedido-btns button {
+  padding:6px 14px; border-radius:4px; font-size:10px;
+  font-family:'Cinzel',serif; letter-spacing:1px; cursor:pointer; border:none;
+}
+.tp-btn-ver { background:#2ecc71; color:#fff; }
+.tp-btn-wa  { background:#25d366; color:#fff; }
+.tp-btn-ok  { background:transparent; border:1px solid rgba(255,255,255,0.2) !important; color:#aaa; }
+@keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(20px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
 /* ─── OVERLAY BLOQUEO DE SECCIÓN ─── */
 .cfg-lock-overlay {
   position:absolute; inset:0; z-index:50;
@@ -2009,6 +2040,12 @@ textarea { resize: vertical; min-height: 80px; }
         <button class="icon-btn" id="reconnectBtn" onclick="manualReconnect()" title="Reconectar" style="display:none">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.36-3.36L23 10M1 14l5.13 4.36A9 9 0 0020.49 15"/></svg>
         </button>
+        <div class="notif-bell-wrap">
+          <button class="icon-btn" id="notifBellBtn" onclick="goTo('pedidos')" title="Notificaciones de pedidos">
+            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+          </button>
+          <span class="notif-badge" id="notifBadge">0</span>
+        </div>
         <button class="icon-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Cambiar tema">
           <svg id="themeIcon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
         </button>
@@ -2609,12 +2646,18 @@ textarea { resize: vertical; min-height: 80px; }
             Ubicación
           </div>
           <div class="contact-form">
+            <div class="save-row" style="margin-bottom:12px;">
+              <button class="btn" onclick="_detectarUbicacionContacto()" style="border:1px solid var(--gold);color:var(--gold);background:transparent;font-size:10px;">
+                🌐 Auto-detectar desde internet
+              </button>
+            </div>
+            <div id="c_location_hint" style="display:none;font-size:10.5px;color:var(--gold);background:rgba(201,151,58,0.08);border:1px solid rgba(201,151,58,0.2);border-radius:4px;padding:7px 10px;margin-bottom:10px;"></div>
             <div class="field">
               <label>Ciudad</label>
               <input type="text" id="c_city" placeholder="Bogotá, Colombia">
             </div>
             <div class="field">
-              <label>Dirección (opcional)</label>
+              <label>Dirección</label>
               <input type="text" id="c_address" placeholder="Calle 80 # 45-20">
             </div>
             <div class="field">
@@ -3220,6 +3263,7 @@ async function saveContact(section) {
     try {
       await _db.collection('config').doc('pm_contact').set({ value: contact });
       showToast('✦ Información guardada');
+      _notificarCambioAdmin('Información de contacto actualizada — sección: ' + section);
     } catch(e) { showToast('Error al guardar: ' + e.message); }
   });
 }
@@ -3322,6 +3366,7 @@ async function saveCloudinaryConfig() {
     _cfgCache['pm_cloudinary'] = { cloud_name, upload_preset };
     if (st) { st.style.color = 'var(--gold)'; st.textContent = '✦ Cloudinary conectado y guardado'; }
     showToast('✦ Cloudinary conectado y guardado');
+    _notificarCambioAdmin('Configuración de Cloudinary actualizada');
     checkCloudinaryConfig();
   });
 }
@@ -5072,6 +5117,130 @@ async function init() {
   await eliminarDuplicados();
   // Reverificar conexión cada 30 s
   setInterval(checkSupabaseConnection, 30000);
+  // Iniciar sistema de notificaciones
+  _initNotificaciones();
+}
+
+// ─── NOTIFICACIONES AL ADMINISTRADOR ─────────────────────────────────────────
+let _notifCount = 0;
+let _pedidosSnapshot = null;
+let _pedidosKnownIds = new Set();
+
+async function _initNotificaciones() {
+  // Solicitar permiso de notificaciones del navegador
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+  // Cargar IDs actuales de pedidos para no notificar los existentes
+  try {
+    const snap = await _db.collection('pedidos').where('facturado','!=',true).get();
+    snap.docs.forEach(d => _pedidosKnownIds.add(d.id));
+  } catch(e) {
+    try {
+      const snap = await _db.collection('pedidos').get();
+      snap.docs.forEach(d => _pedidosKnownIds.add(d.id));
+    } catch(e2) {}
+  }
+  // Escuchar en tiempo real nuevos pedidos
+  _pedidosSnapshot = _db.collection('pedidos').orderBy('fecha','desc')
+    .onSnapshot(snapshot => {
+      snapshot.docChanges().forEach(change => {
+        if (change.type === 'added' && !_pedidosKnownIds.has(change.doc.id)) {
+          _pedidosKnownIds.add(change.doc.id);
+          const p = { _docId: change.doc.id, ...change.doc.data() };
+          _mostrarNotifPedido(p);
+        }
+      });
+    }, err => console.warn('onSnapshot pedidos:', err.message));
+}
+
+function _mostrarNotifPedido(p) {
+  _notifCount++;
+  // Badge en la campana
+  const badge = document.getElementById('notifBadge');
+  if (badge) { badge.textContent = _notifCount; badge.classList.add('visible'); }
+  // Badge en nav-pedidos
+  const navPed = document.getElementById('nav-pedidos');
+  if (navPed && !navPed.querySelector('.notif-badge')) {
+    const b = document.createElement('span');
+    b.className = 'notif-badge visible'; b.id = 'navPedBadge'; b.textContent = _notifCount;
+    b.style.cssText = 'position:absolute;top:4px;right:6px;';
+    navPed.style.position = 'relative'; navPed.appendChild(b);
+  } else if (navPed) {
+    const b = navPed.querySelector('.notif-badge');
+    if (b) { b.textContent = _notifCount; b.classList.add('visible'); }
+  }
+  // Notificación del navegador
+  if ('Notification' in window && Notification.permission === 'granted') {
+    const nom = (p.nombre || p.cliente || 'Cliente');
+    new Notification('🛍 Nuevo pedido · Pleaseme', {
+      body: nom + ' · $' + Number(p.total_final || p.total || 0).toLocaleString('es-CO'),
+      icon: 'logo.png',
+      badge: 'logo.png'
+    });
+  }
+  // Toast prominente en el panel
+  _mostrarToastPedido(p);
+}
+
+function _mostrarToastPedido(p) {
+  const existing = document.getElementById('toastPedidoActivo');
+  if (existing) existing.remove();
+  const nom   = p.nombre || p.cliente || 'Nuevo cliente';
+  const total = '$' + Number(p.total_final || p.total || 0).toLocaleString('es-CO');
+  const items = (p.items || []).length;
+  const wa    = (contact && contact.whatsapp) ? contact.whatsapp : '';
+  const waUrl = wa ? `https://wa.me/${wa}?text=${encodeURIComponent('📦 Nuevo pedido de ' + nom + ' · ' + total)}` : '';
+  const div = document.createElement('div');
+  div.className = 'toast-pedido'; div.id = 'toastPedidoActivo';
+  div.innerHTML = `
+    <div class="toast-pedido-title">🛍 Nuevo pedido recibido</div>
+    <div class="toast-pedido-body"><strong>${nom}</strong> · ${items} artículo${items !== 1 ? 's' : ''} · <strong>${total}</strong></div>
+    <div class="toast-pedido-btns">
+      <button class="tp-btn-ver" onclick="goTo('pedidos');document.getElementById('toastPedidoActivo').remove()">Ver pedido</button>
+      ${waUrl ? `<button class="tp-btn-wa" onclick="window.open('${waUrl}','_blank');document.getElementById('toastPedidoActivo').remove()">WhatsApp</button>` : ''}
+      <button class="tp-btn-ok" onclick="document.getElementById('toastPedidoActivo').remove()">OK</button>
+    </div>`;
+  document.body.appendChild(div);
+  setTimeout(() => { if (div.parentNode) div.remove(); }, 15000);
+}
+
+function _notificarCambioAdmin(msg) {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification('⚙ Pleaseme Admin · Cambio guardado', { body: msg, icon: 'logo.png' });
+  }
+}
+
+// ─── AUTO-DETECTAR UBICACIÓN (contacto) ──────────────────────────────────────
+async function _detectarUbicacionContacto() {
+  const hint = document.getElementById('c_location_hint');
+  if (hint) { hint.textContent = '🌐 Detectando…'; hint.style.display = 'block'; }
+  try {
+    const res  = await fetch('https://ipapi.co/json/');
+    const data = await res.json();
+    const city    = data.city    || '';
+    const region  = data.region  || '';
+    const country = data.country_name || '';
+    const postal  = data.postal  || '';
+    const org     = data.org     || '';
+
+    const cityFull = [city, region, country].filter(Boolean).join(', ');
+    const addrFull = [city, postal, country].filter(Boolean).join(' ');
+
+    const elCity = document.getElementById('c_city');
+    const elAddr = document.getElementById('c_address');
+    if (elCity && city) elCity.value = cityFull;
+    if (elAddr && city) elAddr.value = addrFull;
+
+    if (hint) {
+      hint.style.display = 'block';
+      hint.innerHTML = `📍 <strong>${cityFull}</strong>${postal ? '  ZIP: ' + postal : ''}${org ? '<br><span style="font-size:9.5px;opacity:0.7;">Red: ' + org + '</span>' : ''}`;
+    }
+    showToast('📍 Ubicación detectada: ' + cityFull);
+  } catch(e) {
+    if (hint) { hint.textContent = '✗ No se pudo detectar la ubicación'; }
+    showToast('No se pudo detectar la ubicación');
+  }
 }
 
 // Cargar config (contraseña + contacto) antes de mostrar el login
