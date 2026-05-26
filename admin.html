@@ -1811,6 +1811,41 @@ textarea { resize: vertical; min-height: 80px; }
   font-size:9px;letter-spacing:1px;color:#c0392b;background:rgba(192,57,43,0.1);
   border:1px solid rgba(192,57,43,0.3);padding:2px 8px;border-radius:10px;font-weight:600;
 }
+/* Hint de dirección desde ZIP */
+.fct-dir-hint {
+  font-size:10.5px;color:#2e8b57;background:#f0faf4;border:1px solid rgba(46,139,87,0.25);
+  border-radius:4px;padding:5px 9px;margin-top:5px;display:none;
+  font-family:'Montserrat',sans-serif;
+}
+/* Modal Anular Factura */
+.anular-overlay {
+  display:none;position:fixed;inset:0;z-index:10500;
+  background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);
+  align-items:center;justify-content:center;
+}
+.anular-overlay.open { display:flex; }
+.anular-box {
+  background:#fff;border-radius:10px;padding:28px 30px;max-width:380px;width:90%;
+  box-shadow:0 20px 60px rgba(0,0,0,0.45);font-family:'Montserrat',sans-serif;
+}
+.anular-box-title {
+  font-family:'Cinzel',serif;font-size:13px;color:#c0392b;letter-spacing:1px;
+  margin-bottom:6px;display:flex;align-items:center;gap:8px;
+}
+.anular-box-sub { font-size:11px;color:#888;margin-bottom:16px;line-height:1.5; }
+.anular-box textarea {
+  width:100%;border:1.5px solid #e5e5e5;border-radius:6px;padding:9px 11px;
+  font-size:11.5px;font-family:'Montserrat',sans-serif;color:#1a1a1a;
+  box-sizing:border-box;resize:vertical;min-height:72px;outline:none;
+  transition:border-color 0.2s;
+}
+.anular-box textarea:focus { border-color:#c0392b; }
+.anular-box-btns { display:flex;gap:10px;margin-top:16px;justify-content:flex-end; }
+.anular-box-btns button { padding:9px 18px;border-radius:5px;font-family:'Cinzel',serif;font-size:10px;letter-spacing:1.5px;cursor:pointer;transition:all 0.2s; }
+.btn-anular-cancel { background:transparent;border:1px solid #ddd;color:#999; }
+.btn-anular-cancel:hover { border-color:#bbb;color:#666; }
+.btn-anular-confirm { background:#c0392b;border:none;color:#fff;box-shadow:0 2px 8px rgba(192,57,43,0.3); }
+.btn-anular-confirm:hover { background:#a93226; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -5138,6 +5173,7 @@ function mobGoTo(page) {
           <div class="factura-field">
             <label>Dirección</label>
             <input type="text" id="fct-cli-dir" placeholder="Calle / Av. / Número">
+            <div class="fct-dir-hint" id="fct-dir-hint"></div>
           </div>
         </div>
         <div>
@@ -5236,6 +5272,23 @@ function mobGoTo(page) {
   </div>
 </div>
 
+<!-- MODAL ANULAR FACTURA -->
+<div class="anular-overlay" id="anularOverlay">
+  <div class="anular-box">
+    <div class="anular-box-title">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+      Anular Factura
+    </div>
+    <div class="anular-box-sub">Esta factura quedará marcada como inválida. Puedes agregar una nota con el motivo.</div>
+    <label style="font-size:9.5px;color:#999;letter-spacing:0.5px;text-transform:uppercase;display:block;margin-bottom:5px;">Nota / Motivo (opcional)</label>
+    <textarea id="anularNota" placeholder="Ej: Error en los datos, pedido cancelado por el cliente…"></textarea>
+    <div class="anular-box-btns">
+      <button class="btn-anular-cancel" onclick="cerrarAnularModal()">Cancelar</button>
+      <button class="btn-anular-confirm" onclick="confirmarAnular()">Anular Factura</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL CONFIRMACIÓN CON CÓDIGO ALEATORIO -->
 <div class="confirm-code-overlay" id="confirmCodeOverlay">
   <div class="confirm-code-box">
@@ -5324,6 +5377,8 @@ function abrirFactura(docId) {
   document.getElementById('fct-cli-pais').value = '';
   document.getElementById('fct-env-estado-sel').value = '';
   document.getElementById('fct-confirm-internet').checked = false;
+  const hint = document.getElementById('fct-dir-hint');
+  if (hint) { hint.textContent = ''; hint.style.display = 'none'; }
   _fctPaisChange();
 
   // Auto-completar si el cliente ya compró antes (por teléfono del pedido)
@@ -5456,6 +5511,8 @@ async function guardarFacturaProcesada() {
       const newRef = await _db.collection('facturas_procesadas').add(factura);
       _facturas.unshift({ _docId: newRef.id, ...factura });
     }
+    // Marcar pedido como facturado y eliminarlo de la vista de pedidos
+    await _marcarPedidoFacturado(docId);
   } catch(e) { console.warn('No se pudo guardar la factura:', e.message); }
 }
 
@@ -5520,7 +5577,7 @@ function renderFacturas(lista) {
                 <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                 Ver / Reimprimir
               </button>
-              ${!f.anulada ? `<button class="btn" style="font-size:11px;padding:5px 12px;border-color:rgba(192,57,43,0.4);color:#c0392b;" onclick="anularFactura('${f._docId}')">Anular</button>` : '<span style="font-size:10px;color:#c0392b;padding:5px 8px;">✗ Anulada</span>'}
+              ${!f.anulada ? `<button class="btn" style="font-size:11px;padding:5px 12px;border-color:rgba(192,57,43,0.4);color:#c0392b;" onclick="anularFactura('${f._docId}')">Anular</button>` : `<span style="font-size:10px;color:#c0392b;padding:5px 8px;display:flex;flex-direction:column;gap:2px;">✗ Anulada${f.nota_anulacion ? `<em style="font-size:9.5px;color:#e74c3c;font-style:italic;">"${f.nota_anulacion}"</em>` : ''}</span>`}
               <button class="btn" style="font-size:11px;padding:5px 12px" onclick="eliminarFactura('${f._docId}')">Eliminar</button>
             </div>
           </div>
@@ -5547,19 +5604,52 @@ function filtrarFacturas() {
   }));
 }
 
-async function anularFactura(docId) {
-  if (!confirm('¿Anular esta factura? Quedará marcada como inválida pero permanecerá en el historial.')) return;
+// ─── MARCAR PEDIDO COMO FACTURADO ────────────────────────────────────────────
+async function _marcarPedidoFacturado(docId) {
+  if (!docId) return;
+  try {
+    await _db.collection('pedidos').doc(docId).update({ facturado: true });
+  } catch(e) { /* puede ser de _realizados, ignorar */ }
+  _pedidos = _pedidos.filter(p => p._docId !== docId);
+  if (typeof renderPedidos === 'function') renderPedidos(_pedidos);
+}
+
+// ─── ANULAR FACTURA — MODAL CON NOTA ─────────────────────────────────────────
+let _anularDocId = null;
+
+function anularFactura(docId) {
+  _anularDocId = docId;
+  document.getElementById('anularNota').value = '';
+  document.getElementById('anularOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('anularNota').focus(), 100);
+}
+
+function cerrarAnularModal() {
+  document.getElementById('anularOverlay').classList.remove('open');
+  _anularDocId = null;
+}
+
+async function confirmarAnular() {
+  const docId = _anularDocId;
+  if (!docId) return;
+  const nota = document.getElementById('anularNota').value.trim();
+  cerrarAnularModal();
   try {
     await _db.collection('facturas_procesadas').doc(docId).update({
       anulada: true,
+      nota_anulacion: nota,
       fecha_anulacion: firebase.firestore.FieldValue.serverTimestamp()
     });
     const f = _facturas.find(x => x._docId === docId);
-    if (f) f.anulada = true;
+    if (f) { f.anulada = true; f.nota_anulacion = nota; }
     renderFacturas(_facturas);
     showToast('Factura anulada');
   } catch(e) { showToast('Error al anular: ' + e.message); }
 }
+
+document.getElementById('anularOverlay').addEventListener('click', function(e) {
+  if (e.target === this) cerrarAnularModal();
+});
 
 async function eliminarFactura(docId) {
   if (!confirm('¿Eliminar esta factura del historial?')) return;
@@ -5834,12 +5924,18 @@ async function _fctZipInput(inp) {
     const data = await res.json();
     const place = data.places && data.places[0];
     if (!place) { inp.style.borderColor = 'crimson'; return; }
-    document.getElementById('fct-env-ciudad').value = place['place name'] || '';
+    const city  = place['place name'] || '';
+    const state = place.state || '';
+    document.getElementById('fct-env-ciudad').value = city;
     const stateEl = document.getElementById('fct-env-estado-sel');
-    const stateName = place.state || '';
-    // Buscar en el select el estado que coincida
-    const opt = Array.from(stateEl.options).find(o => o.value === stateName || o.textContent === stateName);
+    const opt = Array.from(stateEl.options).find(o => o.value === state || o.textContent === state);
     if (opt) stateEl.value = opt.value;
+    // Mostrar hint de confirmación en el campo dirección
+    const hint = document.getElementById('fct-dir-hint');
+    if (hint && city) {
+      hint.textContent = '📍 ' + city + (state ? ', ' + state : '') + '  ' + zip + ' — Verifica que tu dirección corresponda a esta ubicación';
+      hint.style.display = 'block';
+    }
     inp.style.borderColor = 'limegreen';
     setTimeout(() => { inp.style.borderColor = ''; }, 1500);
   } catch(e) { inp.style.borderColor = ''; }
