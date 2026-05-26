@@ -1662,7 +1662,7 @@ textarea { resize: vertical; min-height: 80px; }
 .factura-body { padding:30px 32px 22px; }
 .factura-head-row { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:22px; gap:16px; flex-wrap:wrap; }
 .factura-empresa { display:flex; align-items:flex-start; gap:14px; flex:1; min-width:200px; }
-.factura-logo { width:58px; height:58px; object-fit:contain; flex-shrink:0; border-radius:4px; }
+.factura-logo { width:62px; height:62px; object-fit:cover; flex-shrink:0; border-radius:50%; border:2.5px solid #C9973A; box-shadow:0 2px 12px rgba(201,151,58,0.4); background:#f5f0e6; }
 .factura-empresa-texto { flex:1; }
 .factura-empresa-nombre { font-family:'Cinzel',serif; font-size:17px; font-weight:600; color:#1a1a1a; letter-spacing:0.5px; }
 .factura-empresa-sub { font-size:9px; color:#C9973A; letter-spacing:2.5px; text-transform:uppercase; margin-top:2px; font-weight:600; }
@@ -1716,13 +1716,61 @@ textarea { resize: vertical; min-height: 80px; }
   border:1px solid rgba(46,160,67,0.3); color:#2ea043; font-size:10px; letter-spacing:1px;
   padding:3px 10px; border-radius:20px; font-weight:600; }
 
+/* ─── SELECT FIELDS ─── */
+.factura-field select {
+  width:100%; border:1px solid #e5e5e5; border-radius:4px; padding:7px 10px;
+  font-size:12px; font-family:'Montserrat',sans-serif; color:#1a1a1a; box-sizing:border-box;
+  background:#fafafa url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23C9973A' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E") no-repeat right 10px center;
+  appearance:none; -webkit-appearance:none; cursor:pointer;
+  transition:border-color 0.2s, background-color 0.2s;
+}
+.factura-field select:focus { outline:none; border-color:#C9973A; background-color:#fff; }
+/* Nombre siempre en mayúsculas */
+#fct-cli-nombre { text-transform:uppercase; }
+/* Autocomplete */
+.fct-autocomplete {
+  position:absolute; top:100%; left:0; right:0; z-index:200;
+  background:#fff; border:1px solid #e5e5e5; border-top:none;
+  border-radius:0 0 4px 4px; box-shadow:0 6px 16px rgba(0,0,0,0.1);
+  max-height:160px; overflow-y:auto;
+}
+.fct-autocomplete-item {
+  padding:8px 10px; font-size:11.5px; cursor:pointer; color:#1a1a1a;
+  border-bottom:1px solid #f5f5f5; display:flex; flex-direction:column; gap:2px;
+}
+.fct-autocomplete-item:last-child { border-bottom:none; }
+.fct-autocomplete-item:hover { background:#fffbf2; color:#C9973A; }
+.fct-autocomplete-item span { font-size:9.5px; color:#aaa; }
+.factura-field-ac { position:relative; }
+/* Bloque cliente estilo factura empresa (solo en impresión) */
+.fct-cli-print-block { display:none; }
 @media print {
   body > *:not(#facturaOverlay) { display:none !important; }
   .factura-overlay { display:block !important; background:none; padding:0; position:static; overflow:visible; }
   .factura-modal { box-shadow:none; border-radius:0; max-width:100%; }
   .factura-topbar, .factura-footer-bar { display:none !important; }
   .factura-gold-band, .factura-items-table thead tr, .factura-totales { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-  .factura-field input { border:none; border-bottom:1px solid #ddd; border-radius:0; background:transparent; padding:2px 0; }
+  .factura-field { display:none !important; }
+  .factura-confirm-row { display:none !important; }
+  .factura-seccion-title { display:none !important; }
+  .factura-cols { display:block !important; }
+  .fct-cli-print-block {
+    display:grid !important; grid-template-columns:1fr 1fr; gap:20px;
+    margin-bottom:22px; border:1.5px solid #e8dfc8; border-radius:6px; padding:16px 20px;
+  }
+  .fct-cli-print-col { }
+  .fct-cli-print-label {
+    font-size:8px; letter-spacing:3px; text-transform:uppercase; color:#C9973A;
+    font-weight:700; margin-bottom:8px; padding-bottom:5px; border-bottom:1.5px solid #f0e8d4;
+  }
+  .fct-cli-print-nombre {
+    font-size:15px; font-weight:700; color:#1a1a1a; text-transform:uppercase;
+    letter-spacing:0.5px; margin-bottom:6px; font-family:'Montserrat',sans-serif;
+  }
+  .fct-cli-print-linea {
+    font-size:11px; color:#444; line-height:1.8; font-family:'Montserrat',sans-serif;
+  }
+  .fct-cli-print-linea strong { color:#1a1a1a; }
 }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -5026,45 +5074,71 @@ function mobGoTo(page) {
       <div class="factura-cols">
         <div>
           <div class="factura-seccion-title">Datos del cliente</div>
-          <div class="factura-field">
+          <div class="factura-field factura-field-ac">
             <label>Nombre completo</label>
-            <input type="text" id="fct-cli-nombre" placeholder="Nombre del cliente">
+            <input type="text" id="fct-cli-nombre" placeholder="Nombre del cliente" autocomplete="off" oninput="_fctNombreInput(this)" onblur="_fctNombreBlur()">
+            <div id="fct-nombre-sugerencias" class="fct-autocomplete" style="display:none;"></div>
           </div>
           <div class="factura-field">
             <label>Teléfono</label>
-            <input type="text" id="fct-cli-tel" placeholder="+57 300 000 0000">
-          </div>
-          <div class="factura-field">
-            <label>Dirección</label>
-            <input type="text" id="fct-cli-dir" placeholder="Calle / Carrera / Av.">
-          </div>
-          <div class="factura-field">
-            <label>N° de Locker / Apartamento</label>
-            <input type="text" id="fct-cli-locker" placeholder="Locker #123 / Apto 4B">
+            <input type="text" id="fct-cli-tel" placeholder="+1 000 000 0000">
           </div>
           <div class="factura-field">
             <label>País</label>
-            <input type="text" id="fct-cli-pais" placeholder="Colombia">
+            <select id="fct-cli-pais" onchange="_fctPaisChange()">
+              <option value="">Seleccionar país…</option>
+              <option value="USA">🇺🇸 USA – Estados Unidos</option>
+              <option value="DOM REP">🇩🇴 DOM REP – República Dominicana</option>
+            </select>
+          </div>
+          <div class="factura-field">
+            <label>Dirección</label>
+            <input type="text" id="fct-cli-dir" placeholder="Calle / Av. / Número">
           </div>
         </div>
         <div>
           <div class="factura-seccion-title">Dirección de envío</div>
           <div class="factura-field">
-            <label>Ciudad <span style="font-size:9px;color:#C9973A;">(auto)</span></label>
-            <input type="text" id="fct-env-ciudad" placeholder="Detectando…">
+            <label>Ciudad</label>
+            <input type="text" id="fct-env-ciudad" placeholder="Ciudad">
+          </div>
+          <div class="factura-field" id="fct-estado-wrap">
+            <label>Estado</label>
+            <select id="fct-env-estado-sel" style="display:none;" onchange="_fctEstadoSelChange()">
+              <option value="">Seleccionar estado…</option>
+            </select>
+            <input type="text" id="fct-env-estado" placeholder="Estado / Departamento">
           </div>
           <div class="factura-field">
-            <label>Departamento / Estado <span style="font-size:9px;color:#C9973A;">(auto)</span></label>
-            <input type="text" id="fct-env-estado" placeholder="Detectando…">
+            <label>Lock Num</label>
+            <input type="text" id="fct-cli-locker" placeholder="Lock #123">
           </div>
           <div class="factura-field">
             <label>Referencia adicional</label>
             <input type="text" id="fct-env-ref" placeholder="Barrio, edificio, referencia…">
           </div>
-          <div class="factura-confirm-row" style="margin-top:14px;">
+          <div class="factura-confirm-row" style="margin-top:10px;">
             <input type="checkbox" id="fct-confirm-internet">
             <label for="fct-confirm-internet">Pedido confirmado vía internet</label>
           </div>
+        </div>
+      </div>
+
+      <!-- Bloque cliente para impresión (estilo factura empresa) -->
+      <div class="fct-cli-print-block" id="fctCliPrintBlock">
+        <div class="fct-cli-print-col">
+          <div class="fct-cli-print-label">Facturar a / Bill To</div>
+          <div class="fct-cli-print-nombre" id="fctPrintNombre"></div>
+          <div class="fct-cli-print-linea" id="fctPrintTel"></div>
+          <div class="fct-cli-print-linea" id="fctPrintDir"></div>
+          <div class="fct-cli-print-linea" id="fctPrintLock"></div>
+        </div>
+        <div class="fct-cli-print-col">
+          <div class="fct-cli-print-label">Destino / Ship To</div>
+          <div class="fct-cli-print-linea" id="fctPrintCiudad"></div>
+          <div class="fct-cli-print-linea" id="fctPrintEstado"></div>
+          <div class="fct-cli-print-linea" id="fctPrintPais"></div>
+          <div class="fct-cli-print-linea" id="fctPrintRef"></div>
         </div>
       </div>
 
@@ -5176,14 +5250,21 @@ function abrirFactura(docId) {
   }
 
   // Limpiar campos de cliente
-  ['fct-cli-nombre','fct-cli-tel','fct-cli-dir','fct-cli-locker','fct-cli-pais',
+  ['fct-cli-nombre','fct-cli-tel','fct-cli-dir','fct-cli-locker',
    'fct-env-ciudad','fct-env-estado','fct-env-ref'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
+  document.getElementById('fct-cli-pais').value = '';
+  document.getElementById('fct-env-estado-sel').value = '';
   document.getElementById('fct-confirm-internet').checked = false;
+  _fctPaisChange();
 
-  // Auto-detectar ciudad/estado/país vía IP
+  // Auto-completar si el cliente ya compró antes (por teléfono del pedido)
+  const telPedido = p.tel || p.telefono || (p.cliente && p.cliente.tel) || '';
+  if (telPedido) _buscarYLlenarClientePorTel(telPedido);
+
+  // Auto-detectar ciudad/estado vía IP
   _detectarUbicacion();
 
   document.getElementById('facturaOverlay').classList.add('open');
@@ -5194,11 +5275,22 @@ async function _detectarUbicacion() {
   try {
     const res  = await fetch('https://ipapi.co/json/');
     const data = await res.json();
-    if (data.city)         document.getElementById('fct-env-ciudad').value = data.city;
-    if (data.region)       document.getElementById('fct-env-estado').value = data.region;
-    if (data.country_name) {
-      const pais = document.getElementById('fct-cli-pais');
-      if (pais && !pais.value) pais.value = data.country_name;
+    if (data.city) document.getElementById('fct-env-ciudad').value = data.city;
+    const paisSel = document.getElementById('fct-cli-pais');
+    if (!paisSel.value && data.country_code) {
+      if (data.country_code === 'US') {
+        paisSel.value = 'USA';
+        _fctPaisChange();
+        if (data.region) document.getElementById('fct-env-estado-sel').value = data.region;
+      } else if (data.country_code === 'DO') {
+        paisSel.value = 'DOM REP';
+        _fctPaisChange();
+        if (data.region) document.getElementById('fct-env-estado').value = data.region;
+      } else {
+        if (data.region) document.getElementById('fct-env-estado').value = data.region;
+      }
+    } else if (!paisSel.value) {
+      if (data.region) document.getElementById('fct-env-estado').value = data.region;
     }
   } catch(e) {}
 }
@@ -5209,8 +5301,29 @@ function cerrarFactura() {
 }
 
 async function imprimirFactura() {
+  _poblarBloquePrint();
   await guardarFacturaProcesada();
   window.print();
+}
+
+function _poblarBloquePrint() {
+  const nombre  = document.getElementById('fct-cli-nombre').value.trim().toUpperCase();
+  const tel     = document.getElementById('fct-cli-tel').value.trim();
+  const dir     = document.getElementById('fct-cli-dir').value.trim();
+  const lock    = document.getElementById('fct-cli-locker').value.trim();
+  const ciudad  = document.getElementById('fct-env-ciudad').value.trim();
+  const estado  = _fctGetEstadoValor();
+  const pais    = document.getElementById('fct-cli-pais').value.trim();
+  const ref     = document.getElementById('fct-env-ref').value.trim();
+  const s = id => document.getElementById(id);
+  s('fctPrintNombre').textContent  = nombre || '—';
+  s('fctPrintTel').innerHTML       = tel  ? '<strong>Tel:</strong> ' + tel : '';
+  s('fctPrintDir').innerHTML       = dir  ? '<strong>Dir:</strong> ' + dir : '';
+  s('fctPrintLock').innerHTML      = lock ? '<strong>Lock Num:</strong> ' + lock : '';
+  s('fctPrintCiudad').innerHTML    = ciudad  ? '<strong>Ciudad:</strong> ' + ciudad : '';
+  s('fctPrintEstado').innerHTML    = estado  ? '<strong>Estado:</strong> ' + estado : '';
+  s('fctPrintPais').innerHTML      = pais    ? '<strong>País:</strong> ' + pais : '';
+  s('fctPrintRef').innerHTML       = ref     ? '<strong>Ref:</strong> ' + ref : '';
 }
 
 async function guardarFacturaProcesada() {
@@ -5229,7 +5342,7 @@ async function guardarFacturaProcesada() {
       total:     p.total_final || p.total || 0,
       descuento: p.descuento || 0,
       cliente: {
-        nombre:  document.getElementById('fct-cli-nombre').value.trim(),
+        nombre:  document.getElementById('fct-cli-nombre').value.trim().toUpperCase(),
         tel:     document.getElementById('fct-cli-tel').value.trim(),
         direccion: document.getElementById('fct-cli-dir').value.trim(),
         locker:  document.getElementById('fct-cli-locker').value.trim(),
@@ -5237,7 +5350,7 @@ async function guardarFacturaProcesada() {
       },
       envio: {
         ciudad:    document.getElementById('fct-env-ciudad').value.trim(),
-        estado:    document.getElementById('fct-env-estado').value.trim(),
+        estado:    _fctGetEstadoValor(),
         referencia: document.getElementById('fct-env-ref').value.trim(),
         confirmado_internet: document.getElementById('fct-confirm-internet').checked
       }
@@ -5380,9 +5493,16 @@ function reabrirFactura(docId) {
   document.getElementById('fct-cli-tel').value    = (f.cliente && f.cliente.tel) || '';
   document.getElementById('fct-cli-dir').value    = (f.cliente && f.cliente.direccion) || '';
   document.getElementById('fct-cli-locker').value = (f.cliente && f.cliente.locker) || '';
-  document.getElementById('fct-cli-pais').value   = (f.cliente && f.cliente.pais) || '';
+  const paisVal = (f.cliente && f.cliente.pais) || '';
+  document.getElementById('fct-cli-pais').value = paisVal;
+  _fctPaisChange();
   document.getElementById('fct-env-ciudad').value = (f.envio && f.envio.ciudad) || '';
-  document.getElementById('fct-env-estado').value = (f.envio && f.envio.estado) || '';
+  const estadoVal = (f.envio && f.envio.estado) || '';
+  if (paisVal === 'USA') {
+    document.getElementById('fct-env-estado-sel').value = estadoVal;
+  } else {
+    document.getElementById('fct-env-estado').value = estadoVal;
+  }
   document.getElementById('fct-env-ref').value    = (f.envio && f.envio.referencia) || '';
   document.getElementById('fct-confirm-internet').checked = !!(f.envio && f.envio.confirmado_internet);
   _facturaCurrentPedidoId = f.pedido_id;
@@ -5393,6 +5513,137 @@ function reabrirFactura(docId) {
 document.getElementById('facturaOverlay').addEventListener('click', function(e) {
   if (e.target === this) cerrarFactura();
 });
+
+// ─── ESTADOS USA ──────────────────────────────────────────────────────────────
+const _US_STATES = [
+  'Alabama','Alaska','Arizona','Arkansas','California','Colorado','Connecticut',
+  'Delaware','Florida','Georgia','Hawaii','Idaho','Illinois','Indiana','Iowa',
+  'Kansas','Kentucky','Louisiana','Maine','Maryland','Massachusetts','Michigan',
+  'Minnesota','Mississippi','Missouri','Montana','Nebraska','Nevada',
+  'New Hampshire','New Jersey','New Mexico','New York','North Carolina',
+  'North Dakota','Ohio','Oklahoma','Oregon','Pennsylvania','Rhode Island',
+  'South Carolina','South Dakota','Tennessee','Texas','Utah','Vermont',
+  'Virginia','Washington','West Virginia','Wisconsin','Wyoming',
+  'District of Columbia','Puerto Rico'
+];
+
+(function _poblarEstadosUSA() {
+  const sel = document.getElementById('fct-env-estado-sel');
+  _US_STATES.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s; opt.textContent = s;
+    sel.appendChild(opt);
+  });
+})();
+
+function _fctPaisChange() {
+  const pais = document.getElementById('fct-cli-pais').value;
+  const sel  = document.getElementById('fct-env-estado-sel');
+  const inp  = document.getElementById('fct-env-estado');
+  if (pais === 'USA') {
+    sel.style.display = '';
+    inp.style.display = 'none';
+    inp.value = '';
+  } else {
+    sel.style.display = 'none';
+    inp.style.display = '';
+    sel.value = '';
+  }
+}
+
+function _fctEstadoSelChange() {
+  // keep hidden input in sync so guardarFacturaProcesada always reads correctly
+}
+
+function _fctGetEstadoValor() {
+  const pais = document.getElementById('fct-cli-pais').value;
+  if (pais === 'USA') return document.getElementById('fct-env-estado-sel').value;
+  return document.getElementById('fct-env-estado').value.trim();
+}
+
+// ─── AUTOCOMPLETE NOMBRE (clientes anteriores) ────────────────────────────────
+let _fctNombreTimer = null;
+
+function _fctNombreInput(inp) {
+  inp.value = inp.value.toUpperCase();
+  clearTimeout(_fctNombreTimer);
+  const q = inp.value.trim();
+  if (q.length < 2) { _fctOcultarSugerencias(); return; }
+  _fctNombreTimer = setTimeout(() => _fctMostrarSugerencias(q), 200);
+}
+
+function _fctNombreBlur() {
+  setTimeout(_fctOcultarSugerencias, 200);
+}
+
+function _fctMostrarSugerencias(q) {
+  const ql = q.toLowerCase();
+  const vistos = new Set();
+  const matches = (_facturas || []).filter(f => {
+    const nom = (f.cliente && f.cliente.nombre) ? f.cliente.nombre.toLowerCase() : '';
+    if (!nom || !nom.includes(ql)) return false;
+    if (vistos.has(nom)) return false;
+    vistos.add(nom);
+    return true;
+  }).slice(0, 6);
+
+  const box = document.getElementById('fct-nombre-sugerencias');
+  if (!matches.length) { _fctOcultarSugerencias(); return; }
+
+  box.innerHTML = matches.map((f, i) => {
+    const nom = (f.cliente && f.cliente.nombre) || '';
+    const tel = (f.cliente && f.cliente.tel) || '';
+    return `<div class="fct-autocomplete-item" onmousedown="_fctSeleccionarCliente(${_facturas.indexOf(f)})">
+      ${nom}<span>${tel}</span>
+    </div>`;
+  }).join('');
+  box.style.display = 'block';
+}
+
+function _fctOcultarSugerencias() {
+  const box = document.getElementById('fct-nombre-sugerencias');
+  if (box) box.style.display = 'none';
+}
+
+function _fctSeleccionarCliente(idx) {
+  const f = _facturas[idx];
+  if (!f) return;
+  _fctLlenarDesdeFactura(f);
+  _fctOcultarSugerencias();
+}
+
+function _fctLlenarDesdeFactura(f) {
+  if (!f) return;
+  const cli = f.cliente || {};
+  const env = f.envio   || {};
+  if (cli.nombre) document.getElementById('fct-cli-nombre').value = cli.nombre.toUpperCase();
+  if (cli.tel)    document.getElementById('fct-cli-tel').value    = cli.tel;
+  if (cli.direccion) document.getElementById('fct-cli-dir').value = cli.direccion;
+  if (cli.locker) document.getElementById('fct-cli-locker').value = cli.locker;
+  if (cli.pais) {
+    document.getElementById('fct-cli-pais').value = cli.pais;
+    _fctPaisChange();
+  }
+  if (env.ciudad) document.getElementById('fct-env-ciudad').value = env.ciudad;
+  if (env.estado) {
+    if (cli.pais === 'USA') {
+      document.getElementById('fct-env-estado-sel').value = env.estado;
+    } else {
+      document.getElementById('fct-env-estado').value = env.estado;
+    }
+  }
+  if (env.referencia) document.getElementById('fct-env-ref').value = env.referencia;
+}
+
+function _buscarYLlenarClientePorTel(tel) {
+  if (!tel || !_facturas || !_facturas.length) return;
+  const telLimpio = tel.replace(/\D/g,'');
+  const match = _facturas.find(f => {
+    const t = (f.cliente && f.cliente.tel) ? f.cliente.tel.replace(/\D/g,'') : '';
+    return t && t === telLimpio;
+  });
+  if (match) _fctLlenarDesdeFactura(match);
+}
 
 function abrirLightbox(src) {
   document.getElementById('pedidoLightboxImg').src = src;
