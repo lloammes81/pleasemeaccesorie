@@ -404,7 +404,7 @@
   /* ─── LANGUAGE TOGGLE ─── */
   #langToggle {
     position: fixed;
-    top: 28px; right: 12px;
+    top: 48px; right: 12px;
     z-index: 10000;
     display: flex;
     gap: 1px;
@@ -3503,11 +3503,11 @@
   </div>
   <div class="cat-panel-footer">
     <button class="cat-panel-footer-back" onclick="closeCart()">
-      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
       Catálogo
     </button>
-    <button class="cat-panel-footer-back" onclick="showCartView('history')" style="margin-left:8px;">
-      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+    <button class="cat-panel-footer-back" onclick="showCartView('history')" style="margin-left:20px;">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       Historial
     </button>
     <button class="cart-clear-btn" id="cartClearBtn" onclick="clearCart()" style="margin-left:auto;">Limpiar</button>
@@ -4058,6 +4058,23 @@ let products = [];
 // Mostrar categorías de inmediato (vacías) para que la página no salga en blanco
 if (products.length === 0) renderGrid();
 
+// ── Persistencia del carrito ────────────────────────────────────────────
+function saveCart() {
+  try { localStorage.setItem('pm_cart', JSON.stringify(cart)); } catch(e) {}
+}
+
+(function restoreCart() {
+  try {
+    const saved = localStorage.getItem('pm_cart');
+    if (!saved) return;
+    const data = JSON.parse(saved);
+    if (Array.isArray(data) && data.length > 0) {
+      cart = data;
+      updateCartUI();
+    }
+  } catch(e) {}
+})();
+
 fetchProductsFromFirebase()
   .then(data => {
     products = data.filter(p => p.active !== false);
@@ -4113,6 +4130,7 @@ function addToCart(id, customMedida, qty) {
   const existing = cart.find(i => String(i.id) === String(id) && (i.customMedida || '') === medida);
   if (existing) existing.qty += n;
   else cart.push({ uid: `${id}_${Date.now()}`, id, qty: n, customMedida: medida });
+  saveCart();
   updateCartUI();
   showToast();
   checkDiscountQtyNotif();
@@ -4122,6 +4140,7 @@ function addToCart(id, customMedida, qty) {
 
 function removeFromCart(uid) {
   cart = cart.filter(i => i.uid !== uid);
+  saveCart();
   updateCartUI();
   renderGrid();
 }
@@ -4131,7 +4150,7 @@ function changeQty(uid, delta) {
   if (!item) return;
   item.qty += delta;
   if (item.qty <= 0) removeFromCart(uid);
-  else updateCartUI();
+  else { saveCart(); updateCartUI(); }
 }
 
 function getDiscountSettings() {
@@ -4294,6 +4313,7 @@ function hideCartDetail() {
 function clearCart() {
   if (cart.length === 0) return;
   cart = [];
+  saveCart();
   updateCartUI();
   renderGrid();
   _currentPanelProducts.forEach(p => refreshCatCard(p.id));
@@ -4677,6 +4697,7 @@ function buildOrderMsg() {
 
 function limpiarCarritoPostPedido() {
   cart = [];
+  saveCart();
   resetDiscountQtyNotif();
   _stopCartReminder();
   updateCartUI();
