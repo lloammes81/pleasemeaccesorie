@@ -1648,6 +1648,68 @@ textarea { resize: vertical; min-height: 80px; }
   border-radius:8px; overflow:hidden; box-shadow:0 24px 70px rgba(0,0,0,0.5);
   font-family:'Montserrat',sans-serif; font-size:13px;
 }
+
+/* Inputs de la factura siempre claros (sobreescribe tema oscuro del admin) */
+.factura-modal input,
+.factura-modal input[type=text],
+.factura-modal input[type=tel],
+.factura-modal input[type=number],
+.factura-modal select,
+.factura-modal textarea {
+  background: #fafafa !important;
+  color: #1a1a1a !important;
+  border-color: #e5e5e5 !important;
+}
+.factura-modal input::placeholder,
+.factura-modal textarea::placeholder { color: #bbb !important; }
+.factura-modal input:focus,
+.factura-modal select:focus { border-color: #C9973A !important; background: #fff !important; }
+
+/* ── TEMA OSCURO DE LA FACTURA ── */
+.factura-modal.fct-dark { background: #1a1610; color: #e8dcca; }
+.factura-modal.fct-dark .factura-body { background: #1a1610; }
+.factura-modal.fct-dark .factura-empresa-nombre { color: #e8dcca; }
+.factura-modal.fct-dark .factura-empresa-sub { color: #C9973A; }
+.factura-modal.fct-dark .factura-empresa-info { color: #8a7a62; }
+.factura-modal.fct-dark .factura-num-label { color: #6b5e4a; }
+.factura-modal.fct-dark .factura-fecha-val { color: #6b5e4a; }
+.factura-modal.fct-dark .factura-divider { border-top-color: #2e2719; }
+.factura-modal.fct-dark .factura-seccion-title { color: #C9973A; border-bottom-color: rgba(201,151,58,0.3); }
+.factura-modal.fct-dark .factura-field label { color: #6b5e4a; }
+.factura-modal.fct-dark input,
+.factura-modal.fct-dark input[type=text],
+.factura-modal.fct-dark input[type=tel],
+.factura-modal.fct-dark input[type=number],
+.factura-modal.fct-dark select,
+.factura-modal.fct-dark textarea {
+  background: #231f17 !important;
+  color: #f0e6d0 !important;
+  border-color: rgba(201,151,58,0.3) !important;
+}
+.factura-modal.fct-dark input::placeholder,
+.factura-modal.fct-dark textarea::placeholder { color: #5a4f3e !important; }
+.factura-modal.fct-dark input:focus,
+.factura-modal.fct-dark select:focus { border-color: #C9973A !important; background: #2e2819 !important; }
+.factura-modal.fct-dark .factura-items-table td { color: #c4a96a; border-bottom-color: #2e2719; }
+.factura-modal.fct-dark .factura-items-table tbody tr:nth-child(even) td { background: #211d15; }
+.factura-modal.fct-dark .factura-totales { background: #211d15; border-color: #2e2719; }
+.factura-modal.fct-dark .factura-total-fila { color: #c4a96a; border-bottom-color: #3e3520; }
+.factura-modal.fct-dark .factura-total-fila.grande { color: #e8dcca; border-top-color: #3e3520; }
+.factura-modal.fct-dark .factura-nota-final { background: #141009; border-top-color: rgba(201,151,58,0.2); color: #5a4f3e; }
+.factura-modal.fct-dark .factura-footer-bar { background: #111; border-top-color: rgba(201,151,58,0.2); }
+.factura-modal.fct-dark .factura-confirm-row { background: #1e1a13; border-color: rgba(201,151,58,0.2); }
+.factura-modal.fct-dark .factura-confirm-row label { color: #8a7a62; }
+.factura-modal.fct-dark .btn-fct-cancel { color: #6b5e4a; border-color: rgba(255,255,255,0.12); }
+.factura-modal.fct-dark .fct-dir-hint { color: #6b5e4a; }
+
+/* Botón tema en topbar */
+.btn-fct-theme {
+  background: none; border: 1px solid rgba(201,151,58,0.35); color: #E8C96D;
+  font-size: 14px; width: 32px; height: 32px; border-radius: 50%;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s; flex-shrink: 0;
+}
+.btn-fct-theme:hover { background: rgba(201,151,58,0.15); }
 .factura-topbar {
   background:#111; padding:12px 20px;
   display:flex; align-items:center; justify-content:space-between;
@@ -5392,7 +5454,10 @@ function mobGoTo(page) {
   <div class="factura-modal" id="facturaModal">
     <div class="factura-topbar">
       <span class="factura-topbar-title">FACTURA · RECIBO</span>
-      <button onclick="cerrarFactura()">✕ Cerrar</button>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="btn-fct-theme" id="fctThemeBtn" onclick="toggleFctTheme()" title="Cambiar tema">☀️</button>
+        <button onclick="cerrarFactura()">✕ Cerrar</button>
+      </div>
     </div>
     <div class="factura-gold-band"></div>
     <div class="factura-body" id="facturaBody">
@@ -5659,6 +5724,12 @@ function abrirFactura(docId) {
 
   document.getElementById('facturaOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
+  // Restaurar tema preferido de la factura
+  const modal  = document.getElementById('facturaModal');
+  const btn    = document.getElementById('fctThemeBtn');
+  const savedT = (() => { try { return localStorage.getItem('fct_theme'); } catch(e) { return null; } })();
+  if (savedT === 'dark') { modal.classList.add('fct-dark'); btn.textContent = '🌙'; }
+  else { modal.classList.remove('fct-dark'); btn.textContent = '☀️'; }
 }
 
 async function _detectarUbicacion() {
@@ -6417,29 +6488,40 @@ function _fctLlenarDesdeFactura(f) {
 }
 
 // ─── TELÉFONO: formato y detección de país ────────────────────────────────────
-function _fctTelInput(inp) {
-  let raw = inp.value.replace(/[^\d+]/g, '');
+function toggleFctTheme() {
+  const modal = document.getElementById('facturaModal');
+  const btn   = document.getElementById('fctThemeBtn');
+  const isDark = modal.classList.toggle('fct-dark');
+  btn.textContent = isDark ? '🌙' : '☀️';
+  try { localStorage.setItem('fct_theme', isDark ? 'dark' : 'light'); } catch(e) {}
+}
 
-  // Detectar país desde prefijo
-  const paisSel = document.getElementById('fct-cli-pais');
-  if (raw.startsWith('+')) {
-    const digits = raw.slice(1);
-    // DOM REP: +1 seguido de 809, 829, 849
-    if (/^1(809|829|849)/.test(digits)) {
-      if (paisSel.value !== 'DOM REP') { paisSel.value = 'DOM REP'; _fctPaisChange(); }
-    } else if (/^1/.test(digits)) {
-      if (paisSel.value !== 'USA') { paisSel.value = 'USA'; _fctPaisChange(); }
-    }
+function _fctTelInput(inp) {
+  const cursor = inp.selectionStart;
+  const before = inp.value.length;
+
+  // Solo permite: dígitos, +, espacios, guiones, paréntesis
+  const clean = inp.value.replace(/[^\d+\s\-\(\)]/g, '');
+  if (clean !== inp.value) {
+    inp.value = clean;
+    inp.setSelectionRange(cursor - 1, cursor - 1);
   }
 
-  // Formatear +1 XXXXXXXXXX → +1 XXX XXX XXXX
+  const raw = inp.value.replace(/[^\d+]/g, '');
+
+  // Detectar país desde prefijo numérico
+  const paisSel = document.getElementById('fct-cli-pais');
   if (raw.startsWith('+1')) {
-    const nums = raw.slice(2).replace(/\D/g,'').slice(0,10);
-    let fmt = '+1';
-    if (nums.length > 0) fmt += ' ' + nums.slice(0,3);
-    if (nums.length > 3) fmt += ' ' + nums.slice(3,6);
-    if (nums.length > 6) fmt += ' ' + nums.slice(6,10);
-    inp.value = fmt;
+    const digits = raw.slice(2);
+    if (/^(809|829|849)/.test(digits)) {
+      if (paisSel.value !== 'DOM REP') { paisSel.value = 'DOM REP'; _fctPaisChange(); }
+    } else {
+      if (paisSel.value !== 'USA') { paisSel.value = 'USA'; _fctPaisChange(); }
+    }
+  } else if (/^1(809|829|849)/.test(raw)) {
+    if (paisSel.value !== 'DOM REP') { paisSel.value = 'DOM REP'; _fctPaisChange(); }
+  } else if (/^1/.test(raw) && raw.length > 4) {
+    if (paisSel.value !== 'USA') { paisSel.value = 'USA'; _fctPaisChange(); }
   }
 }
 
