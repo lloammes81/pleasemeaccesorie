@@ -1628,6 +1628,9 @@ textarea { resize: vertical; min-height: 80px; }
 .pedido-items-table th { text-align:left; padding:4px 8px; color:var(--text-muted); border-bottom:1px solid var(--border); font-weight:500; }
 .pedido-items-table td { padding:5px 8px; border-bottom:1px solid var(--border); }
 .pedido-items-table tr:last-child td { border-bottom:none; }
+.pedido-item-thumb { width:44px; height:44px; object-fit:cover; border-radius:3px; cursor:zoom-in; border:1px solid var(--border); flex-shrink:0; transition:opacity 0.15s; }
+.pedido-item-thumb:hover { opacity:0.8; }
+.pedido-item-cell { display:flex; align-items:center; gap:8px; }
 .pedido-total-row { font-size:14px; font-weight:600; color:var(--gold); margin-top:8px; }
 .pedido-nota { font-size:11px; color:var(--text-muted); margin-top:6px; }
 .pedido-actions { display:flex; gap:8px; margin-top:12px; }
@@ -3113,7 +3116,7 @@ function renderPedidos(lista) {
     const nuevo = !p.leido;
     const itemsRows = (p.items || []).map(it =>
       `<tr>
-        <td>${it.name || '—'}</td>
+        <td><div class="pedido-item-cell">${it.photo ? `<img class="pedido-item-thumb" src="${it.photo}" alt="${it.name || ''}" onclick="abrirLightbox('${it.photo}')">` : ''}<span>${it.name || '—'}</span></div></td>
         <td>${it.category || ''}</td>
         <td style="text-align:center">${it.qty}</td>
         <td style="text-align:right">$${it.price || '—'}</td>
@@ -4800,6 +4803,16 @@ function cerrarLightbox() {
   document.body.style.overflow = '';
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarLightbox(); });
+(function() {
+  const lb = document.getElementById('pedidoLightbox');
+  let _tx = 0, _ty = 0;
+  lb.addEventListener('touchstart', e => { _tx = e.touches[0].clientX; _ty = e.touches[0].clientY; }, { passive: true });
+  lb.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - _tx;
+    const dy = e.changedTouches[0].clientY - _ty;
+    if (Math.abs(dx) > 55 || Math.abs(dy) > 55) cerrarLightbox();
+  }, { passive: true });
+})();
 </script>
 
 </body>

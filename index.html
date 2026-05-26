@@ -404,7 +404,7 @@
   /* ─── LANGUAGE TOGGLE ─── */
   #langToggle {
     position: fixed;
-    top: 12px; right: 12px;
+    top: 28px; right: 12px;
     z-index: 10000;
     display: flex;
     gap: 1px;
@@ -1448,7 +1448,8 @@
   .hist-pedido-hdr { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
   .hist-num { font-family:'Cinzel',serif; font-size:9px; letter-spacing:2px; color:var(--gold-light); }
   .hist-fecha { font-size:10px; color:var(--text-muted); }
-  .hist-item { display:flex; gap:8px; align-items:baseline; padding:4px 0; border-bottom:1px solid rgba(201,151,58,0.07); }
+  .hist-item { display:flex; gap:8px; align-items:center; padding:6px 0; border-bottom:1px solid rgba(201,151,58,0.07); }
+  .hist-item-img { width:38px; height:38px; object-fit:cover; border-radius:3px; flex-shrink:0; border:1px solid rgba(201,151,58,0.2); }
   .hist-item:last-of-type { border-bottom:none; }
   .hist-item-name { flex:1; font-family:'Cormorant Garamond',serif; font-size:14px; color:var(--text-cream); }
   .hist-item-qty  { font-size:10px; color:var(--text-muted); }
@@ -3472,10 +3473,6 @@
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
         <span data-i18n="mySelection">Mi Selección</span>
       </button>
-      <button class="cart-tab" id="tabHistorial" onclick="showCartView('history')">
-        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
-        <span data-i18n="myPurchases">Mis compras</span>
-      </button>
     </div>
     <button class="cart-close-btn" onclick="closeCart()">×</button>
   </div>
@@ -3508,6 +3505,10 @@
     <button class="cat-panel-footer-back" onclick="closeCart()">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
       Catálogo
+    </button>
+    <button class="cat-panel-footer-back" onclick="showCartView('history')" style="margin-left:8px;">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+      Historial
     </button>
     <button class="cart-clear-btn" id="cartClearBtn" onclick="clearCart()" style="margin-left:auto;">Limpiar</button>
   </div>
@@ -4782,7 +4783,7 @@ async function guardarPedidoFirebase(numero, canvas) {
     const final   = (disc ? Math.round(_fbReg * (1 - ds.pct / 100)) : _fbReg) + _fbFix;
     const items   = cart.map(item => {
       const p = products.find(x => String(x.id) === String(item.id));
-      return p ? { name: p.name, category: p.categoryLabel, qty: item.qty, price: p.price } : null;
+      return p ? { name: p.name, category: p.categoryLabel, qty: item.qty, price: p.price, photo: p.photo || null } : null;
     }).filter(Boolean);
 
     let imgUrl = null;
@@ -6048,7 +6049,7 @@ function guardarPedidoLocal(numero) {
     const total = (disc ? Math.round(regular * (1 - ds.pct / 100)) : regular) + fixed;
     const items = cart.map(item => {
       const p = products.find(x => String(x.id) === String(item.id));
-      return p ? { name: p.name, qty: item.qty, price: p.price } : null;
+      return p ? { name: p.name, qty: item.qty, price: p.price, photo: p.photo || null } : null;
     }).filter(Boolean);
     _histDB.guardar({ numero, fecha: new Date().toISOString(), items, total, descuento: disc ? ds.pct : 0 });
   } catch(e) {}
@@ -6063,12 +6064,12 @@ function showCartView(view) {
     cartBody.style.display = '';
     histBody.style.display = 'none';
     tabCart.classList.add('active');
-    tabHist.classList.remove('active');
+    if (tabHist) tabHist.classList.remove('active');
   } else {
     cartBody.style.display = 'none';
     histBody.style.display = '';
     tabCart.classList.remove('active');
-    tabHist.classList.add('active');
+    if (tabHist) tabHist.classList.add('active');
     _renderHistorialEnCarrito();
   }
 }
@@ -6088,6 +6089,7 @@ async function _renderHistorialEnCarrito() {
       const fecha = new Date(p.fecha).toLocaleDateString(loc, { day:'2-digit', month:'long', year:'numeric' });
       const items = (p.items || []).map(it => `
         <div class="hist-item">
+          ${it.photo ? `<img class="hist-item-img" src="${it.photo}" alt="${it.name}">` : ''}
           <span class="hist-item-name">${it.name}</span>
           <span class="hist-item-qty">×${it.qty}</span>
           <span class="hist-item-price">$${(Math.round(parseFloat(it.price)) * it.qty).toLocaleString(loc)}</span>
