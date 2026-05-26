@@ -1709,6 +1709,20 @@ textarea { resize: vertical; min-height: 80px; }
 .btn-fct-print:hover { background:linear-gradient(135deg,#b08530,#9a7428); }
 .btn-fct-cancel { background:transparent; color:#999; border:1px solid #ddd; }
 .btn-fct-cancel:hover { border-color:#bbb; color:#666; }
+.btn-fct-wa { background:linear-gradient(135deg,#25D366,#1da851); color:#fff; border:none; box-shadow:0 2px 8px rgba(37,211,102,0.3); display:flex; align-items:center; gap:6px; }
+.btn-fct-wa:hover { background:linear-gradient(135deg,#1da851,#128c3e); }
+
+/* ─── TOGGLE NOTIF ─── */
+.notif-toggle-wrap { display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid rgba(201,151,58,0.12); }
+.notif-toggle-wrap:last-child { border-bottom:none; }
+.notif-toggle-label { font-family:'Cinzel',serif; font-size:10px; letter-spacing:1px; color:var(--text-main); }
+.notif-toggle-sub { font-size:9px; color:var(--text-muted); margin-top:3px; }
+.toggle-switch { position:relative; width:40px; height:22px; flex-shrink:0; }
+.toggle-switch input { opacity:0; width:0; height:0; }
+.toggle-slider { position:absolute; cursor:pointer; inset:0; background:#ccc; border-radius:22px; transition:.3s; }
+.toggle-slider:before { content:''; position:absolute; height:16px; width:16px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:.3s; }
+.toggle-switch input:checked + .toggle-slider { background:linear-gradient(135deg,#C9973A,#b08530); }
+.toggle-switch input:checked + .toggle-slider:before { transform:translateX(18px); }
 
 /* ─── PÁGINA REALIZADOS ─── */
 .realizados-filtros { display:flex; gap:10px; align-items:center; margin-bottom:20px; flex-wrap:wrap; }
@@ -2776,6 +2790,23 @@ textarea { resize: vertical; min-height: 80px; }
           </div>
         </div>
 
+        <!-- ── Notificaciones ── -->
+        <div class="section-card" style="margin-top:24px;">
+          <div class="section-title">Notificaciones</div>
+          <div class="contact-form" style="max-width:480px">
+            <div class="notif-toggle-wrap">
+              <div>
+                <div class="notif-toggle-label">Activar notificaciones</div>
+                <div class="notif-toggle-sub">Alertas de pedidos en el navegador y sonido</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggleNotifEnabled" onchange="_guardarToggleNotif(this.checked)">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
         <!-- ── Firebase Connection ── -->
         <div class="section-card" style="margin-top:24px;">
           <div class="section-title">Base de datos · Firebase</div>
@@ -3432,7 +3463,7 @@ function goTo(page) {
   if (page === 'banner') { loadBanner(); loadDiscount(); }
   if (page === 'visitas') loadVisitas();
   if (page === 'info') { loadCatalogInfo(); renderInfoTable(); loadWatermarkConfig(); }
-  if (page === 'config')   { fillCloudinaryForm(); setTimeout(() => _aplicarBloqueosSeccion('config'), 80); }
+  if (page === 'config')   { fillCloudinaryForm(); _initToggleNotifUI(); setTimeout(() => _aplicarBloqueosSeccion('config'), 80); }
   if (page === 'contacto') { fillContactForm();    setTimeout(() => _aplicarBloqueosSeccion('contacto'), 80); }
   if (page === 'pedidos') loadPedidos();
   if (page === 'realizados') loadRealizados();
@@ -5112,6 +5143,7 @@ async function init() {
   setTimeout(checkSupabaseConnection, 1500);
   fillContactForm();
   fillCloudinaryForm();
+  _initToggleNotifUI();
   checkCloudinaryConfig();
   autoConnectCloudinary();
   loadBanner();
@@ -5164,7 +5196,7 @@ async function _initNotificaciones() {
 
 function _mostrarNotifPedido(p) {
   _notifCount++;
-  // Badge en la campana
+  // Badge en la campana (always visible regardless of toggle)
   const badge = document.getElementById('notifBadge');
   if (badge) { badge.textContent = _notifCount; badge.classList.add('visible'); }
   // Badge en nav-pedidos
@@ -5178,6 +5210,9 @@ function _mostrarNotifPedido(p) {
     const b = navPed.querySelector('.notif-badge');
     if (b) { b.textContent = _notifCount; b.classList.add('visible'); }
   }
+  if (!_notifEnabled()) return;
+  // Sonido moneda
+  _playNotifSound();
   // Notificación del navegador
   if ('Notification' in window && Notification.permission === 'granted') {
     const nom = (p.nombre || p.cliente || 'Cliente');
@@ -5213,10 +5248,92 @@ function _mostrarToastPedido(p) {
   setTimeout(() => { if (div.parentNode) div.remove(); }, 15000);
 }
 
+function _notifEnabled() {
+  return localStorage.getItem('pm_notif_enabled') !== 'false';
+}
+
+function _guardarToggleNotif(val) {
+  localStorage.setItem('pm_notif_enabled', val ? 'true' : 'false');
+  showToast(val ? '🔔 Notificaciones activadas' : '🔕 Notificaciones desactivadas');
+}
+
+function _initToggleNotifUI() {
+  const el = document.getElementById('toggleNotifEnabled');
+  if (el) el.checked = _notifEnabled();
+}
+
+function _playNotifSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const tones = [880, 1100, 1320];
+    tones.forEach((freq, i) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const t = ctx.currentTime + i * 0.1;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.4, t + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+      osc.start(t);
+      osc.stop(t + 0.2);
+    });
+  } catch(e) { /* AudioContext not available */ }
+}
+
 function _notificarCambioAdmin(msg) {
+  if (!_notifEnabled()) return;
   if ('Notification' in window && Notification.permission === 'granted') {
     new Notification('⚙ Pleaseme Admin · Cambio guardado', { body: msg, icon: 'logo.png' });
   }
+}
+
+function compartirFacturaWhatsApp() {
+  const nombre  = document.getElementById('fct-cli-nombre').value.trim();
+  const tel     = document.getElementById('fct-cli-tel').value.trim();
+  const dir     = document.getElementById('fct-cli-dir').value.trim();
+  const ciudad  = document.getElementById('fct-env-ciudad').value.trim();
+  const zip     = document.getElementById('fct-env-zip').value.trim();
+  const estado  = _fctGetEstadoValor();
+  const pais    = document.getElementById('fct-cli-pais').value.trim();
+  const lock    = document.getElementById('fct-cli-locker').value.trim();
+  const ref     = document.getElementById('fct-env-ref').value.trim();
+  const totalEl = document.getElementById('fct-total');
+  const total   = totalEl ? totalEl.textContent : '—';
+
+  const pedidoDoc = _pedidos.find(p => p._docId === _facturaCurrentPedidoId)
+    || _realizados.find(p => p._docId === _facturaCurrentPedidoId) || {};
+  let itemsText = '';
+  (pedidoDoc.items || []).forEach(it => {
+    const unit = Math.round(parseFloat(it.price)) || 0;
+    itemsText += `  • ${it.name || '—'} x${it.qty || 1} — $${(unit * (it.qty || 1)).toLocaleString()}\n`;
+  });
+  const numero = pedidoDoc.numero || _facturaCurrentPedidoId || '—';
+
+  let msg = `🛍 *Pleaseme Accessories* · Factura #${numero}\n`;
+  msg += `━━━━━━━━━━━━━━━━━━\n`;
+  msg += `👤 *Cliente:* ${nombre || '—'}\n`;
+  if (tel)    msg += `📞 *Tel:* ${tel}\n`;
+  if (dir)    msg += `🏠 *Dir:* ${dir}\n`;
+  if (ciudad) msg += `🏙 *Ciudad:* ${ciudad}${zip ? ' ZIP: '+zip : ''}\n`;
+  if (estado) msg += `📍 *Estado:* ${estado}\n`;
+  if (pais)   msg += `🌎 *País:* ${pais}\n`;
+  if (lock)   msg += `🔒 *Lock Num:* ${lock}\n`;
+  if (ref)    msg += `📋 *Ref:* ${ref}\n`;
+  msg += `━━━━━━━━━━━━━━━━━━\n`;
+  if (itemsText) msg += itemsText;
+  msg += `━━━━━━━━━━━━━━━━━━\n`;
+  msg += `💰 *Total: ${total}*\n`;
+  msg += `\n✨ Gracias por tu compra · Cada pieza, una historia`;
+
+  // Use client phone if available, otherwise open blank wa.me
+  const rawTel = tel.replace(/\D/g, '');
+  const waUrl  = rawTel
+    ? `https://wa.me/${rawTel}?text=${encodeURIComponent(msg)}`
+    : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  window.open(waUrl, '_blank');
 }
 
 // ─── AUTO-DETECTAR UBICACIÓN (contacto) ──────────────────────────────────────
@@ -5494,6 +5611,10 @@ function mobGoTo(page) {
     </div>
     <div class="factura-footer-bar">
       <button class="btn-fct-cancel" onclick="cerrarFactura()">Cancelar</button>
+      <button class="btn-fct-wa" onclick="compartirFacturaWhatsApp()">
+        <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.118 1.528 5.843L0 24l6.335-1.484A11.93 11.93 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.795 9.795 0 0 1-5.012-1.374l-.36-.214-3.732.875.936-3.636-.235-.374A9.795 9.795 0 0 1 2.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/></svg>
+        Enviar por WhatsApp
+      </button>
       <button class="btn-fct-print" onclick="imprimirFactura()">
         &#128438; Imprimir / Guardar PDF
       </button>
