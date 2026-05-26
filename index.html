@@ -4783,7 +4783,7 @@ async function guardarPedidoFirebase(numero, canvas) {
     const final   = (disc ? Math.round(_fbReg * (1 - ds.pct / 100)) : _fbReg) + _fbFix;
     const items   = cart.map(item => {
       const p = products.find(x => String(x.id) === String(item.id));
-      return p ? { name: p.name, category: p.categoryLabel, qty: item.qty, price: p.price } : null;
+      return p ? { name: p.name, category: p.categoryLabel, qty: item.qty, price: p.price, photo: p.photo || null } : null;
     }).filter(Boolean);
 
     let imgUrl = null;
