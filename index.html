@@ -5495,29 +5495,62 @@ function cartTotalRaw() {
   let pointers=[], startDist=0, lastScale=1;
   let panStartX=0, panStartY=0, startMidX=0, startMidY=0;
   let lastTap=0, isPanning=false;
+  let swipeStartY=0, swipeDy=0, isSwiping=false;
+  const SWIPE_CLOSE=85;
 
   function clamp(v,mn,mx){ return Math.min(mx,Math.max(mn,v)); }
-  function applyT(){
+
+  function applyT(instant){
     const img=document.getElementById('imgViewerImg');
-    if(img) img.style.transform=`translate(${panX}px,${panY}px) scale(${scale})`;
+    if(!img) return;
+    if(instant) img.style.transition='none';
+    img.style.transform=`translate(${panX}px,${panY}px) scale(${scale})`;
   }
-  function resetT(){ scale=1; panX=0; panY=0; applyT(); }
+
+  function resetT(animated){
+    const img=document.getElementById('imgViewerImg');
+    scale=1; panX=0; panY=0;
+    if(!img) return;
+    if(animated){ img.style.transition='transform 0.25s ease'; }
+    else { img.style.transition='none'; }
+    img.style.transform='translate(0,0) scale(1)';
+    setTimeout(()=>{ if(img) img.style.transition=''; },300);
+  }
+
+  function applySwipe(dy){
+    const img=document.getElementById('imgViewerImg');
+    const ov=document.getElementById('imgViewerOverlay');
+    if(!img||!ov) return;
+    img.style.transition='none';
+    img.style.transform=`translateY(${dy}px) scale(1)`;
+    ov.style.opacity=String(clamp(1-Math.abs(dy)/180,0.15,1));
+  }
+
+  function snapBack(){
+    const img=document.getElementById('imgViewerImg');
+    const ov=document.getElementById('imgViewerOverlay');
+    if(img){ img.style.transition='transform 0.25s ease'; img.style.transform='translate(0,0) scale(1)'; setTimeout(()=>{ if(img) img.style.transition=''; },300); }
+    if(ov){ ov.style.transition='opacity 0.25s ease'; ov.style.opacity='1'; setTimeout(()=>{ ov.style.transition=''; },300); }
+  }
 
   window.openImgViewer=function(src){
     if(!src) return;
     const img=document.getElementById('imgViewerImg');
     const ov=document.getElementById('imgViewerOverlay');
-    img.src=src; resetT();
+    img.src=src; resetT(false);
+    ov.style.opacity=''; ov.style.transition='';
     ov.classList.add('open');
     document.body.style.overflow='hidden';
   };
+
   window.closeImgViewer=function(){
     const ov=document.getElementById('imgViewerOverlay');
-    if(ov) ov.classList.remove('open');
+    if(ov){ ov.classList.remove('open'); ov.style.opacity=''; ov.style.transition=''; }
     document.body.style.overflow='';
     const img=document.getElementById('imgViewerImg');
-    if(img){ resetT(); setTimeout(()=>{ img.src=''; },300); }
+    if(img){ resetT(false); setTimeout(()=>{ img.src=''; },300); }
   };
+
   window._catImgClick=function(el){
     const img=el.querySelector('img');
     if(img&&img.src) openImgViewer(img.src);
@@ -5538,13 +5571,14 @@ function cartTotalRaw() {
       pointers.push({id:e.pointerId,x:e.clientX,y:e.clientY});
       if(pointers.length===1){
         const now=Date.now();
-        if(now-lastTap<280){ scale>1?resetT():(()=>{scale=2.5;applyT();})(); }
+        if(now-lastTap<280){ scale>1?resetT(true):(()=>{ scale=2.5; applyT(true); })(); }
         lastTap=now;
         panStartX=panX; panStartY=panY;
         startMidX=e.clientX; startMidY=e.clientY;
+        swipeStartY=e.clientY; swipeDy=0; isSwiping=false;
         isPanning=true;
       } else if(pointers.length===2){
-        isPanning=false;
+        isPanning=false; isSwiping=false;
         startDist=Math.hypot(pointers[1].x-pointers[0].x,pointers[1].y-pointers[0].y);
         lastScale=scale;
       }
@@ -5556,18 +5590,30 @@ function cartTotalRaw() {
       if(idx<0) return;
       pointers[idx]={id:e.pointerId,x:e.clientX,y:e.clientY};
       if(pointers.length===2){
+        isSwiping=false;
         const d=Math.hypot(pointers[1].x-pointers[0].x,pointers[1].y-pointers[0].y);
         scale=clamp(lastScale*(d/startDist),1,6);
         if(scale===1){panX=0;panY=0;}
-        applyT();
-      } else if(pointers.length===1&&isPanning&&scale>1){
-        panX=panStartX+(e.clientX-startMidX);
-        panY=panStartY+(e.clientY-startMidY);
-        applyT();
+        applyT(true);
+      } else if(pointers.length===1&&isPanning){
+        if(scale===1){
+          swipeDy=e.clientY-swipeStartY;
+          isSwiping=true;
+          applySwipe(swipeDy);
+        } else {
+          panX=panStartX+(e.clientX-startMidX);
+          panY=panStartY+(e.clientY-startMidY);
+          applyT(true);
+        }
       }
     });
 
     function onUp(e){
+      if(isSwiping){
+        if(Math.abs(swipeDy)>SWIPE_CLOSE){ closeImgViewer(); }
+        else { snapBack(); }
+        isSwiping=false; swipeDy=0;
+      }
       pointers=pointers.filter(p=>p.id!==e.pointerId);
       if(pointers.length<2){ lastScale=scale; startDist=0; panStartX=panX; panStartY=panY; isPanning=pointers.length===1; }
     }
@@ -5578,7 +5624,7 @@ function cartTotalRaw() {
       e.preventDefault();
       scale=clamp(scale*(e.deltaY<0?1.15:0.87),1,6);
       if(scale===1){panX=0;panY=0;}
-      applyT();
+      applyT(true);
     },{passive:false});
   });
 })();
