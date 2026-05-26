@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20260323-1';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20260526-2';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -1828,6 +1828,10 @@ textarea { resize: vertical; min-height: 80px; }
         <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
         Pedidos Realizados
       </button>
+      <button class="nav-item" onclick="goTo('facturas')" id="nav-facturas">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Facturas Procesadas
+      </button>
       <button class="nav-item" onclick="goTo('config')" id="nav-config">
         <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
         Configuración
@@ -2526,6 +2530,20 @@ textarea { resize: vertical; min-height: 80px; }
       <div id="realizadosLista"><p class="pedidos-empty">Cargando…</p></div>
     </div>
 
+    <!-- PAGE: FACTURAS PROCESADAS -->
+    <div class="page" id="page-facturas">
+      <div class="realizados-filtros">
+        <span class="realizados-badge" style="background:rgba(201,151,58,0.12);border-color:rgba(201,151,58,0.4);color:#C9973A;">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Facturas generadas
+        </span>
+        <input class="pedidos-search" id="facturasSearch" type="text"
+          placeholder="Buscar por número de factura o cliente…" oninput="filtrarFacturas()">
+        <button class="btn" onclick="loadFacturas()" style="white-space:nowrap">↺ Actualizar</button>
+      </div>
+      <div id="facturasLista"><p class="pedidos-empty">Cargando facturas…</p></div>
+    </div>
+
     <!-- PAGE: CONFIGURACIÓN -->
     <div class="page" id="page-config">
       <div class="contact-grid">
@@ -3176,7 +3194,7 @@ function goTo(page) {
   document.getElementById('page-' + page).classList.add('active');
   document.getElementById('nav-' + page).classList.add('active');
 
-  const titles = { productos: 'Productos', contacto: 'Información de contacto', banner: 'Banner de anuncio', visitas: 'Visitas al catálogo', info: 'Información del catálogo', config: 'Configuración · API Keys', pedidos: 'Pedidos de clientes', realizados: 'Pedidos Realizados', ofertas: 'Ofertas de temporada' };
+  const titles = { productos: 'Productos', contacto: 'Información de contacto', banner: 'Banner de anuncio', visitas: 'Visitas al catálogo', info: 'Información del catálogo', config: 'Configuración · API Keys', pedidos: 'Pedidos de clientes', realizados: 'Pedidos Realizados', facturas: 'Facturas Procesadas', ofertas: 'Ofertas de temporada' };
   document.getElementById('topbarTitle').textContent = titles[page] || '';
 
   const topAction = document.getElementById('topbarAction');
@@ -3186,6 +3204,7 @@ function goTo(page) {
   if (page === 'config') fillCloudinaryForm();
   if (page === 'pedidos') loadPedidos();
   if (page === 'realizados') loadRealizados();
+  if (page === 'facturas') loadFacturas();
   if (page === 'ofertas') loadOfertas();
   if (page === 'productos') {
     topAction.style.display = '';
@@ -5105,6 +5124,7 @@ function mobGoTo(page) {
 function abrirFactura(docId) {
   const p = _pedidos.find(x => x._docId === docId) || _realizados.find(x => x._docId === docId);
   if (!p) return;
+  _facturaCurrentPedidoId = docId;
   const loc = 'es-CO';
   const c = contact || {};
 
@@ -5188,8 +5208,186 @@ function cerrarFactura() {
   document.body.style.overflow = '';
 }
 
-function imprimirFactura() {
+async function imprimirFactura() {
+  await guardarFacturaProcesada();
   window.print();
+}
+
+async function guardarFacturaProcesada() {
+  try {
+    const docId = _facturaCurrentPedidoId;
+    if (!docId) return;
+    const p = _pedidos.find(x => x._docId === docId) || _realizados.find(x => x._docId === docId);
+    if (!p) return;
+    const factura = {
+      numero:    p.numero || '—',
+      fecha:     firebase.firestore.FieldValue.serverTimestamp(),
+      pedido_id: docId,
+      pedido_numero: p.numero || '—',
+      items:     p.items || [],
+      subtotal:  p.subtotal || 0,
+      total:     p.total_final || p.total || 0,
+      descuento: p.descuento || 0,
+      cliente: {
+        nombre:  document.getElementById('fct-cli-nombre').value.trim(),
+        tel:     document.getElementById('fct-cli-tel').value.trim(),
+        direccion: document.getElementById('fct-cli-dir').value.trim(),
+        locker:  document.getElementById('fct-cli-locker').value.trim(),
+        pais:    document.getElementById('fct-cli-pais').value.trim()
+      },
+      envio: {
+        ciudad:    document.getElementById('fct-env-ciudad').value.trim(),
+        estado:    document.getElementById('fct-env-estado').value.trim(),
+        referencia: document.getElementById('fct-env-ref').value.trim(),
+        confirmado_internet: document.getElementById('fct-confirm-internet').checked
+      }
+    };
+    await _db.collection('facturas_procesadas').add(factura);
+  } catch(e) { console.warn('No se pudo guardar la factura:', e.message); }
+}
+
+let _facturaCurrentPedidoId = null;
+let _facturas = [];
+
+async function loadFacturas() {
+  const lista = document.getElementById('facturasLista');
+  if (!lista) return;
+  lista.innerHTML = '<p class="pedidos-empty">Cargando facturas…</p>';
+  try {
+    const snap = await _db.collection('facturas_procesadas').orderBy('fecha','desc').limit(200).get();
+    _facturas = snap.docs.map(doc => ({ _docId: doc.id, ...doc.data() }));
+    renderFacturas(_facturas);
+  } catch(e) {
+    lista.innerHTML = '<p class="pedidos-empty">Error al cargar: ' + e.message + '</p>';
+  }
+}
+
+function renderFacturas(lista) {
+  const el = document.getElementById('facturasLista');
+  if (!el) return;
+  if (!lista.length) {
+    el.innerHTML = '<p class="pedidos-empty">Aún no hay facturas procesadas.</p>';
+    return;
+  }
+  el.innerHTML = lista.map(f => {
+    const fecha = f.fecha ? new Date(f.fecha.seconds * 1000).toLocaleString('es-CO', { dateStyle:'short', timeStyle:'short' }) : '—';
+    const total = Number(f.total || 0).toLocaleString('es-CO');
+    const cliente = (f.cliente && f.cliente.nombre) ? f.cliente.nombre : '<em style="color:#888">Sin nombre</em>';
+    const tel  = (f.cliente && f.cliente.tel) ? f.cliente.tel : '—';
+    const dir  = (f.cliente && f.cliente.direccion) ? f.cliente.direccion : '—';
+    const ciudad = (f.envio && f.envio.ciudad) ? f.envio.ciudad : '—';
+    const estado = (f.envio && f.envio.estado) ? f.envio.estado : '';
+    const pais   = (f.cliente && f.cliente.pais) ? f.cliente.pais : '';
+    const locker = (f.cliente && f.cliente.locker) ? f.cliente.locker : '';
+    return `
+      <div class="pedido-card" id="fcard-${f._docId}" style="border-color:rgba(201,151,58,0.3);">
+        <div class="pedido-card-head" onclick="toggleFactura('${f._docId}')">
+          <span class="pedido-numero">${f.pedido_numero || f.numero || '—'}</span>
+          <span style="font-size:9px;letter-spacing:1px;color:#C9973A;background:rgba(201,151,58,0.1);border:1px solid rgba(201,151,58,0.3);padding:2px 8px;border-radius:10px;">FACTURA</span>
+          <span class="pedido-fecha">${fecha}</span>
+          <span class="pedido-total-head">$${total}</span>
+          <svg class="pedido-arrow" id="farrow-${f._docId}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="pedido-body" id="fbody-${f._docId}">
+          <div></div>
+          <div>
+            <p style="font-size:11px;color:var(--text-muted);margin-bottom:6px;letter-spacing:1px;text-transform:uppercase;">Cliente</p>
+            <p style="font-size:13px;margin:0 0 4px;color:var(--text);"><strong>${cliente}</strong></p>
+            <p style="font-size:11px;color:var(--text-muted);margin:0 0 2px;">📱 ${tel}</p>
+            <p style="font-size:11px;color:var(--text-muted);margin:0 0 2px;">📍 ${dir}${locker ? ' · '+locker : ''}</p>
+            <p style="font-size:11px;color:var(--text-muted);margin:0 0 10px;">🌐 ${ciudad}${estado ? ', '+estado : ''}${pais ? ' · '+pais : ''}</p>
+            <p style="font-size:11px;color:var(--text-muted);margin-bottom:6px;letter-spacing:1px;text-transform:uppercase;">Artículos (${(f.items||[]).length})</p>
+            <table class="pedido-items-table">
+              <thead><tr><th>Artículo</th><th style="text-align:center">Cant.</th><th style="text-align:right">Precio</th></tr></thead>
+              <tbody>${(f.items||[]).map(it => `<tr><td>${it.name||'—'}</td><td style="text-align:center">${it.qty}</td><td style="text-align:right">$${it.price||'—'}</td></tr>`).join('')}</tbody>
+            </table>
+            <p class="pedido-total-row">Total: $${total}</p>
+            <div class="pedido-actions">
+              <button class="btn btn-primary" style="font-size:11px;padding:5px 14px;display:flex;align-items:center;gap:6px;" onclick="reabrirFactura('${f._docId}')">
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Ver / Reimprimir
+              </button>
+              <button class="btn" style="font-size:11px;padding:5px 12px" onclick="eliminarFactura('${f._docId}')">Eliminar</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleFactura(docId) {
+  const body  = document.getElementById('fbody-'  + docId);
+  const arrow = document.getElementById('farrow-' + docId);
+  if (!body) return;
+  const open = body.classList.toggle('open');
+  arrow.style.transform = open ? 'rotate(180deg)' : '';
+}
+
+function filtrarFacturas() {
+  const q = (document.getElementById('facturasSearch').value || '').toLowerCase().trim();
+  if (!q) { renderFacturas(_facturas); return; }
+  renderFacturas(_facturas.filter(f => {
+    const num = (f.pedido_numero || f.numero || '').toLowerCase();
+    const nom = (f.cliente && f.cliente.nombre || '').toLowerCase();
+    return num.includes(q) || nom.includes(q);
+  }));
+}
+
+async function eliminarFactura(docId) {
+  if (!confirm('¿Eliminar esta factura del historial?')) return;
+  await _db.collection('facturas_procesadas').doc(docId).delete();
+  _facturas = _facturas.filter(f => f._docId !== docId);
+  renderFacturas(_facturas);
+}
+
+function reabrirFactura(docId) {
+  const f = _facturas.find(x => x._docId === docId);
+  if (!f) return;
+  const loc = 'es-CO';
+  const c = contact || {};
+  const infoLines = [
+    c.whatsapp ? '📱 ' + c.whatsapp : '',
+    c.email    ? '✉ '  + c.email    : '',
+    c.web      ? '🌐 ' + c.web      : '',
+    c.city     ? '📍 ' + c.city     : '',
+    c.address  ? c.address           : '',
+    c.hours    ? '🕐 ' + c.hours    : ''
+  ].filter(Boolean);
+  document.getElementById('fct-empresa-info').innerHTML = infoLines.join('<br>');
+  document.getElementById('fct-numero').textContent = f.pedido_numero || f.numero || '—';
+  const fechaStr = f.fecha
+    ? new Date(f.fecha.seconds * 1000).toLocaleDateString('es-CO', { day:'2-digit', month:'long', year:'numeric' })
+    : new Date().toLocaleDateString('es-CO', { day:'2-digit', month:'long', year:'numeric' });
+  document.getElementById('fct-fecha').textContent = fechaStr;
+  const rows = (f.items || []).map(it => {
+    const unit = Math.round(parseFloat(it.price)) || 0;
+    const sub  = unit * (it.qty || 1);
+    return `<tr><td>${it.name||'—'}</td><td>${it.category||''}</td><td style="text-align:center">${it.qty}</td><td style="text-align:right">$${unit.toLocaleString(loc)}</td><td style="text-align:right">$${sub.toLocaleString(loc)}</td></tr>`;
+  }).join('');
+  document.getElementById('fct-items-body').innerHTML = rows;
+  document.getElementById('fct-total').textContent = '$' + Number(f.total||0).toLocaleString(loc);
+  if (f.subtotal && f.subtotal !== f.total && f.descuento) {
+    document.getElementById('fct-subtotal-row').style.display = '';
+    document.getElementById('fct-subtotal-val').textContent = '$' + Number(f.subtotal).toLocaleString(loc);
+    document.getElementById('fct-desc-row').style.display = '';
+    document.getElementById('fct-descuento-pct').textContent = f.descuento;
+    document.getElementById('fct-desc-val').textContent = '-$' + (Number(f.subtotal) - Number(f.total)).toLocaleString(loc);
+  } else {
+    document.getElementById('fct-subtotal-row').style.display = 'none';
+    document.getElementById('fct-desc-row').style.display = 'none';
+  }
+  document.getElementById('fct-cli-nombre').value = (f.cliente && f.cliente.nombre) || '';
+  document.getElementById('fct-cli-tel').value    = (f.cliente && f.cliente.tel) || '';
+  document.getElementById('fct-cli-dir').value    = (f.cliente && f.cliente.direccion) || '';
+  document.getElementById('fct-cli-locker').value = (f.cliente && f.cliente.locker) || '';
+  document.getElementById('fct-cli-pais').value   = (f.cliente && f.cliente.pais) || '';
+  document.getElementById('fct-env-ciudad').value = (f.envio && f.envio.ciudad) || '';
+  document.getElementById('fct-env-estado').value = (f.envio && f.envio.estado) || '';
+  document.getElementById('fct-env-ref').value    = (f.envio && f.envio.referencia) || '';
+  document.getElementById('fct-confirm-internet').checked = !!(f.envio && f.envio.confirmado_internet);
+  _facturaCurrentPedidoId = f.pedido_id;
+  document.getElementById('facturaOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
 }
 
 document.getElementById('facturaOverlay').addEventListener('click', function(e) {
