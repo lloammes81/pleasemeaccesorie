@@ -1811,6 +1811,26 @@ textarea { resize: vertical; min-height: 80px; }
   font-size:9px;letter-spacing:1px;color:#c0392b;background:rgba(192,57,43,0.1);
   border:1px solid rgba(192,57,43,0.3);padding:2px 8px;border-radius:10px;font-weight:600;
 }
+/* ─── OVERLAY BLOQUEO DE SECCIÓN ─── */
+.cfg-lock-overlay {
+  position:absolute; inset:0; z-index:50;
+  background:rgba(10,9,7,0.82); backdrop-filter:blur(3px);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:10px; border-radius:inherit;
+}
+.cfg-lock-icon { color:#C9973A; opacity:0.9; }
+.cfg-lock-text {
+  color:#E8C96D; font-size:10px; letter-spacing:3px;
+  font-family:'Cinzel',serif; text-transform:uppercase;
+}
+.cfg-lock-btn {
+  background:linear-gradient(135deg,#C9973A,#b08530); border:none; color:#fff;
+  font-family:'Cinzel',serif; font-size:9.5px; letter-spacing:2px;
+  padding:9px 22px; border-radius:4px; cursor:pointer;
+  box-shadow:0 2px 10px rgba(201,151,58,0.35); transition:all 0.2s;
+  margin-top:4px;
+}
+.cfg-lock-btn:hover { background:linear-gradient(135deg,#b08530,#9a7428); transform:translateY(-1px); }
 /* Hint de dirección desde ZIP */
 .fct-dir-hint {
   font-size:10.5px;color:#2e8b57;background:#f0faf4;border:1px solid rgba(46,139,87,0.25);
@@ -3185,23 +3205,54 @@ async function loadConfig() {
 function loadContact() { /* cargado por loadConfig() */ }
 
 async function saveContact(section) {
-  // Asegurarse de tener los datos más recientes de la BD antes de guardar
-  if (!contact || Object.keys(contact).length === 0) await loadConfig();
-  const fields = {
-    whatsapp:  ['whatsapp', 'wa_msg', 'share_msg'],
-    instagram: ['instagram', 'ig_link', 'fb_link', 'tiktok_link'],
-    email:     ['email', 'web'],
-    location:  ['city', 'address', 'hours']
-  };
-  (fields[section] || []).forEach(k => {
-    const el = document.getElementById('c_' + k);
-    // Solo sobreescribir si el campo tiene valor o si el campo existe y fue editado
-    if (el && el.value.trim() !== '') contact[k] = el.value.trim();
+  _confirmarConCodigo('Guardar información de contacto en la base de datos', async () => {
+    if (!contact || Object.keys(contact).length === 0) await loadConfig();
+    const fields = {
+      whatsapp:  ['whatsapp', 'wa_msg', 'share_msg'],
+      instagram: ['instagram', 'ig_link', 'fb_link', 'tiktok_link'],
+      email:     ['email', 'web'],
+      location:  ['city', 'address', 'hours']
+    };
+    (fields[section] || []).forEach(k => {
+      const el = document.getElementById('c_' + k);
+      if (el && el.value.trim() !== '') contact[k] = el.value.trim();
+    });
+    try {
+      await _db.collection('config').doc('pm_contact').set({ value: contact });
+      showToast('✦ Información guardada');
+    } catch(e) { showToast('Error al guardar: ' + e.message); }
   });
-  try {
-    await _db.collection('config').doc('pm_contact').set({ value: contact });
-    showToast('✦ Información guardada');
-  } catch(e) { showToast('Error al guardar: ' + e.message); }
+}
+
+// ─── BLOQUEO DE SECCIONES DE CONFIGURACIÓN ───────────────────────────────────
+function _aplicarBloqueosSeccion(pageId) {
+  const page = document.getElementById('page-' + pageId);
+  if (!page) return;
+  // Quitar overlays anteriores para recrearlos frescos
+  page.querySelectorAll('.cfg-lock-overlay').forEach(el => el.remove());
+  page.querySelectorAll('.contact-card, .section-card').forEach(card => {
+    card.style.position = 'relative';
+    card.style.overflow = 'hidden';
+    const ov = document.createElement('div');
+    ov.className = 'cfg-lock-overlay';
+    ov.innerHTML = `
+      <svg class="cfg-lock-icon" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <rect x="3" y="11" width="18" height="11" rx="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+      <span class="cfg-lock-text">Sección bloqueada</span>
+      <button class="cfg-lock-btn" onclick="_desbloquearSeccion(this.parentElement)">🔑 Desbloquear</button>
+    `;
+    card.appendChild(ov);
+  });
+}
+
+function _desbloquearSeccion(overlay) {
+  _confirmarConCodigo('Desbloquear sección de configuración', () => {
+    overlay.style.transition = 'opacity 0.25s';
+    overlay.style.opacity = '0';
+    setTimeout(() => overlay.remove(), 250);
+  });
 }
 
 async function testCloudinaryConnection() {
@@ -3328,7 +3379,8 @@ function goTo(page) {
   if (page === 'banner') { loadBanner(); loadDiscount(); }
   if (page === 'visitas') loadVisitas();
   if (page === 'info') { loadCatalogInfo(); renderInfoTable(); loadWatermarkConfig(); }
-  if (page === 'config') fillCloudinaryForm();
+  if (page === 'config')   { fillCloudinaryForm(); setTimeout(() => _aplicarBloqueosSeccion('config'), 80); }
+  if (page === 'contacto') { fillContactForm();    setTimeout(() => _aplicarBloqueosSeccion('contacto'), 80); }
   if (page === 'pedidos') loadPedidos();
   if (page === 'realizados') loadRealizados();
   if (page === 'facturas') loadFacturas();
