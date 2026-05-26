@@ -1772,6 +1772,45 @@ textarea { resize: vertical; min-height: 80px; }
   }
   .fct-cli-print-linea strong { color:#1a1a1a; }
 }
+/* ─── MODAL CONFIRMACIÓN CÓDIGO ALEATORIO ─── */
+.confirm-code-overlay {
+  display:none; position:fixed; inset:0; z-index:10000;
+  background:rgba(0,0,0,0.82); backdrop-filter:blur(5px);
+  align-items:center; justify-content:center;
+}
+.confirm-code-overlay.open { display:flex; }
+.confirm-code-box {
+  background:#fff; border-radius:10px; padding:32px 36px;
+  max-width:360px; width:90%; text-align:center;
+  box-shadow:0 24px 60px rgba(0,0,0,0.5); font-family:'Montserrat',sans-serif;
+}
+.confirm-code-title { font-family:'Cinzel',serif; font-size:13px; color:#1a1a1a; letter-spacing:1px; margin-bottom:6px; }
+.confirm-code-sub { font-size:11px; color:#888; margin-bottom:18px; line-height:1.5; }
+.confirm-code-display {
+  font-family:'Cinzel',serif; font-size:30px; font-weight:700;
+  color:#C9973A; letter-spacing:10px; padding:12px 0; margin-bottom:16px;
+  background:#fffbf2; border-radius:6px; border:1.5px dashed #e8dfc8;
+}
+.confirm-code-input {
+  width:100%; border:1.5px solid #e5e5e5; border-radius:6px; padding:10px 14px;
+  font-size:20px; font-family:'Cinzel',serif; text-align:center; letter-spacing:8px;
+  box-sizing:border-box; color:#1a1a1a; outline:none;
+  transition:border-color 0.2s;
+}
+.confirm-code-input:focus { border-color:#C9973A; }
+.confirm-code-input.error { border-color:crimson; animation:shake 0.3s; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+.confirm-code-btns { display:flex; gap:10px; margin-top:18px; }
+.confirm-code-btns button { flex:1; padding:10px; border-radius:5px; font-family:'Cinzel',serif; font-size:10px; letter-spacing:1.5px; cursor:pointer; transition:all 0.2s; }
+.ccb-cancel { background:transparent; border:1px solid #ddd; color:#999; }
+.ccb-cancel:hover { border-color:#bbb; color:#666; }
+.ccb-confirm { background:linear-gradient(135deg,#C9973A,#b08530); border:none; color:#fff; box-shadow:0 2px 8px rgba(201,151,58,0.3); }
+.ccb-confirm:hover { background:linear-gradient(135deg,#b08530,#9a7428); }
+/* badge ANULADA */
+.badge-anulada {
+  font-size:9px;letter-spacing:1px;color:#c0392b;background:rgba(192,57,43,0.1);
+  border:1px solid rgba(192,57,43,0.3);padding:2px 8px;border-radius:10px;font-weight:600;
+}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -3187,13 +3226,18 @@ async function saveCloudinaryConfig() {
     return showToast('No se pudo conectar a Cloudinary');
   }
 
-  try {
-    await _db.collection('config').doc('pm_cloudinary').set({ value: { cloud_name, upload_preset } });
-  } catch(e) { return showToast('Error al guardar: ' + e.message); }
-  _cfgCache['pm_cloudinary'] = { cloud_name, upload_preset };
-  if (st) { st.style.color = 'var(--gold)'; st.textContent = '✦ Cloudinary conectado y guardado'; }
-  showToast('✦ Cloudinary conectado y guardado');
-  checkCloudinaryConfig();
+  if (st) { st.style.color = 'limegreen'; st.textContent = '✓ Conexión verificada — confirma para guardar'; }
+
+  // Exigir confirmación con código aleatorio antes de guardar en la base de datos
+  _confirmarConCodigo('Guardar credenciales de Cloudinary en la base de datos', async () => {
+    try {
+      await _db.collection('config').doc('pm_cloudinary').set({ value: { cloud_name, upload_preset } });
+    } catch(e) { return showToast('Error al guardar: ' + e.message); }
+    _cfgCache['pm_cloudinary'] = { cloud_name, upload_preset };
+    if (st) { st.style.color = 'var(--gold)'; st.textContent = '✦ Cloudinary conectado y guardado'; }
+    showToast('✦ Cloudinary conectado y guardado');
+    checkCloudinaryConfig();
+  });
 }
 
 function fillCloudinaryForm() {
@@ -5184,6 +5228,20 @@ function mobGoTo(page) {
   </div>
 </div>
 
+<!-- MODAL CONFIRMACIÓN CON CÓDIGO ALEATORIO -->
+<div class="confirm-code-overlay" id="confirmCodeOverlay">
+  <div class="confirm-code-box">
+    <div class="confirm-code-title">Confirmación requerida</div>
+    <div class="confirm-code-sub" id="confirmCodeSub">Para guardar esta configuración escribe el código que aparece abajo:</div>
+    <div class="confirm-code-display" id="confirmCodeDisplay">——</div>
+    <input type="text" class="confirm-code-input" id="confirmCodeInput" maxlength="6" placeholder="· · · · · ·" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'')">
+    <div class="confirm-code-btns">
+      <button class="ccb-cancel" onclick="_cerrarConfirmCode()">Cancelar</button>
+      <button class="ccb-confirm" onclick="_validarConfirmCode()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <!-- LIGHTBOX IMAGEN PEDIDO -->
 <div id="pedidoLightbox" onclick="cerrarLightbox()">
   <button id="pedidoLightboxBack" onclick="cerrarLightbox()">
@@ -5355,7 +5413,18 @@ async function guardarFacturaProcesada() {
         confirmado_internet: document.getElementById('fct-confirm-internet').checked
       }
     };
-    await _db.collection('facturas_procesadas').add(factura);
+    // Evitar duplicados: buscar si ya existe factura para este pedido
+    const existing = await _db.collection('facturas_procesadas')
+      .where('pedido_id', '==', docId).limit(1).get();
+    if (!existing.empty) {
+      const existDocId = existing.docs[0].id;
+      await _db.collection('facturas_procesadas').doc(existDocId).set(factura);
+      const idx = _facturas.findIndex(f => f._docId === existDocId);
+      if (idx >= 0) _facturas[idx] = { _docId: existDocId, ...factura };
+    } else {
+      const newRef = await _db.collection('facturas_procesadas').add(factura);
+      _facturas.unshift({ _docId: newRef.id, ...factura });
+    }
   } catch(e) { console.warn('No se pudo guardar la factura:', e.message); }
 }
 
@@ -5396,7 +5465,7 @@ function renderFacturas(lista) {
       <div class="pedido-card" id="fcard-${f._docId}" style="border-color:rgba(201,151,58,0.3);">
         <div class="pedido-card-head" onclick="toggleFactura('${f._docId}')">
           <span class="pedido-numero">${f.pedido_numero || f.numero || '—'}</span>
-          <span style="font-size:9px;letter-spacing:1px;color:#C9973A;background:rgba(201,151,58,0.1);border:1px solid rgba(201,151,58,0.3);padding:2px 8px;border-radius:10px;">FACTURA</span>
+          ${f.anulada ? '<span class="badge-anulada">ANULADA</span>' : '<span style="font-size:9px;letter-spacing:1px;color:#C9973A;background:rgba(201,151,58,0.1);border:1px solid rgba(201,151,58,0.3);padding:2px 8px;border-radius:10px;">FACTURA</span>'}
           <span class="pedido-fecha">${fecha}</span>
           <span class="pedido-total-head">$${total}</span>
           <svg class="pedido-arrow" id="farrow-${f._docId}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
@@ -5420,6 +5489,7 @@ function renderFacturas(lista) {
                 <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                 Ver / Reimprimir
               </button>
+              ${!f.anulada ? `<button class="btn" style="font-size:11px;padding:5px 12px;border-color:rgba(192,57,43,0.4);color:#c0392b;" onclick="anularFactura('${f._docId}')">Anular</button>` : '<span style="font-size:10px;color:#c0392b;padding:5px 8px;">✗ Anulada</span>'}
               <button class="btn" style="font-size:11px;padding:5px 12px" onclick="eliminarFactura('${f._docId}')">Eliminar</button>
             </div>
           </div>
@@ -5446,12 +5516,67 @@ function filtrarFacturas() {
   }));
 }
 
+async function anularFactura(docId) {
+  if (!confirm('¿Anular esta factura? Quedará marcada como inválida pero permanecerá en el historial.')) return;
+  try {
+    await _db.collection('facturas_procesadas').doc(docId).update({
+      anulada: true,
+      fecha_anulacion: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    const f = _facturas.find(x => x._docId === docId);
+    if (f) f.anulada = true;
+    renderFacturas(_facturas);
+    showToast('Factura anulada');
+  } catch(e) { showToast('Error al anular: ' + e.message); }
+}
+
 async function eliminarFactura(docId) {
   if (!confirm('¿Eliminar esta factura del historial?')) return;
   await _db.collection('facturas_procesadas').doc(docId).delete();
   _facturas = _facturas.filter(f => f._docId !== docId);
   renderFacturas(_facturas);
 }
+
+// ─── CONFIRMACIÓN CON CÓDIGO ALEATORIO ───────────────────────────────────────
+let _confirmCodeCallback = null;
+
+function _confirmarConCodigo(descripcion, callback) {
+  const codigo = String(Math.floor(100000 + Math.random() * 900000));
+  _confirmCodeCallback = callback;
+  document.getElementById('confirmCodeSub').textContent = descripcion + '. Escribe el código para confirmar:';
+  document.getElementById('confirmCodeDisplay').textContent = codigo;
+  document.getElementById('confirmCodeDisplay').dataset.codigo = codigo;
+  const inp = document.getElementById('confirmCodeInput');
+  inp.value = '';
+  inp.classList.remove('error');
+  document.getElementById('confirmCodeOverlay').classList.add('open');
+  setTimeout(() => inp.focus(), 100);
+}
+
+function _cerrarConfirmCode() {
+  document.getElementById('confirmCodeOverlay').classList.remove('open');
+  _confirmCodeCallback = null;
+}
+
+function _validarConfirmCode() {
+  const ingresado = document.getElementById('confirmCodeInput').value.trim();
+  const esperado  = document.getElementById('confirmCodeDisplay').dataset.codigo;
+  const inp = document.getElementById('confirmCodeInput');
+  if (ingresado !== esperado) {
+    inp.classList.add('error');
+    setTimeout(() => inp.classList.remove('error'), 500);
+    inp.value = '';
+    return;
+  }
+  const cb = _confirmCodeCallback;
+  _cerrarConfirmCode();
+  if (cb) cb();
+}
+
+document.getElementById('confirmCodeInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') _validarConfirmCode();
+  if (e.key === 'Escape') _cerrarConfirmCode();
+});
 
 function reabrirFactura(docId) {
   const f = _facturas.find(x => x._docId === docId);
