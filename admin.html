@@ -5507,10 +5507,20 @@ function mobGoTo(page) {
               <option value="DOM REP">🇩🇴 DOM REP – República Dominicana</option>
             </select>
           </div>
-          <div class="factura-field">
+          <div class="factura-field factura-field-ac">
             <label>Dirección</label>
-            <input type="text" id="fct-cli-dir" placeholder="Calle / Av. / Número">
+            <input type="text" id="fct-cli-dir" placeholder="Calle / Av. / Número" autocomplete="off" oninput="_fctDirInput(this)" onblur="_fctDirBlur()">
+            <div id="fct-dir-sugerencias" class="fct-autocomplete" style="display:none;"></div>
             <div class="fct-dir-hint" id="fct-dir-hint"></div>
+          </div>
+          <div class="factura-field">
+            <label>Tipo de pago</label>
+            <select id="fct-tipo-pago">
+              <option value="">Seleccionar…</option>
+              <option value="Cash">💵 Cash</option>
+              <option value="Transferencia">💳 Transferencia</option>
+              <option value="Depósito">🏦 Depósito</option>
+            </select>
           </div>
         </div>
         <div>
@@ -5533,6 +5543,10 @@ function mobGoTo(page) {
               <option value="">Seleccionar estado…</option>
             </select>
             <input type="text" id="fct-env-estado" placeholder="Estado / Departamento">
+          </div>
+          <div class="factura-field">
+            <label>Suite / Apt / Unit</label>
+            <input type="text" id="fct-env-suite" placeholder="Suite 101, Apt 2B…">
           </div>
           <div class="factura-field">
             <label>Lock Num</label>
@@ -6509,6 +6523,86 @@ function _fctLlenarDesdeFactura(f) {
     }
   }
   if (env.referencia) document.getElementById('fct-env-ref').value = env.referencia;
+  if (env.suite) { const s = document.getElementById('fct-env-suite'); if (s) s.value = env.suite; }
+  if (f.tipo_pago) { const tp = document.getElementById('fct-tipo-pago'); if (tp) tp.value = f.tipo_pago; }
+}
+
+// ─── DIRECCIÓN: autocomplete con Nominatim ────────────────────────────────────
+let _fctDirTimer = null;
+
+function _fctDirInput(inp) {
+  clearTimeout(_fctDirTimer);
+  const q = inp.value.trim();
+  if (q.length < 5) { _fctDirOcultar(); return; }
+  _fctDirTimer = setTimeout(() => _fctDirBuscar(q), 450);
+}
+
+function _fctDirBlur() {
+  setTimeout(_fctDirOcultar, 250);
+}
+
+function _fctDirOcultar() {
+  const box = document.getElementById('fct-dir-sugerencias');
+  if (box) box.style.display = 'none';
+}
+
+async function _fctDirBuscar(q) {
+  const pais = document.getElementById('fct-cli-pais').value;
+  const cc   = pais === 'USA' ? 'us' : pais === 'DOM REP' ? 'do' : '';
+  const url  = 'https://nominatim.openstreetmap.org/search?format=json&limit=5&addressdetails=1&q=' +
+    encodeURIComponent(q) + (cc ? '&countrycodes=' + cc : '');
+  try {
+    const res  = await fetch(url, { headers: { 'Accept-Language': 'es' } });
+    const data = await res.json();
+    const box  = document.getElementById('fct-dir-sugerencias');
+    if (!box) return;
+    if (!data.length) { box.style.display = 'none'; return; }
+    box.innerHTML = data.map((r, i) => {
+      const label = r.display_name || '';
+      return `<div class="fct-autocomplete-item" onmousedown="_fctDirSeleccionar(${i})" data-idx="${i}">${label}</div>`;
+    }).join('');
+    box._nominatimData = data;
+    box.style.display = 'block';
+  } catch(e) { _fctDirOcultar(); }
+}
+
+function _fctDirSeleccionar(idx) {
+  const box  = document.getElementById('fct-dir-sugerencias');
+  if (!box || !box._nominatimData) return;
+  const r    = box._nominatimData[idx];
+  if (!r) return;
+  const a    = r.address || {};
+  // Fill address field with road + house number
+  const road = [a.house_number, a.road || a.pedestrian || a.footway].filter(Boolean).join(' ');
+  const dirEl = document.getElementById('fct-cli-dir');
+  if (dirEl) dirEl.value = road || r.display_name.split(',')[0];
+  // Fill city
+  const city = a.city || a.town || a.village || a.county || '';
+  const ciudadEl = document.getElementById('fct-env-ciudad');
+  if (ciudadEl && city) ciudadEl.value = city;
+  // Fill state
+  const state = a.state || '';
+  if (state) {
+    const staSel = document.getElementById('fct-env-estado-sel');
+    const staInp = document.getElementById('fct-env-estado');
+    if (staSel && staSel.style.display !== 'none') {
+      const opt = Array.from(staSel.options).find(o => o.value === state || o.textContent.includes(state));
+      if (opt) staSel.value = opt.value;
+    } else if (staInp) {
+      staInp.value = state;
+    }
+  }
+  // Fill zip
+  const zip = a.postcode || '';
+  const zipEl = document.getElementById('fct-env-zip');
+  if (zipEl && zip) zipEl.value = zip.slice(0, 5);
+  // Hint
+  const hint = document.getElementById('fct-dir-hint');
+  if (hint) {
+    hint.textContent = '📍 ' + [city, state, zip].filter(Boolean).join(', ');
+    hint.style.display = 'block';
+  }
+  _fctDirOcultar();
 }
 
 // ─── TELÉFONO: formato y detección de país ────────────────────────────────────
@@ -6527,13 +6621,14 @@ function _fctTelInput(inp) {
     }
   }
 
-  // Formatear +1 XXXXXXXXXX → +1 XXX XXX XXXX
+  // Formatear +1 XXXXXXXXXX → +1 (XXX) XXX-XXXX
   if (raw.startsWith('+1')) {
     const nums = raw.slice(2).replace(/\D/g,'').slice(0,10);
     let fmt = '+1';
-    if (nums.length > 0) fmt += ' ' + nums.slice(0,3);
+    if (nums.length > 0) fmt += ' (' + nums.slice(0,3);
+    if (nums.length >= 3) fmt += ')';
     if (nums.length > 3) fmt += ' ' + nums.slice(3,6);
-    if (nums.length > 6) fmt += ' ' + nums.slice(6,10);
+    if (nums.length > 6) fmt += '-' + nums.slice(6,10);
     inp.value = fmt;
   }
 }
