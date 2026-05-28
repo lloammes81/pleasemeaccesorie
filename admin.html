@@ -1807,6 +1807,26 @@ textarea { resize: vertical; min-height: 80px; }
 #facturaModal.tema-oscuro .fct-autocomplete-item:hover { background:rgba(201,151,58,0.1); color:#E8C96D; }
 #facturaModal.tema-oscuro .fct-geo-hint { background:rgba(201,151,58,0.08); border-color:rgba(201,151,58,0.2); color:#8a7a65; }
 #facturaManualModal.tema-oscuro { background:#111 !important; color:#f0e6d0 !important; }
+
+/* ─── FCTM inputs: inherit theme from modal ─── */
+.fctm-input {
+  border:1px solid #e5e5e5; border-radius:3px; padding:5px 7px;
+  font-size:11px; font-family:'Montserrat',sans-serif;
+  background:#fafafa; color:#1a1a1a; box-sizing:border-box;
+  width:100%; transition:border-color 0.2s, background 0.2s;
+}
+.fctm-input:focus { outline:none; border-color:#C9973A; background:#fff; }
+#facturaManualModal.tema-oscuro .fctm-input {
+  background:#1e1b14 !important; color:#f0e6d0 !important;
+  border-color:rgba(201,151,58,0.25) !important;
+}
+#facturaManualModal.tema-oscuro .fctm-input:focus {
+  background:#231f17 !important; border-color:#C9973A !important;
+}
+#facturaManualModal.tema-oscuro .fctm-input::placeholder { color:#5a4e3a !important; }
+#facturaManualModal.tema-oscuro .fctm-prod-sub { color:#c0b090 !important; }
+#facturaManualModal.tema-oscuro .factura-total-fila { color:#8a7a65; }
+#facturaManualModal.tema-oscuro #fctm-desc-row { color:#e07a5f !important; }
 #facturaManualModal.tema-oscuro .factura-body { background:#111; }
 #facturaManualModal.tema-oscuro .factura-empresa-nombre { color:#E8C96D; }
 #facturaManualModal.tema-oscuro .factura-empresa-sub { color:#C9973A; }
@@ -5783,18 +5803,23 @@ function mobGoTo(page) {
 
       <!-- Descuento global + totales -->
       <div class="factura-totales" style="margin-top:12px;">
-        <div class="factura-total-fila" style="align-items:center;gap:10px;flex-wrap:wrap;">
-          <span>Descuento global (%)</span>
-          <input type="number" id="fctm-desc-global" min="0" max="100" value="0" oninput="_fctmRecalcular()" style="width:60px;border:1px solid #e5e5e5;border-radius:4px;padding:4px 8px;font-size:12px;text-align:center;background:#fafafa;color:#1a1a1a;">
+        <div class="factura-total-fila" style="align-items:center;gap:10px;flex-wrap:wrap;padding-bottom:8px;border-bottom:1px solid #e8dfc8;">
+          <span style="flex:1;">Descuento global (%)</span>
+          <input type="number" id="fctm-desc-global" min="0" max="100" value="0" oninput="_fctmRecalcular()" class="fctm-input" style="width:60px;text-align:center;padding:4px 8px;">
+          <span style="margin-left:4px;font-size:11px;color:#aaa;">Envío ($)</span>
+          <input type="number" id="fctm-envio" min="0" step="0.01" value="" placeholder="0" oninput="_fctmRecalcular()" class="fctm-input" style="width:72px;text-align:right;padding:4px 8px;">
         </div>
         <div class="factura-total-fila" id="fctm-subtotal-row">
-          <span>Subtotal</span><span id="fctm-subtotal-val">$0</span>
+          <span>Subtotal</span><span id="fctm-subtotal-val">$0,00</span>
         </div>
-        <div class="factura-total-fila" id="fctm-desc-row" style="display:none;">
-          <span>Descuento</span><span id="fctm-desc-val">-$0</span>
+        <div class="factura-total-fila" id="fctm-desc-row" style="display:none;color:#e74c3c;">
+          <span id="fctm-desc-label">Descuento (0%)</span><span id="fctm-desc-val">-$0,00</span>
+        </div>
+        <div class="factura-total-fila" id="fctm-envio-row" style="display:none;">
+          <span>Envío</span><span id="fctm-envio-val">$0,00</span>
         </div>
         <div class="factura-total-fila grande">
-          <span>TOTAL</span><span id="fctm-total-val">$0</span>
+          <span>TOTAL</span><span id="fctm-total-val">$0,00</span>
         </div>
       </div>
       <div class="factura-nota-final">Gracias por tu compra · Pleaseme Accessories · Cada pieza, una historia</div>
@@ -6872,6 +6897,7 @@ function abrirFacturaManual() {
   document.getElementById('fctm-cli-pais').value = '';
   document.getElementById('fctm-tipo-pago').value = '';
   document.getElementById('fctm-desc-global').value = '0';
+  const envioEl = document.getElementById('fctm-envio'); if (envioEl) envioEl.value = '';
   // Start with one empty row
   document.getElementById('fctm-items-body').innerHTML = '';
   _fctmAgregarFila();
@@ -6909,11 +6935,11 @@ function _fctmAgregarFila() {
   const tr = document.createElement('tr');
   tr.id = 'fctm-row-' + id;
   tr.innerHTML = `
-    <td><input type="text" placeholder="Nombre del producto" oninput="_fctmRecalcular()" style="width:100%;border:1px solid #e5e5e5;border-radius:3px;padding:5px 7px;font-size:11px;background:#fafafa;color:#1a1a1a;box-sizing:border-box;" class="fctm-prod-nombre"></td>
-    <td style="text-align:center"><input type="number" value="1" min="1" oninput="_fctmRecalcular()" style="width:48px;border:1px solid #e5e5e5;border-radius:3px;padding:5px 4px;font-size:11px;text-align:center;background:#fafafa;color:#1a1a1a;" class="fctm-prod-qty"></td>
-    <td style="text-align:right"><input type="number" value="0" min="0" step="0.01" oninput="_fctmRecalcular()" style="width:72px;border:1px solid #e5e5e5;border-radius:3px;padding:5px 4px;font-size:11px;text-align:right;background:#fafafa;color:#1a1a1a;" class="fctm-prod-precio"></td>
-    <td style="text-align:right"><input type="number" value="0" min="0" max="100" oninput="_fctmRecalcular()" style="width:52px;border:1px solid #e5e5e5;border-radius:3px;padding:5px 4px;font-size:11px;text-align:right;background:#fafafa;color:#1a1a1a;" class="fctm-prod-desc"></td>
-    <td style="text-align:right;font-size:11px;color:#333;" class="fctm-prod-sub">$0</td>
+    <td><input type="text" placeholder="Nombre del producto" oninput="_fctmRecalcular()" class="fctm-prod-nombre fctm-input"></td>
+    <td style="text-align:center"><input type="number" value="1" min="1" oninput="_fctmRecalcular()" class="fctm-prod-qty fctm-input" style="width:48px;text-align:center;"></td>
+    <td style="text-align:right"><input type="number" value="0" min="0" step="0.01" oninput="_fctmRecalcular()" class="fctm-prod-precio fctm-input" style="width:72px;text-align:right;"></td>
+    <td style="text-align:right"><input type="number" value="0" min="0" max="100" oninput="_fctmRecalcular()" class="fctm-prod-desc fctm-input" style="width:52px;text-align:right;"></td>
+    <td style="text-align:right;font-size:11px;" class="fctm-prod-sub">$0,00</td>
     <td style="text-align:center"><button onclick="_fctmEliminarFila(${id})" style="background:none;border:none;color:#e74c3c;cursor:pointer;font-size:14px;padding:2px 6px;">✕</button></td>`;
   tbody.appendChild(tr);
 }
@@ -6936,18 +6962,32 @@ function _fctmRecalcular() {
     if (subEl) subEl.textContent = '$' + sub.toLocaleString('es-CO', {minimumFractionDigits:2, maximumFractionDigits:2});
     subtotal += sub;
   });
+  const fmt        = v => '$' + v.toLocaleString('es-CO', {minimumFractionDigits:2, maximumFractionDigits:2});
   const descGlobal = parseFloat(document.getElementById('fctm-desc-global').value || 0) || 0;
   const descMonto  = subtotal * descGlobal / 100;
-  const total      = subtotal - descMonto;
-  const fmt = v => '$' + v.toLocaleString('es-CO', {minimumFractionDigits:2, maximumFractionDigits:2});
+  const subtotalConDesc = subtotal - descMonto;
+  const envioVal   = parseFloat(document.getElementById('fctm-envio').value || 0) || 0;
+  const total      = subtotalConDesc + envioVal;
+
   document.getElementById('fctm-subtotal-val').textContent = fmt(subtotal);
+
   const descRow = document.getElementById('fctm-desc-row');
   if (descGlobal > 0) {
     descRow.style.display = '';
-    document.getElementById('fctm-desc-val').textContent = '-' + fmt(descMonto);
+    document.getElementById('fctm-desc-label').textContent = 'Descuento (' + descGlobal + '%)';
+    document.getElementById('fctm-desc-val').textContent   = '-' + fmt(descMonto);
   } else {
     descRow.style.display = 'none';
   }
+
+  const envioRow = document.getElementById('fctm-envio-row');
+  if (envioVal > 0) {
+    envioRow.style.display = '';
+    document.getElementById('fctm-envio-val').textContent = fmt(envioVal);
+  } else {
+    envioRow.style.display = 'none';
+  }
+
   document.getElementById('fctm-total-val').textContent = fmt(total);
 }
 
@@ -6984,8 +7024,9 @@ function _fctmCompartirWA() {
   const pago   = document.getElementById('fctm-tipo-pago').value;
   const items  = _fctmGetItems();
   const descG  = parseFloat(document.getElementById('fctm-desc-global').value || 0) || 0;
-  let subtotal = items.reduce((s, i) => s + i.sub, 0);
-  let total    = subtotal * (1 - descG / 100);
+  let subtotal   = items.reduce((s, i) => s + i.sub, 0);
+  const envioWA  = parseFloat(document.getElementById('fctm-envio')?.value || 0) || 0;
+  let total      = subtotal * (1 - descG / 100) + envioWA;
   let msg = `*FACTURA MANUAL · Pleaseme Accessories*\n`;
   msg += `Factura: ${document.getElementById('fctm-numero').textContent}\n`;
   msg += `Fecha: ${document.getElementById('fctm-fecha').textContent}\n\n`;
@@ -6993,6 +7034,7 @@ function _fctmCompartirWA() {
   if (tel)    msg += `*Tel:* ${tel}\n`;
   if (ciudad || estado) msg += `*Destino:* ${[ciudad,estado].filter(Boolean).join(', ')}\n`;
   if (pago)   msg += `*Pago:* ${pago}\n`;
+  if (envioWA > 0) msg += `*Envío:* $${envioWA.toFixed(2)}\n`;
   msg += `\n*Productos:*\n`;
   items.forEach(i => {
     msg += `  • ${i.nombre} x${i.qty} @ $${i.precio}`;
