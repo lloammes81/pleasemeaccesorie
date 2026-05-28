@@ -7128,12 +7128,73 @@ function _fctmCompartirWA() {
   window.open(url, '_blank');
 }
 
-function _fctmImprimir() {
-  // Temporarily hide other overlays and print
+async function _fctmImprimir() {
+  await _guardarFacturaManual();
   const overlay = document.getElementById('facturaManualOverlay');
   overlay.classList.add('printing-manual');
   window.print();
   overlay.classList.remove('printing-manual');
+}
+
+async function _guardarFacturaManual() {
+  if (!_db) return;
+  try {
+    const numero  = document.getElementById('fctm-numero').textContent.trim();
+    const moneda  = _fctmGetMoneda();
+    const items   = _fctmGetItems().map(i => ({
+      name:  i.nombre,
+      qty:   i.qty,
+      price: i.precio.toFixed(2),
+      desc:  i.desc,
+      sub:   i.sub.toFixed(2),
+      category: ''
+    }));
+    const descG    = parseFloat(document.getElementById('fctm-desc-global').value || 0) || 0;
+    const envioVal = parseFloat(document.getElementById('fctm-envio')?.value || 0) || 0;
+    const subtotal = items.reduce((s,i) => s + parseFloat(i.sub), 0);
+    const descMonto = subtotal * descG / 100;
+    const total    = subtotal - descMonto + envioVal;
+
+    const factura = {
+      numero,
+      pedido_numero: numero,
+      origen: 'manual',
+      moneda,
+      fecha:   firebase.firestore.FieldValue.serverTimestamp(),
+      estado:  '',
+      items,
+      subtotal: parseFloat(subtotal.toFixed(2)),
+      descuento: descG,
+      envio_costo: envioVal,
+      total:   parseFloat(total.toFixed(2)),
+      tipo_pago: document.getElementById('fctm-tipo-pago')?.value || '',
+      cliente: {
+        nombre:    (document.getElementById('fctm-cli-nombre')?.value || '').trim().toUpperCase(),
+        tel:       (document.getElementById('fctm-cli-tel')?.value    || '').trim(),
+        direccion: (document.getElementById('fctm-cli-dir')?.value    || '').trim(),
+        pais:      (document.getElementById('fctm-cli-pais')?.value   || '').trim(),
+        locker:    (document.getElementById('fctm-cli-locker')?.value || '').trim()
+      },
+      envio: {
+        ciudad:    (document.getElementById('fctm-env-ciudad')?.value || '').trim(),
+        zip:       (document.getElementById('fctm-env-zip')?.value    || '').trim(),
+        estado:    (document.getElementById('fctm-env-estado')?.value || '').trim(),
+        suite:     (document.getElementById('fctm-env-suite')?.value  || '').trim(),
+        referencia:(document.getElementById('fctm-env-ref')?.value    || '').trim()
+      }
+    };
+
+    // Evitar duplicado por número
+    const existing = await _db.collection('facturas_procesadas')
+      .where('numero', '==', numero).limit(1).get();
+    if (!existing.empty) {
+      await _db.collection('facturas_procesadas').doc(existing.docs[0].id).set(factura);
+    } else {
+      const ref = await _db.collection('facturas_procesadas').add(factura);
+      _facturas.unshift({ _docId: ref.id, ...factura });
+    }
+    showToast('✦ Factura guardada en Facturas Procesadas');
+  } catch(e) { showToast('Error al guardar: ' + e.message); }
 }
 
 function abrirLightbox(src) {
