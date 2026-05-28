@@ -5719,15 +5719,17 @@ function mobGoTo(page) {
           </div>
           <div class="factura-field">
             <label>País</label>
-            <select id="fctm-cli-pais">
+            <select id="fctm-cli-pais" onchange="_fctmPaisChange()">
               <option value="">Seleccionar país…</option>
               <option value="USA">🇺🇸 USA – Estados Unidos</option>
               <option value="DOM REP">🇩🇴 DOM REP – República Dominicana</option>
             </select>
           </div>
-          <div class="factura-field">
+          <div class="factura-field factura-field-ac">
             <label>Dirección</label>
-            <input type="text" id="fctm-cli-dir" placeholder="Calle / Av. / Número">
+            <input type="text" id="fctm-cli-dir" placeholder="Calle / Av. / Número" autocomplete="off" oninput="_fctmDirInput(this)" onblur="_fctmDirBlur()">
+            <div id="fctm-dir-sugerencias" class="fct-autocomplete" style="display:none;"></div>
+            <div class="fct-dir-hint" id="fctm-dir-hint"></div>
           </div>
           <div class="factura-field">
             <label>Tipo de pago</label>
@@ -5792,7 +5794,7 @@ function mobGoTo(page) {
           <tr>
             <th>Producto</th>
             <th style="text-align:center">Cant.</th>
-            <th style="text-align:right">Precio</th>
+            <th style="text-align:right">Precio <span id="fctm-moneda-label" style="font-weight:400;opacity:0.7;font-size:9px;"></span></th>
             <th style="text-align:right">Desc.%</th>
             <th style="text-align:right">Subtotal</th>
             <th></th>
@@ -6898,6 +6900,8 @@ function abrirFacturaManual() {
   document.getElementById('fctm-tipo-pago').value = '';
   document.getElementById('fctm-desc-global').value = '0';
   const envioEl = document.getElementById('fctm-envio'); if (envioEl) envioEl.value = '';
+  const hintEl = document.getElementById('fctm-dir-hint'); if (hintEl) { hintEl.textContent=''; hintEl.style.display='none'; }
+  const monLbl = document.getElementById('fctm-moneda-label'); if (monLbl) monLbl.textContent='';
   // Start with one empty row
   document.getElementById('fctm-items-body').innerHTML = '';
   _fctmAgregarFila();
@@ -6962,7 +6966,8 @@ function _fctmRecalcular() {
     if (subEl) subEl.textContent = '$' + sub.toLocaleString('es-CO', {minimumFractionDigits:2, maximumFractionDigits:2});
     subtotal += sub;
   });
-  const fmt        = v => '$' + v.toLocaleString('es-CO', {minimumFractionDigits:2, maximumFractionDigits:2});
+  const sym        = _fctmGetMoneda();
+  const fmt        = v => sym + v.toLocaleString('es-CO', {minimumFractionDigits:2, maximumFractionDigits:2});
   const descGlobal = parseFloat(document.getElementById('fctm-desc-global').value || 0) || 0;
   const descMonto  = subtotal * descGlobal / 100;
   const subtotalConDesc = subtotal - descMonto;
@@ -7004,6 +7009,80 @@ function _fctmTelInput(inp) {
   }
 }
 
+function _fctmGetMoneda() {
+  const pais = document.getElementById('fctm-cli-pais')?.value || '';
+  return pais === 'DOM REP' ? 'RD$' : '$';
+}
+
+function _fctmPaisChange() {
+  const sym = _fctmGetMoneda();
+  const lbl = document.getElementById('fctm-moneda-label');
+  if (lbl) lbl.textContent = sym;
+  _fctmRecalcular();
+}
+
+// ─── ADDRESS AUTOCOMPLETE (Nominatim) para factura manual ─────────────────────
+let _fctmDirTimer = null;
+
+function _fctmDirInput(inp) {
+  clearTimeout(_fctmDirTimer);
+  const q = inp.value.trim();
+  if (q.length < 5) { _fctmDirOcultar(); return; }
+  _fctmDirTimer = setTimeout(() => _fctmDirBuscar(q), 450);
+}
+
+function _fctmDirBlur() { setTimeout(_fctmDirOcultar, 250); }
+
+function _fctmDirOcultar() {
+  const box = document.getElementById('fctm-dir-sugerencias');
+  if (box) box.style.display = 'none';
+}
+
+async function _fctmDirBuscar(q) {
+  const pais = document.getElementById('fctm-cli-pais')?.value || '';
+  const cc   = pais === 'USA' ? 'us' : pais === 'DOM REP' ? 'do' : '';
+  const url  = 'https://nominatim.openstreetmap.org/search?format=json&limit=5&addressdetails=1&q=' +
+    encodeURIComponent(q) + (cc ? '&countrycodes=' + cc : '');
+  try {
+    const res  = await fetch(url, { headers: { 'Accept-Language': 'es' } });
+    const data = await res.json();
+    const box  = document.getElementById('fctm-dir-sugerencias');
+    if (!box) return;
+    if (!data.length) { box.style.display = 'none'; return; }
+    box.innerHTML = data.map((r, i) =>
+      `<div class="fct-autocomplete-item" onmousedown="_fctmDirSeleccionar(${i})">${r.display_name || ''}</div>`
+    ).join('');
+    box._nominatimData = data;
+    box.style.display = 'block';
+  } catch(e) { _fctmDirOcultar(); }
+}
+
+function _fctmDirSeleccionar(idx) {
+  const box = document.getElementById('fctm-dir-sugerencias');
+  if (!box || !box._nominatimData) return;
+  const r = box._nominatimData[idx];
+  if (!r) return;
+  const a    = r.address || {};
+  const road = [a.house_number, a.road || a.pedestrian || a.footway].filter(Boolean).join(' ');
+  const dirEl = document.getElementById('fctm-cli-dir');
+  if (dirEl) dirEl.value = road || r.display_name.split(',')[0];
+  const city = a.city || a.town || a.village || a.county || '';
+  const ciudadEl = document.getElementById('fctm-env-ciudad');
+  if (ciudadEl && city) ciudadEl.value = city;
+  const state = a.state || '';
+  const staInp = document.getElementById('fctm-env-estado');
+  if (staInp && state) staInp.value = state;
+  const zip = a.postcode || '';
+  const zipEl = document.getElementById('fctm-env-zip');
+  if (zipEl && zip) zipEl.value = zip.slice(0, 5);
+  const hint = document.getElementById('fctm-dir-hint');
+  if (hint) {
+    hint.textContent = '📍 ' + [city, state, zip].filter(Boolean).join(', ');
+    hint.style.display = 'block';
+  }
+  _fctmDirOcultar();
+}
+
 function _fctmGetItems() {
   const rows = document.querySelectorAll('#fctm-items-body tr');
   return Array.from(rows).map(tr => {
@@ -7042,7 +7121,8 @@ function _fctmCompartirWA() {
     msg += ` = $${i.sub.toFixed(2)}\n`;
   });
   if (descG > 0) msg += `\nDescuento global: -${descG}%`;
-  msg += `\n*TOTAL: $${total.toFixed(2)}*`;
+  const symWA = _fctmGetMoneda();
+  msg += `\n*TOTAL: ${symWA}${total.toFixed(2)}*`;
   const phone = (typeof getWhatsAppNumber === 'function') ? getWhatsAppNumber() : '';
   const url   = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
   window.open(url, '_blank');
