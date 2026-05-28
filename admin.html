@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20260528-5';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20260528-6';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -2070,6 +2070,7 @@ textarea { resize: vertical; min-height: 80px; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 </head>
 <body>
 
@@ -5920,6 +5921,9 @@ function mobGoTo(page) {
     </div>
     <div class="factura-footer-bar">
       <button class="btn-fct-cancel" onclick="cerrarFacturaManual()">Cancelar</button>
+      <button onclick="_fctmGuardarPendiente()" title="Guardar sin imprimir" style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1.5px;padding:9px 18px;border-radius:4px;cursor:pointer;background:transparent;border:1.5px solid rgba(201,151,58,0.5);color:#C9973A;transition:all 0.2s;" onmouseover="this.style.background='rgba(201,151,58,0.1)'" onmouseout="this.style.background='transparent'">
+        ⏳ Pendiente
+      </button>
       <button class="btn-fct-wa" onclick="_fctmCompartirWA()" style="display:inline-flex;align-items:center;gap:6px;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.558 4.122 1.532 5.857L.057 23.882l6.184-1.622A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.969 0-3.81-.54-5.385-1.479l-.386-.229-3.668.962.98-3.579-.252-.4A9.954 9.954 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
         Enviar por WhatsApp
@@ -7471,37 +7475,277 @@ function _fctmGetItems() {
   }));
 }
 
-function _fctmCompartirWA() {
+async function _fctmCompartirWA() {
+  // Validate
   const nombre = document.getElementById('fctm-cli-nombre').value.trim();
+  if (!nombre) { showToast('⚠ Ingresa el nombre del cliente'); document.getElementById('fctm-cli-nombre')?.focus(); return; }
+  if (!_fctmItems.length) { showToast('⚠ Agrega al menos un producto'); document.getElementById('fctm-input-nombre')?.focus(); return; }
+
+  _fctmPreparar();
+
   const tel    = document.getElementById('fctm-cli-tel').value.trim();
+  const numero = document.getElementById('fctm-numero').textContent.trim();
+  const phone  = (typeof getWhatsAppNumber === 'function') ? getWhatsAppNumber().replace(/\D/g,'') : '';
+  const sym    = _fctmGetMoneda();
+  const descG  = parseFloat(document.getElementById('fctm-desc-global').value || 0) || 0;
+  const envioWA = parseFloat(document.getElementById('fctm-envio')?.value || 0) || 0;
+  const subtotalWA = _fctmItems.reduce((s, i) => s + i.qty * i.precio, 0);
+  const totalWA = subtotalWA * (1 - descG / 100) + envioWA;
+
+  // Fallback WhatsApp text message
   const ciudad = document.getElementById('fctm-env-ciudad').value.trim();
   const estado = document.getElementById('fctm-env-estado').value.trim();
   const pago   = document.getElementById('fctm-tipo-pago').value;
-  const items  = _fctmGetItems();
-  const descG  = parseFloat(document.getElementById('fctm-desc-global').value || 0) || 0;
-  let subtotal   = items.reduce((s, i) => s + i.sub, 0);
-  const envioWA  = parseFloat(document.getElementById('fctm-envio')?.value || 0) || 0;
-  let total      = subtotal * (1 - descG / 100) + envioWA;
-  let msg = `*FACTURA MANUAL · Pleaseme Accessories*\n`;
-  msg += `Factura: ${document.getElementById('fctm-numero').textContent}\n`;
-  msg += `Fecha: ${document.getElementById('fctm-fecha').textContent}\n\n`;
-  if (nombre) msg += `*Cliente:* ${nombre}\n`;
-  if (tel)    msg += `*Tel:* ${tel}\n`;
+  let msg = `*FACTURA · Pleaseme Accessories*\nFactura: ${numero}\nFecha: ${document.getElementById('fctm-fecha').textContent}\n\n`;
+  msg += `*Cliente:* ${nombre}\n`;
+  if (tel) msg += `*Tel:* ${tel}\n`;
   if (ciudad || estado) msg += `*Destino:* ${[ciudad,estado].filter(Boolean).join(', ')}\n`;
-  if (pago)   msg += `*Pago:* ${pago}\n`;
-  if (envioWA > 0) msg += `*Envío:* $${envioWA.toFixed(2)}\n`;
-  msg += `\n*Productos:*\n`;
-  items.forEach(i => {
-    msg += `  • ${i.nombre} x${i.qty} @ $${i.precio}`;
-    if (i.desc > 0) msg += ` (-${i.desc}%)`;
-    msg += ` = $${i.sub.toFixed(2)}\n`;
+  if (pago) msg += `*Pago:* ${pago}\n`;
+  msg += `\n*Artículos:*\n`;
+  _fctmItems.forEach(i => { msg += `  • ${i.nombre} ×${i.qty} @ ${sym}${i.precio.toFixed(2)} = ${sym}${(i.qty*i.precio).toFixed(2)}\n`; });
+  if (descG > 0) msg += `\nDescuento: -${descG}%`;
+  if (envioWA > 0) msg += `\nEnvío: ${sym}${envioWA.toFixed(2)}`;
+  msg += `\n\n*TOTAL: ${sym}${totalWA.toFixed(2)}*`;
+
+  const waUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+
+  let compartido = false;
+
+  // Try PDF via Web Share API (mobile)
+  if (window.jspdf && navigator.share) {
+    try {
+      const pdf  = _generarPdfFacturaManual();
+      const blob = pdf.output('blob');
+      const file = new File([blob], `factura-${numero}.pdf`, { type: 'application/pdf' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: `Factura ${numero} - Pleaseme`, text: msg });
+        compartido = true;
+      }
+    } catch(e) {
+      if (e.name === 'AbortError') return;
+      console.warn('Web Share falló:', e.message);
+    }
+  }
+
+  if (!compartido) {
+    // Desktop fallback: download PDF + open WhatsApp
+    if (window.jspdf) {
+      const pdf = _generarPdfFacturaManual();
+      pdf.save(`factura-pleaseme-${numero}.pdf`);
+      showToast('📎 PDF descargado — adjúntalo en WhatsApp');
+    }
+    window.open(waUrl, '_blank');
+  }
+}
+
+function _generarPdfFacturaManual() {
+  const { jsPDF } = window.jspdf;
+  const doc    = new jsPDF({ unit: 'mm', format: 'a4' });
+  const pageW  = 210, margin = 18;
+  const sym    = _fctmGetMoneda();
+  const g      = id => (document.getElementById(id)?.value || '').trim();
+  const nombre = g('fctm-cli-nombre').toUpperCase();
+  const tel    = g('fctm-cli-tel');
+  const dir    = g('fctm-cli-dir');
+  const suite  = g('fctm-env-suite');
+  const locker = g('fctm-cli-locker');
+  const ciudad = g('fctm-env-ciudad');
+  const zip    = g('fctm-env-zip');
+  const estado = g('fctm-env-estado');
+  const pais   = g('fctm-cli-pais');
+  const ref    = g('fctm-env-ref');
+  const pago   = g('fctm-tipo-pago');
+  const numero = document.getElementById('fctm-numero')?.textContent?.trim() || '—';
+  const fecha  = document.getElementById('fctm-fecha')?.textContent?.trim()  || new Date().toLocaleDateString('es-CO');
+  const descG  = parseFloat(document.getElementById('fctm-desc-global')?.value || 0) || 0;
+  const envio  = parseFloat(document.getElementById('fctm-envio')?.value || 0) || 0;
+  const subtotal = _fctmItems.reduce((s, i) => s + i.qty * i.precio, 0);
+  const descMonto = subtotal * descG / 100;
+  const total  = subtotal - descMonto + envio;
+
+  let y = 18;
+
+  // ── HEADER ──
+  doc.setFillColor(26, 22, 16);
+  doc.rect(0, 0, pageW, 40, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(20);
+  doc.setTextColor(201, 151, 58);
+  doc.text('PLEASEME', margin, y + 7);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(154, 140, 118);
+  doc.text('ACCESSORIES · Oro laminado de alta calidad', margin, y + 13);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(201, 151, 58);
+  doc.text('FACTURA', pageW - margin, y + 7, { align: 'right' });
+  doc.setFontSize(15);
+  doc.setTextColor(255, 240, 179);
+  doc.text(numero, pageW - margin, y + 16, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(154, 140, 118);
+  doc.text(fecha, pageW - margin, y + 23, { align: 'right' });
+  y = 48;
+
+  // ── CLIENTE (izquierda) ──
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7);
+  doc.setTextColor(139, 105, 20);
+  doc.text('FACTURAR A', margin, y);
+  doc.setDrawColor(201, 151, 58);
+  doc.setLineWidth(0.4);
+  doc.line(margin, y + 1.5, margin + 40, y + 1.5);
+  y += 5;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(26, 22, 16);
+  doc.text(nombre || '—', margin, y);
+  y += 5;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(60, 50, 40);
+  if (tel)    { doc.text('Tel: ' + tel, margin, y); y += 5; }
+  if (dir)    { const ln = doc.splitTextToSize('Dir: ' + dir + (suite ? ', ' + suite : ''), 85); doc.text(ln, margin, y); y += ln.length * 5; }
+  if (locker) { doc.text('Lock: ' + locker, margin, y); y += 5; }
+  if (pago)   { doc.text('Pago: ' + pago, margin, y); y += 5; }
+
+  // ── ENVÍO (derecha) ──
+  const rx = pageW / 2 + 5;
+  let ry = 48;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7);
+  doc.setTextColor(139, 105, 20);
+  doc.text('ENVÍO A', rx, ry);
+  doc.line(rx, ry + 1.5, rx + 30, ry + 1.5);
+  ry += 5;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(60, 50, 40);
+  if (ciudad) { doc.text('Ciudad: ' + ciudad + (zip ? '  ZIP: ' + zip : ''), rx, ry); ry += 5; }
+  if (estado) { doc.text('Estado: ' + estado, rx, ry); ry += 5; }
+  if (pais)   { doc.text('País: '   + pais,   rx, ry); ry += 5; }
+  if (ref)    { doc.text('Ref: '    + ref,    rx, ry); ry += 5; }
+
+  y = Math.max(y, ry) + 10;
+
+  // ── TABLA DE ARTÍCULOS ──
+  doc.setFillColor(26, 22, 16);
+  doc.rect(margin, y, pageW - 2 * margin, 7, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.setTextColor(201, 151, 58);
+  const col = { art: margin + 2, cant: margin + 110, precio: margin + 128, sub: pageW - margin - 2 };
+  doc.text('ARTÍCULO', col.art,  y + 4.5);
+  doc.text('CANT.',    col.cant, y + 4.5, { align: 'center' });
+  doc.text('PRECIO',  col.precio + 14, y + 4.5, { align: 'right' });
+  doc.text('SUBTOTAL',col.sub,  y + 4.5, { align: 'right' });
+  y += 8;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  _fctmItems.forEach((item, idx) => {
+    if (idx % 2 === 0) { doc.setFillColor(252, 249, 243); doc.rect(margin, y - 1, pageW - 2 * margin, 7, 'F'); }
+    doc.setTextColor(26, 22, 16);
+    doc.text(String(item.nombre).substring(0, 42), col.art, y + 4);
+    doc.text(String(item.qty), col.cant, y + 4, { align: 'center' });
+    doc.text(sym + item.precio.toFixed(2), col.precio + 14, y + 4, { align: 'right' });
+    doc.text(sym + (item.qty * item.precio).toFixed(2), col.sub, y + 4, { align: 'right' });
+    y += 7;
   });
-  if (descG > 0) msg += `\nDescuento global: -${descG}%`;
-  const symWA = _fctmGetMoneda();
-  msg += `\n*TOTAL: ${symWA}${total.toFixed(2)}*`;
-  const phone = (typeof getWhatsAppNumber === 'function') ? getWhatsAppNumber() : '';
-  const url   = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
-  window.open(url, '_blank');
+  y += 6;
+
+  // ── TOTALES ──
+  const totX = pageW - margin - 70;
+  doc.setDrawColor(224, 215, 196);
+  doc.setLineWidth(0.3);
+  doc.line(totX, y, pageW - margin, y);
+  y += 5;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(60, 50, 40);
+  if (subtotal !== total) {
+    doc.text('Subtotal:', totX, y);
+    doc.text(sym + subtotal.toFixed(2), pageW - margin, y, { align: 'right' });
+    y += 5;
+  }
+  if (descG > 0) {
+    doc.setTextColor(180, 50, 50);
+    doc.text('Descuento (' + descG + '%):', totX, y);
+    doc.text('-' + sym + descMonto.toFixed(2), pageW - margin, y, { align: 'right' });
+    y += 5;
+    doc.setTextColor(60, 50, 40);
+  }
+  if (envio > 0) {
+    doc.text('Envío:', totX, y);
+    doc.text(sym + envio.toFixed(2), pageW - margin, y, { align: 'right' });
+    y += 5;
+  }
+  doc.setFillColor(26, 22, 16);
+  doc.rect(totX - 2, y - 1, pageW - margin - totX + 4, 10, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(201, 151, 58);
+  doc.text('TOTAL:', totX, y + 6);
+  doc.text(sym + total.toFixed(2), pageW - margin, y + 6, { align: 'right' });
+  y += 16;
+
+  // ── FOOTER ──
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(154, 140, 118);
+  doc.text('Gracias por tu compra · Pleaseme Accessories · Cada pieza, una historia', pageW / 2, y + 6, { align: 'center' });
+
+  return doc;
+}
+
+async function _fctmGuardarPendiente() {
+  const nombre = (document.getElementById('fctm-cli-nombre')?.value || '').trim();
+  if (!nombre) {
+    showToast('⚠ Ingresa el nombre del cliente');
+    document.getElementById('fctm-cli-nombre')?.focus(); return;
+  }
+  if (!_fctmItems.length) {
+    showToast('⚠ Agrega al menos un producto');
+    document.getElementById('fctm-input-nombre')?.focus(); return;
+  }
+  if (!_db) { showToast('⚠ Sin conexión a la base de datos'); return; }
+  try {
+    const numero  = document.getElementById('fctm-numero').textContent.trim();
+    const moneda  = _fctmGetMoneda();
+    const items   = _fctmGetItems().map(i => ({ name: i.nombre, qty: i.qty, price: i.precio.toFixed(2), desc: 0, sub: i.sub.toFixed(2), category: '' }));
+    const descG   = parseFloat(document.getElementById('fctm-desc-global').value || 0) || 0;
+    const envioVal = parseFloat(document.getElementById('fctm-envio')?.value || 0) || 0;
+    const subtotal = items.reduce((s, i) => s + parseFloat(i.sub), 0);
+    const descMonto = subtotal * descG / 100;
+    const total   = subtotal - descMonto + envioVal;
+    const g = id => (document.getElementById(id)?.value || '').trim();
+    const factura = {
+      numero, pedido_numero: numero, origen: 'manual', moneda,
+      fecha:   firebase.firestore.FieldValue.serverTimestamp(),
+      estado:  'pendiente',
+      tipo_pago: g('fctm-tipo-pago'),
+      items, subtotal: parseFloat(subtotal.toFixed(2)),
+      descuento: descG, envio_costo: envioVal, total: parseFloat(total.toFixed(2)),
+      cliente: {
+        nombre: g('fctm-cli-nombre').toUpperCase(),
+        tel:    g('fctm-cli-tel'),
+        pais:   g('fctm-cli-pais'),
+        direccion: g('fctm-cli-dir'),
+        suite:  g('fctm-env-suite'),
+        locker: g('fctm-cli-locker')
+      },
+      envio: {
+        ciudad: g('fctm-env-ciudad'), zip: g('fctm-env-zip'),
+        estado: g('fctm-env-estado'), referencia: g('fctm-env-ref')
+      }
+    };
+    const snap = await _db.collection('facturas_procesadas').where('numero','==',numero).limit(1).get();
+    if (!snap.empty) await _db.collection('facturas_procesadas').doc(snap.docs[0].id).set(factura);
+    else             await _db.collection('facturas_procesadas').add(factura);
+    showToast('⏳ Factura guardada como Pendiente');
+    cerrarFacturaManual();
+  } catch(e) { showToast('Error al guardar: ' + e.message); }
 }
 
 function _fctmPreparar() {
