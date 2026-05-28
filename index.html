@@ -6299,9 +6299,25 @@ function cerrarBanner() {
     data.sessions.push({
       ts: now.toISOString(),
       date: now.toLocaleDateString('es-CO', {day:'2-digit',month:'short',year:'numeric'}),
-      time: now.toLocaleTimeString('es-CO', {hour:'2-digit',minute:'2-digit'})
+      time: now.toLocaleTimeString('es-CO', {hour:'2-digit',minute:'2-digit'}),
+      city: '', country: ''
     });
     localStorage.setItem(key, JSON.stringify(data));
+    // Geolocalización por IP (asíncrono, no bloquea la carga)
+    fetch('https://ipapi.co/json/')
+      .then(r => r.json())
+      .then(geo => {
+        try {
+          const d2 = JSON.parse(localStorage.getItem(key) || '{}');
+          const last = (d2.sessions || []).slice(-1)[0];
+          if (last) {
+            last.city    = geo.city    || geo.region || '';
+            last.country = geo.country_name || geo.country || '';
+            last.ip      = geo.ip || '';
+            localStorage.setItem(key, JSON.stringify(d2));
+          }
+        } catch(e) {}
+      }).catch(() => {});
   } catch(e) {}
 })();
 

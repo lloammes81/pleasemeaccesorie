@@ -2188,6 +2188,7 @@ textarea { resize: vertical; min-height: 80px; }
               <th>#</th>
               <th>Fecha</th>
               <th>Hora</th>
+              <th>Ubicación</th>
             </tr>
           </thead>
           <tbody id="visitTableBody"></tbody>
@@ -4624,12 +4625,16 @@ function loadVisitas() {
       empty.style.display = '';
     } else {
       empty.style.display = 'none';
-      tbody.innerHTML = sessions.slice(0, 30).map((s, i) => `
+      tbody.innerHTML = sessions.slice(0, 30).map((s, i) => {
+        const ubicacion = [s.city, s.country].filter(Boolean).join(', ') || '<span style="color:var(--text-muted);font-size:10px;">—</span>';
+        return `
         <tr>
           <td style="color:var(--text-muted);font-size:11px;">${sessions.length - i}</td>
           <td>${s.date}</td>
           <td style="color:var(--gold-deep);font-weight:500;">${s.time}</td>
-        </tr>`).join('');
+          <td style="font-size:11px;">${ubicacion}</td>
+        </tr>`;
+      }).join('');
     }
   } catch(e) { console.error(e); }
 }
