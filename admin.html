@@ -5546,20 +5546,10 @@ function mobGoTo(page) {
               <option value="DOM REP">🇩🇴 DOM REP – República Dominicana</option>
             </select>
           </div>
-          <div class="factura-field factura-field-ac">
-            <label>Dirección</label>
-            <input type="text" id="fct-cli-dir" placeholder="Calle / Av. / Número" autocomplete="off" oninput="_fctDirInput(this)" onblur="_fctDirBlur()">
-            <div id="fct-dir-sugerencias" class="fct-autocomplete" style="display:none;"></div>
-            <div class="fct-dir-hint" id="fct-dir-hint"></div>
-          </div>
           <div class="factura-field">
-            <label>Tipo de pago</label>
-            <select id="fct-tipo-pago">
-              <option value="">Seleccionar…</option>
-              <option value="Cash">💵 Cash</option>
-              <option value="Transferencia">💳 Transferencia</option>
-              <option value="Depósito">🏦 Depósito</option>
-            </select>
+            <label>Dirección</label>
+            <input type="text" id="fct-cli-dir" placeholder="Calle / Av. / Número">
+            <div class="fct-dir-hint" id="fct-dir-hint"></div>
           </div>
         </div>
         <div>
@@ -5582,10 +5572,6 @@ function mobGoTo(page) {
               <option value="">Seleccionar estado…</option>
             </select>
             <input type="text" id="fct-env-estado" placeholder="Estado / Departamento">
-          </div>
-          <div class="factura-field">
-            <label>Suite / Apt / Unit</label>
-            <input type="text" id="fct-env-suite" placeholder="Suite 101, Apt 2B…">
           </div>
           <div class="factura-field">
             <label>Lock Num</label>
@@ -6595,9 +6581,7 @@ function reabrirFactura(docId) {
   document.body.style.overflow = 'hidden';
 }
 
-document.getElementById('facturaOverlay').addEventListener('click', function(e) {
-  if (e.target === this) cerrarFactura();
-});
+
 
 // ─── ESTADOS USA ──────────────────────────────────────────────────────────────
 const _US_STATES = [
