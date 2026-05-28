@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20260528-4';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20260528-5';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -2179,7 +2179,11 @@ textarea { resize: vertical; min-height: 80px; }
         <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
         Factura Manual
       </button>
-      <button class="nav-item" onclick="goTo('config')" id="nav-config">
+      <button class="nav-item" onclick="goTo('historia')" id="nav-historia">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" width="16" height="16"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Historia Facturas
+      </button>
+      <button class="nav-item" onclick="goTo('config')" id="nav-config"> id="nav-config">
         <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
         Configuración
       </button>
@@ -2905,6 +2909,20 @@ textarea { resize: vertical; min-height: 80px; }
       <div id="facturasLista"><p class="pedidos-empty">Cargando facturas…</p></div>
     </div>
 
+    <!-- PAGE: HISTORIA FACTURAS MANUALES -->
+    <div class="page" id="page-historia">
+      <div class="realizados-filtros">
+        <span class="realizados-badge" style="background:rgba(201,151,58,0.12);border-color:rgba(201,151,58,0.4);color:#C9973A;">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Facturas manuales
+        </span>
+        <input class="pedidos-search" id="historiaSearch" type="text"
+          placeholder="Buscar por número o cliente…" oninput="filtrarHistoria()">
+        <button class="btn" onclick="loadHistoria()" style="white-space:nowrap">↺ Actualizar</button>
+      </div>
+      <div id="historiaLista"><p class="pedidos-empty">Cargando historial…</p></div>
+    </div>
+
     <!-- PAGE: CONFIGURACIÓN -->
     <div class="page" id="page-config">
       <div class="contact-grid">
@@ -3593,7 +3611,7 @@ function goTo(page) {
   document.getElementById('page-' + page).classList.add('active');
   document.getElementById('nav-' + page).classList.add('active');
 
-  const titles = { productos: 'Productos', contacto: 'Información de contacto', banner: 'Banner de anuncio', visitas: 'Visitas al catálogo', info: 'Información del catálogo', config: 'Configuración · API Keys', pedidos: 'Pedidos de clientes', realizados: 'Pedidos a Crédito', facturas: 'Facturas Procesadas', ofertas: 'Ofertas de temporada' };
+  const titles = { productos: 'Productos', contacto: 'Información de contacto', banner: 'Banner de anuncio', visitas: 'Visitas al catálogo', info: 'Información del catálogo', config: 'Configuración · API Keys', pedidos: 'Pedidos de clientes', realizados: 'Pedidos a Crédito', facturas: 'Facturas Procesadas', ofertas: 'Ofertas de temporada', historia: 'Historia de Facturas Manuales' };
   document.getElementById('topbarTitle').textContent = titles[page] || '';
 
   const topAction = document.getElementById('topbarAction');
@@ -3605,6 +3623,7 @@ function goTo(page) {
   if (page === 'pedidos') loadPedidos();
   if (page === 'realizados') loadRealizados();
   if (page === 'facturas') loadFacturas();
+  if (page === 'historia') loadHistoria();
   if (page === 'ofertas') loadOfertas();
   if (page === 'productos') {
     topAction.style.display = '';
@@ -6506,6 +6525,119 @@ function filtrarFacturas() {
   }));
 }
 
+// ─── HISTORIA FACTURAS MANUALES ──────────────────────────────────────────────
+let _historia = [];
+
+async function loadHistoria() {
+  const lista = document.getElementById('historiaLista');
+  if (!lista) return;
+  lista.innerHTML = '<p class="pedidos-empty">Cargando historial…</p>';
+  try {
+    const snap = await _db.collection('facturas_procesadas')
+      .where('origen', '==', 'manual')
+      .orderBy('fecha', 'desc').limit(300).get();
+    _historia = snap.docs.map(doc => ({ _docId: doc.id, ...doc.data() }));
+    renderHistoria(_historia);
+  } catch(e) {
+    lista.innerHTML = '<p class="pedidos-empty">Error al cargar: ' + e.message + '</p>';
+  }
+}
+
+function renderHistoria(lista) {
+  const el = document.getElementById('historiaLista');
+  if (!el) return;
+  if (!lista.length) {
+    el.innerHTML = '<p class="pedidos-empty">No hay facturas manuales registradas aún.</p>';
+    return;
+  }
+  el.innerHTML = lista.map(f => {
+    const fecha   = f.fecha ? new Date(f.fecha.seconds * 1000).toLocaleString('es-CO', { dateStyle:'medium', timeStyle:'short' }) : '—';
+    const sym     = f.moneda === 'RD$' ? 'RD$' : '$';
+    const total   = sym + Number(f.total || 0).toLocaleString('es-CO', { minimumFractionDigits:2 });
+    const cliente = (f.cliente && f.cliente.nombre) ? f.cliente.nombre : '<em style="color:#888">Sin nombre</em>';
+    const tel     = (f.cliente && f.cliente.tel)     ? f.cliente.tel : '';
+    const pais    = (f.cliente && f.cliente.pais)    ? f.cliente.pais : '';
+    const ciudad  = (f.envio   && f.envio.ciudad)    ? f.envio.ciudad : '';
+    const estado  = (f.envio   && f.envio.estado)    ? f.envio.estado : '';
+    const pago    = f.tipo_pago || '';
+    const items   = f.items || [];
+    const desc    = Number(f.descuento || 0);
+    const envio   = Number(f.envio_costo || 0);
+    const sub     = Number(f.subtotal || 0);
+    return `
+      <div class="pedido-card" id="hcard-${f._docId}" style="border-color:rgba(201,151,58,0.35);">
+        <div class="pedido-card-head" onclick="toggleHistoria('${f._docId}')">
+          <span class="pedido-numero">${f.pedido_numero || f.numero || '—'}</span>
+          <span style="font-size:9px;letter-spacing:1px;color:#C9973A;background:rgba(201,151,58,0.1);border:1px solid rgba(201,151,58,0.3);padding:2px 8px;border-radius:10px;">MANUAL</span>
+          <span class="pedido-fecha">${fecha}</span>
+          <span class="pedido-total-head">${total}</span>
+          <svg class="pedido-arrow" id="harrow-${f._docId}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="pedido-body" id="hbody-${f._docId}">
+          <div></div>
+          <div>
+            <p style="font-size:11px;color:var(--text-muted);margin-bottom:6px;letter-spacing:1px;text-transform:uppercase;">Cliente</p>
+            <p style="font-size:14px;font-weight:700;margin:0 0 3px;color:var(--text);">${cliente}</p>
+            ${tel ? '<p style="font-size:11px;color:var(--text-muted);margin:0 0 2px;">📱 ' + tel + '</p>' : ''}
+            ${ciudad ? '<p style="font-size:11px;color:var(--text-muted);margin:0 0 2px;">📍 ' + [ciudad,estado].filter(Boolean).join(', ') + (pais ? ' · '+pais : '') + '</p>' : ''}
+            ${pago ? '<p style="font-size:11px;color:var(--text-muted);margin:0 0 8px;">💳 ' + pago + '</p>' : ''}
+            <p style="font-size:11px;color:var(--text-muted);margin-bottom:6px;letter-spacing:1px;text-transform:uppercase;">Artículos (${items.length})</p>
+            <table class="pedido-items-table">
+              <thead><tr><th>Artículo</th><th style="text-align:center">Cant.</th><th style="text-align:right">Precio</th><th style="text-align:right">Subtotal</th></tr></thead>
+              <tbody>${items.map(it => {
+                const itSub = sym + Number(it.sub || 0).toLocaleString('es-CO',{minimumFractionDigits:2});
+                const itPrice = sym + Number(it.price || 0).toLocaleString('es-CO',{minimumFractionDigits:2});
+                return '<tr><td>' + (it.name||'—') + '</td><td style="text-align:center">' + (it.qty||1) + '</td><td style="text-align:right">' + itPrice + '</td><td style="text-align:right">' + itSub + '</td></tr>';
+              }).join('')}</tbody>
+            </table>
+            <div style="margin-top:10px;padding:10px 12px;background:var(--bg2);border-radius:4px;font-size:12px;">
+              <div style="display:flex;justify-content:space-between;color:var(--text-muted);padding:2px 0;">${'<span>Subtotal</span><span>' + sym + sub.toLocaleString('es-CO',{minimumFractionDigits:2}) + '</span>'}</div>
+              ${desc > 0 ? '<div style="display:flex;justify-content:space-between;color:#e74c3c;padding:2px 0;"><span>Descuento (' + desc + '%)</span><span>-' + sym + (sub*desc/100).toLocaleString('es-CO',{minimumFractionDigits:2}) + '</span></div>' : ''}
+              ${envio > 0 ? '<div style="display:flex;justify-content:space-between;color:var(--text-muted);padding:2px 0;"><span>Envío</span><span>' + sym + envio.toLocaleString('es-CO',{minimumFractionDigits:2}) + '</span></div>' : ''}
+              <div style="display:flex;justify-content:space-between;font-weight:700;font-size:14px;color:var(--gold);padding-top:6px;margin-top:4px;border-top:1px solid var(--border);">
+                <span>TOTAL</span><span>${total}</span>
+              </div>
+            </div>
+            <div class="pedido-actions" style="margin-top:10px;">
+              <button class="btn" style="font-size:11px;padding:5px 12px;border-color:rgba(192,57,43,0.4);color:#c0392b;" onclick="eliminarHistoria('${f._docId}')">
+                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleHistoria(docId) {
+  const body  = document.getElementById('hbody-'  + docId);
+  const arrow = document.getElementById('harrow-' + docId);
+  if (!body) return;
+  const open = body.classList.toggle('open');
+  arrow.style.transform = open ? 'rotate(180deg)' : '';
+}
+
+function filtrarHistoria() {
+  const q = (document.getElementById('historiaSearch').value || '').toLowerCase().trim();
+  if (!q) { renderHistoria(_historia); return; }
+  renderHistoria(_historia.filter(f => {
+    const num = (f.pedido_numero || f.numero || '').toLowerCase();
+    const nom = (f.cliente && f.cliente.nombre || '').toLowerCase();
+    return num.includes(q) || nom.includes(q);
+  }));
+}
+
+async function eliminarHistoria(docId) {
+  if (!confirm('¿Eliminar esta factura del historial? Esta acción no se puede deshacer.')) return;
+  try {
+    await _db.collection('facturas_procesadas').doc(docId).delete();
+    _historia = _historia.filter(h => h._docId !== docId);
+    renderHistoria(_historia);
+    showToast('✦ Factura eliminada del historial');
+  } catch(e) { showToast('Error al eliminar: ' + e.message); }
+}
+
 // ─── MARCAR PEDIDO COMO FACTURADO ────────────────────────────────────────────
 async function _marcarPedidoFacturado(docId) {
   if (!docId) return;
@@ -7444,6 +7576,8 @@ async function _fctmImprimir() {
   document.body.classList.add('printing-fctm');
   window.print();
   document.body.classList.remove('printing-fctm');
+  // Reset form after printing
+  cerrarFacturaManual();
 }
 
 async function _guardarFacturaManual() {
