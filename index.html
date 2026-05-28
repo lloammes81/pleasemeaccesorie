@@ -3393,15 +3393,7 @@
 })();
 </script>
 
-<!-- TAB BLOCK -->
-<div id="tabWarning" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(10,8,4,0.97);flex-direction:column;align-items:center;justify-content:center;gap:28px;">
-  <div style="width:54px;height:1px;background:linear-gradient(90deg,transparent,#C9973A,transparent);"></div>
-  <p style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:3px;color:#C9973A;text-transform:uppercase;margin:0;">Pleaseme Accessories</p>
-  <h2 style="font-family:'Cinzel',serif;font-size:16px;letter-spacing:3px;color:#E8C96D;text-align:center;margin:0;text-shadow:0 0 20px rgba(201,151,58,0.4);">Esta página ya está<br>abierta</h2>
-  <p style="font-family:'Cinzel',serif;font-size:8.5px;letter-spacing:2px;color:rgba(154,140,118,0.6);text-transform:uppercase;margin:0;text-align:center;">Por favor usa la pestaña<br>que ya tienes abierta</p>
-  <div style="width:54px;height:1px;background:linear-gradient(90deg,transparent,#C9973A,transparent);"></div>
-  <button onclick="window.close()" style="font-family:'Cinzel',serif;font-size:8px;letter-spacing:2.5px;color:#0A0804;background:linear-gradient(135deg,#8B6914,#C9973A);border:none;padding:11px 28px;text-transform:uppercase;cursor:pointer;">Cerrar esta pestaña</button>
-</div>
+
 
 <div class="top-bar"></div>
 <div id="announcementBanner">
@@ -6588,14 +6580,7 @@ renderInfoSections();
         bc.postMessage('pong');
         try { window.focus(); } catch(e) {}
       } else if (e.data === 'pong') {
-        const w = document.getElementById('tabWarning');
-        if (w) {
-          w.style.display = 'flex';
-          document.body.style.overflow = 'hidden';
-          document.body.style.pointerEvents = 'none';
-          w.style.pointerEvents = 'all';
-        }
-        try { window.close(); } catch(e) {}
+        window.close();
       }
     };
     setTimeout(() => bc.postMessage('ping'), 200);
