@@ -1806,10 +1806,45 @@ textarea { resize: vertical; min-height: 80px; }
 #facturaModal.tema-oscuro .fct-autocomplete-item { color:#c0b090; }
 #facturaModal.tema-oscuro .fct-autocomplete-item:hover { background:rgba(201,151,58,0.1); color:#E8C96D; }
 #facturaModal.tema-oscuro .fct-geo-hint { background:rgba(201,151,58,0.08); border-color:rgba(201,151,58,0.2); color:#8a7a65; }
+#facturaManualModal.tema-oscuro { background:#111 !important; color:#f0e6d0 !important; }
+#facturaManualModal.tema-oscuro .factura-body { background:#111; }
+#facturaManualModal.tema-oscuro .factura-empresa-nombre { color:#E8C96D; }
+#facturaManualModal.tema-oscuro .factura-empresa-sub { color:#C9973A; }
+#facturaManualModal.tema-oscuro .factura-empresa-info { color:#8a7a65; }
+#facturaManualModal.tema-oscuro .factura-divider { border-color:rgba(201,151,58,0.2); }
+#facturaManualModal.tema-oscuro .factura-divider-gold { border-color:#C9973A; }
+#facturaManualModal.tema-oscuro .factura-seccion-title { color:#C9973A; border-color:rgba(201,151,58,0.2); }
+#facturaManualModal.tema-oscuro .factura-num-label { color:rgba(201,151,58,0.5); }
+#facturaManualModal.tema-oscuro .factura-num-val { color:#E8C96D; }
+#facturaManualModal.tema-oscuro .factura-fecha-val { color:#7a6e5c; }
+#facturaManualModal.tema-oscuro .factura-field label { color:rgba(201,151,58,0.65); }
+#facturaManualModal.tema-oscuro .factura-field input,
+#facturaManualModal.tema-oscuro .factura-field select,
+#facturaManualModal.tema-oscuro .factura-field textarea {
+  background:#1a1710 !important; border-color:rgba(201,151,58,0.2) !important; color:#f0e6d0 !important; }
+#facturaManualModal.tema-oscuro .factura-field input::placeholder,
+#facturaManualModal.tema-oscuro .factura-field textarea::placeholder { color:#5a4e3a !important; }
+#facturaManualModal.tema-oscuro .factura-field input:focus,
+#facturaManualModal.tema-oscuro .factura-field select:focus,
+#facturaManualModal.tema-oscuro .factura-field textarea:focus {
+  border-color:rgba(201,151,58,0.5) !important; outline:none; }
+#facturaManualModal.tema-oscuro .factura-field select {
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23C9973A' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); }
+#facturaManualModal.tema-oscuro .factura-items-table thead tr { background:linear-gradient(90deg,#0a0804,#1a1610); }
+#facturaManualModal.tema-oscuro .factura-items-table td { color:#c0b090; border-color:rgba(201,151,58,0.1); }
+#facturaManualModal.tema-oscuro .factura-items-table tbody tr:nth-child(even) td { background:rgba(201,151,58,0.04); }
+#facturaManualModal.tema-oscuro .factura-totales { background:rgba(201,151,58,0.05); border-color:rgba(201,151,58,0.2); }
+#facturaManualModal.tema-oscuro .factura-total-fila { color:#8a7a65; }
+#facturaManualModal.tema-oscuro .factura-total-fila.grande { color:#E8C96D; border-color:rgba(201,151,58,0.3); }
+#facturaManualModal.tema-oscuro .factura-nota-final { background:rgba(201,151,58,0.04); border-color:rgba(201,151,58,0.15); color:#5a4e3a; }
+#facturaManualModal.tema-oscuro .factura-footer-bar { background:#1a1610; border-color:rgba(201,151,58,0.2); }
+#facturaManualModal.tema-oscuro .btn-fct-cancel { color:#8a7a65; border-color:rgba(201,151,58,0.25); }
+#facturaManualModal.tema-oscuro .btn-fct-cancel:hover { color:#C9973A; border-color:rgba(201,151,58,0.5); }
 /* Bloque cliente estilo factura empresa (solo en impresión) */
 .fct-cli-print-block { display:none; }
 @media print {
-  body > *:not(#facturaOverlay) { display:none !important; }
+  body > *:not(#facturaOverlay):not(#facturaManualOverlay) { display:none !important; }
+  #facturaManualOverlay { display:block !important; background:none; padding:0; position:static; overflow:visible; }
   .factura-overlay { display:block !important; background:none; padding:0; position:static; overflow:visible; }
   .factura-modal { box-shadow:none; border-radius:0; max-width:100%; }
   .factura-topbar, .factura-footer-bar { display:none !important; }
@@ -2814,6 +2849,10 @@ textarea { resize: vertical; min-height: 80px; }
         <input class="pedidos-search" id="facturasSearch" type="text"
           placeholder="Buscar por número de factura o cliente…" oninput="filtrarFacturas()">
         <button class="btn" onclick="loadFacturas()" style="white-space:nowrap">↺ Actualizar</button>
+        <button class="btn btn-primary" onclick="abrirFacturaManual()" style="white-space:nowrap;display:inline-flex;align-items:center;gap:6px;">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+          Factura Manual
+        </button>
       </div>
       <div id="facturasLista"><p class="pedidos-empty">Cargando facturas…</p></div>
     </div>
@@ -5627,6 +5666,163 @@ function mobGoTo(page) {
   </div>
 </div>
 
+<!-- MODAL FACTURA MANUAL -->
+<div class="factura-overlay" id="facturaManualOverlay">
+  <div class="factura-modal" id="facturaManualModal">
+    <div class="factura-topbar">
+      <span class="factura-topbar-title">FACTURA MANUAL</span>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button id="fctm-tema-btn" onclick="toggleFacturaManualTema()" title="Cambiar tema" style="display:inline-flex;align-items:center;gap:5px;">
+          <span id="fctm-tema-icon">☀</span> <span id="fctm-tema-label">Tema claro</span>
+        </button>
+        <button onclick="cerrarFacturaManual()">✕ Cerrar</button>
+      </div>
+    </div>
+    <div class="factura-gold-band"></div>
+    <div class="factura-body">
+      <!-- Cabecera -->
+      <div class="factura-head-row">
+        <div class="factura-empresa">
+          <img src="logo.png" class="factura-logo" alt="Logo" onerror="this.style.display='none'">
+          <div class="factura-empresa-texto">
+            <div class="factura-empresa-nombre">Pleaseme Accessories</div>
+            <div class="factura-empresa-sub">Accesorios en Oro Laminado</div>
+            <div class="factura-empresa-info" id="fctm-empresa-info"></div>
+          </div>
+        </div>
+        <div class="factura-num-bloque">
+          <div class="factura-num-label">Factura N°</div>
+          <div class="factura-num-val" id="fctm-numero">—</div>
+          <div class="factura-fecha-val" id="fctm-fecha"></div>
+        </div>
+      </div>
+      <hr class="factura-divider">
+
+      <!-- Datos cliente + envío -->
+      <div class="factura-cols">
+        <div>
+          <div class="factura-seccion-title">Datos del cliente</div>
+          <div class="factura-field">
+            <label>Nombre completo</label>
+            <input type="text" id="fctm-cli-nombre" placeholder="Nombre del cliente" style="text-transform:uppercase;">
+          </div>
+          <div class="factura-field">
+            <label>Teléfono</label>
+            <input type="tel" id="fctm-cli-tel" placeholder="+1 (000) 000-0000" inputmode="tel" oninput="_fctmTelInput(this)">
+          </div>
+          <div class="factura-field">
+            <label>País</label>
+            <select id="fctm-cli-pais">
+              <option value="">Seleccionar país…</option>
+              <option value="USA">🇺🇸 USA – Estados Unidos</option>
+              <option value="DOM REP">🇩🇴 DOM REP – República Dominicana</option>
+            </select>
+          </div>
+          <div class="factura-field">
+            <label>Dirección</label>
+            <input type="text" id="fctm-cli-dir" placeholder="Calle / Av. / Número">
+          </div>
+          <div class="factura-field">
+            <label>Tipo de pago</label>
+            <select id="fctm-tipo-pago">
+              <option value="">Seleccionar…</option>
+              <option value="Cash">💵 Cash</option>
+              <option value="Transferencia">💳 Transferencia</option>
+              <option value="Depósito">🏦 Depósito</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <div class="factura-seccion-title">Dirección de envío</div>
+          <div class="factura-field">
+            <div style="display:flex;gap:8px;align-items:flex-end;">
+              <div style="flex:1;">
+                <label style="display:block;font-size:9.5px;color:#999;margin-bottom:3px;letter-spacing:0.5px;text-transform:uppercase;">Ciudad</label>
+                <input type="text" id="fctm-env-ciudad" placeholder="Ciudad" style="width:100%;border:1px solid #e5e5e5;border-radius:4px;padding:7px 10px;font-size:12px;font-family:'Montserrat',sans-serif;color:#1a1a1a;box-sizing:border-box;background:#fafafa;">
+              </div>
+              <div style="width:82px;">
+                <label style="display:block;font-size:9.5px;color:#999;margin-bottom:3px;letter-spacing:0.5px;text-transform:uppercase;">ZIP</label>
+                <input type="text" id="fctm-env-zip" placeholder="00000" maxlength="5" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'')" style="width:100%;border:1px solid #e5e5e5;border-radius:4px;padding:7px 8px;font-size:12px;font-family:'Montserrat',sans-serif;color:#1a1a1a;box-sizing:border-box;background:#fafafa;text-align:center;letter-spacing:2px;">
+              </div>
+            </div>
+          </div>
+          <div class="factura-field">
+            <label>Estado</label>
+            <input type="text" id="fctm-env-estado" placeholder="Estado / Departamento">
+          </div>
+          <div class="factura-field">
+            <label>Suite / Apt / Unit</label>
+            <input type="text" id="fctm-env-suite" placeholder="Suite 101, Apt 2B…">
+          </div>
+          <div class="factura-field">
+            <label>Lock Num</label>
+            <input type="text" id="fctm-cli-locker" placeholder="Lock #123">
+          </div>
+          <div class="factura-field">
+            <label>Referencia adicional</label>
+            <input type="text" id="fctm-env-ref" placeholder="Barrio, edificio, referencia…">
+          </div>
+        </div>
+      </div>
+
+      <hr class="factura-divider">
+
+      <!-- Productos manuales -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div class="factura-seccion-title" style="margin-bottom:0;">Productos</div>
+        <button onclick="_fctmAgregarFila()" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:1.5px;color:#C9973A;background:rgba(201,151,58,0.1);border:1px solid rgba(201,151,58,0.35);padding:5px 14px;cursor:pointer;border-radius:3px;">+ Agregar producto</button>
+      </div>
+      <table class="factura-items-table" style="table-layout:fixed;">
+        <colgroup>
+          <col style="width:35%">
+          <col style="width:12%">
+          <col style="width:16%">
+          <col style="width:14%">
+          <col style="width:16%">
+          <col style="width:7%">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th style="text-align:center">Cant.</th>
+            <th style="text-align:right">Precio</th>
+            <th style="text-align:right">Desc.%</th>
+            <th style="text-align:right">Subtotal</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="fctm-items-body"></tbody>
+      </table>
+
+      <!-- Descuento global + totales -->
+      <div class="factura-totales" style="margin-top:12px;">
+        <div class="factura-total-fila" style="align-items:center;gap:10px;flex-wrap:wrap;">
+          <span>Descuento global (%)</span>
+          <input type="number" id="fctm-desc-global" min="0" max="100" value="0" oninput="_fctmRecalcular()" style="width:60px;border:1px solid #e5e5e5;border-radius:4px;padding:4px 8px;font-size:12px;text-align:center;background:#fafafa;color:#1a1a1a;">
+        </div>
+        <div class="factura-total-fila" id="fctm-subtotal-row">
+          <span>Subtotal</span><span id="fctm-subtotal-val">$0</span>
+        </div>
+        <div class="factura-total-fila" id="fctm-desc-row" style="display:none;">
+          <span>Descuento</span><span id="fctm-desc-val">-$0</span>
+        </div>
+        <div class="factura-total-fila grande">
+          <span>TOTAL</span><span id="fctm-total-val">$0</span>
+        </div>
+      </div>
+      <div class="factura-nota-final">Gracias por tu compra · Pleaseme Accessories · Cada pieza, una historia</div>
+    </div>
+    <div class="factura-footer-bar">
+      <button class="btn-fct-cancel" onclick="cerrarFacturaManual()">Cancelar</button>
+      <button class="btn-fct-wa" onclick="_fctmCompartirWA()" style="display:inline-flex;align-items:center;gap:6px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.558 4.122 1.532 5.857L.057 23.882l6.184-1.622A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.969 0-3.81-.54-5.385-1.479l-.386-.229-3.668.962.98-3.579-.252-.4A9.954 9.954 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+        Enviar por WhatsApp
+      </button>
+      <button class="btn-fct-print" onclick="_fctmImprimir()">&#128438; Imprimir</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL ANULAR FACTURA -->
 <div class="anular-overlay" id="anularOverlay">
   <div class="anular-box">
@@ -6672,6 +6868,165 @@ function _buscarYLlenarClientePorTel(tel) {
     return t && t === telLimpio;
   });
   if (match) _fctLlenarDesdeFactura(match);
+}
+
+// ─── FACTURA MANUAL ───────────────────────────────────────────────────────────
+function abrirFacturaManual() {
+  // Número único
+  const num = 'FM-' + Date.now().toString().slice(-6);
+  document.getElementById('fctm-numero').textContent = num;
+  document.getElementById('fctm-fecha').textContent  = new Date().toLocaleDateString('es-CO', {day:'2-digit',month:'short',year:'numeric'});
+  // Info empresa
+  const ei = document.getElementById('fct-empresa-info');
+  const eim = document.getElementById('fctm-empresa-info');
+  if (ei && eim) eim.innerHTML = ei.innerHTML;
+  // Reset form
+  ['fctm-cli-nombre','fctm-cli-tel','fctm-cli-dir','fctm-env-ciudad','fctm-env-zip','fctm-env-estado','fctm-env-suite','fctm-cli-locker','fctm-env-ref'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('fctm-cli-pais').value = '';
+  document.getElementById('fctm-tipo-pago').value = '';
+  document.getElementById('fctm-desc-global').value = '0';
+  // Start with one empty row
+  document.getElementById('fctm-items-body').innerHTML = '';
+  _fctmAgregarFila();
+  _fctmRecalcular();
+  // Restore theme
+  const modal = document.getElementById('facturaManualModal');
+  if (localStorage.getItem('fctm_tema') === 'oscuro') {
+    modal.classList.add('tema-oscuro');
+    document.getElementById('fctm-tema-icon').textContent  = '✦';
+    document.getElementById('fctm-tema-label').textContent = 'Tema oscuro';
+  } else {
+    modal.classList.remove('tema-oscuro');
+    document.getElementById('fctm-tema-icon').textContent  = '☀';
+    document.getElementById('fctm-tema-label').textContent = 'Tema claro';
+  }
+  document.getElementById('facturaManualOverlay').classList.add('open');
+}
+
+function cerrarFacturaManual() {
+  document.getElementById('facturaManualOverlay').classList.remove('open');
+}
+
+function toggleFacturaManualTema() {
+  const modal = document.getElementById('facturaManualModal');
+  const isOscuro = modal.classList.toggle('tema-oscuro');
+  localStorage.setItem('fctm_tema', isOscuro ? 'oscuro' : 'claro');
+  document.getElementById('fctm-tema-icon').textContent  = isOscuro ? '✦' : '☀';
+  document.getElementById('fctm-tema-label').textContent = isOscuro ? 'Tema oscuro' : 'Tema claro';
+}
+
+let _fctmRowId = 0;
+function _fctmAgregarFila() {
+  const id = ++_fctmRowId;
+  const tbody = document.getElementById('fctm-items-body');
+  const tr = document.createElement('tr');
+  tr.id = 'fctm-row-' + id;
+  tr.innerHTML = `
+    <td><input type="text" placeholder="Nombre del producto" oninput="_fctmRecalcular()" style="width:100%;border:1px solid #e5e5e5;border-radius:3px;padding:5px 7px;font-size:11px;background:#fafafa;color:#1a1a1a;box-sizing:border-box;" class="fctm-prod-nombre"></td>
+    <td style="text-align:center"><input type="number" value="1" min="1" oninput="_fctmRecalcular()" style="width:48px;border:1px solid #e5e5e5;border-radius:3px;padding:5px 4px;font-size:11px;text-align:center;background:#fafafa;color:#1a1a1a;" class="fctm-prod-qty"></td>
+    <td style="text-align:right"><input type="number" value="0" min="0" step="0.01" oninput="_fctmRecalcular()" style="width:72px;border:1px solid #e5e5e5;border-radius:3px;padding:5px 4px;font-size:11px;text-align:right;background:#fafafa;color:#1a1a1a;" class="fctm-prod-precio"></td>
+    <td style="text-align:right"><input type="number" value="0" min="0" max="100" oninput="_fctmRecalcular()" style="width:52px;border:1px solid #e5e5e5;border-radius:3px;padding:5px 4px;font-size:11px;text-align:right;background:#fafafa;color:#1a1a1a;" class="fctm-prod-desc"></td>
+    <td style="text-align:right;font-size:11px;color:#333;" class="fctm-prod-sub">$0</td>
+    <td style="text-align:center"><button onclick="_fctmEliminarFila(${id})" style="background:none;border:none;color:#e74c3c;cursor:pointer;font-size:14px;padding:2px 6px;">✕</button></td>`;
+  tbody.appendChild(tr);
+}
+
+function _fctmEliminarFila(id) {
+  const row = document.getElementById('fctm-row-' + id);
+  if (row) row.remove();
+  _fctmRecalcular();
+}
+
+function _fctmRecalcular() {
+  const rows = document.querySelectorAll('#fctm-items-body tr');
+  let subtotal = 0;
+  rows.forEach(tr => {
+    const qty    = parseFloat(tr.querySelector('.fctm-prod-qty')?.value  || 0) || 0;
+    const precio = parseFloat(tr.querySelector('.fctm-prod-precio')?.value || 0) || 0;
+    const desc   = parseFloat(tr.querySelector('.fctm-prod-desc')?.value  || 0) || 0;
+    const sub    = qty * precio * (1 - desc / 100);
+    const subEl  = tr.querySelector('.fctm-prod-sub');
+    if (subEl) subEl.textContent = '$' + sub.toLocaleString('es-CO', {minimumFractionDigits:2, maximumFractionDigits:2});
+    subtotal += sub;
+  });
+  const descGlobal = parseFloat(document.getElementById('fctm-desc-global').value || 0) || 0;
+  const descMonto  = subtotal * descGlobal / 100;
+  const total      = subtotal - descMonto;
+  const fmt = v => '$' + v.toLocaleString('es-CO', {minimumFractionDigits:2, maximumFractionDigits:2});
+  document.getElementById('fctm-subtotal-val').textContent = fmt(subtotal);
+  const descRow = document.getElementById('fctm-desc-row');
+  if (descGlobal > 0) {
+    descRow.style.display = '';
+    document.getElementById('fctm-desc-val').textContent = '-' + fmt(descMonto);
+  } else {
+    descRow.style.display = 'none';
+  }
+  document.getElementById('fctm-total-val').textContent = fmt(total);
+}
+
+function _fctmTelInput(inp) {
+  let raw = inp.value.replace(/[^\d+]/g, '');
+  if (raw.startsWith('+1')) {
+    const nums = raw.slice(2).replace(/\D/g,'').slice(0,10);
+    let fmt = '+1';
+    if (nums.length > 0) fmt += ' (' + nums.slice(0,3);
+    if (nums.length >= 3) fmt += ')';
+    if (nums.length > 3) fmt += ' ' + nums.slice(3,6);
+    if (nums.length > 6) fmt += '-' + nums.slice(6,10);
+    inp.value = fmt;
+  }
+}
+
+function _fctmGetItems() {
+  const rows = document.querySelectorAll('#fctm-items-body tr');
+  return Array.from(rows).map(tr => {
+    const nombre = tr.querySelector('.fctm-prod-nombre')?.value.trim() || '';
+    const qty    = parseFloat(tr.querySelector('.fctm-prod-qty')?.value  || 1);
+    const precio = parseFloat(tr.querySelector('.fctm-prod-precio')?.value || 0);
+    const desc   = parseFloat(tr.querySelector('.fctm-prod-desc')?.value  || 0);
+    const sub    = qty * precio * (1 - desc / 100);
+    return { nombre, qty, precio, desc, sub };
+  }).filter(r => r.nombre || r.precio);
+}
+
+function _fctmCompartirWA() {
+  const nombre = document.getElementById('fctm-cli-nombre').value.trim();
+  const tel    = document.getElementById('fctm-cli-tel').value.trim();
+  const ciudad = document.getElementById('fctm-env-ciudad').value.trim();
+  const estado = document.getElementById('fctm-env-estado').value.trim();
+  const pago   = document.getElementById('fctm-tipo-pago').value;
+  const items  = _fctmGetItems();
+  const descG  = parseFloat(document.getElementById('fctm-desc-global').value || 0) || 0;
+  let subtotal = items.reduce((s, i) => s + i.sub, 0);
+  let total    = subtotal * (1 - descG / 100);
+  let msg = `*FACTURA MANUAL · Pleaseme Accessories*\n`;
+  msg += `Factura: ${document.getElementById('fctm-numero').textContent}\n`;
+  msg += `Fecha: ${document.getElementById('fctm-fecha').textContent}\n\n`;
+  if (nombre) msg += `*Cliente:* ${nombre}\n`;
+  if (tel)    msg += `*Tel:* ${tel}\n`;
+  if (ciudad || estado) msg += `*Destino:* ${[ciudad,estado].filter(Boolean).join(', ')}\n`;
+  if (pago)   msg += `*Pago:* ${pago}\n`;
+  msg += `\n*Productos:*\n`;
+  items.forEach(i => {
+    msg += `  • ${i.nombre} x${i.qty} @ $${i.precio}`;
+    if (i.desc > 0) msg += ` (-${i.desc}%)`;
+    msg += ` = $${i.sub.toFixed(2)}\n`;
+  });
+  if (descG > 0) msg += `\nDescuento global: -${descG}%`;
+  msg += `\n*TOTAL: $${total.toFixed(2)}*`;
+  const phone = (typeof getWhatsAppNumber === 'function') ? getWhatsAppNumber() : '';
+  const url   = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+}
+
+function _fctmImprimir() {
+  // Temporarily hide other overlays and print
+  const overlay = document.getElementById('facturaManualOverlay');
+  overlay.classList.add('printing-manual');
+  window.print();
+  overlay.classList.remove('printing-manual');
 }
 
 function abrirLightbox(src) {
