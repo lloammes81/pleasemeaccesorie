@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20260528-3';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20260528-4';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -1878,9 +1878,10 @@ textarea { resize: vertical; min-height: 80px; }
 .fctm-cli-print-block { display:none; }
 .fctm-print-section { display:none; }
 @media print {
-  body > *:not(#facturaOverlay):not(#facturaManualOverlay) { display:none !important; }
-  #facturaManualOverlay { display:block !important; background:none; padding:0; position:static; overflow:visible; }
-  .factura-overlay { display:block !important; background:none; padding:0; position:static; overflow:visible; }
+  /* Hide everything, then selectively reveal only the active invoice */
+  body > * { display:none !important; }
+  body:not(.printing-fctm) #facturaOverlay { display:block !important; background:none !important; padding:0; position:static; overflow:visible; }
+  body.printing-fctm #facturaManualOverlay { display:block !important; background:none !important; padding:0; position:static; overflow:visible; }
   .factura-modal { box-shadow:none; border-radius:0; max-width:100%; }
   .factura-topbar, .factura-footer-bar { display:none !important; }
   .factura-gold-band, .factura-items-table thead tr, .factura-totales { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
@@ -5777,7 +5778,7 @@ function mobGoTo(page) {
               </div>
               <div style="width:82px;">
                 <label style="display:block;font-size:9.5px;color:#999;margin-bottom:3px;letter-spacing:0.5px;text-transform:uppercase;">ZIP</label>
-                <input type="text" id="fctm-env-zip" placeholder="00000" maxlength="5" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'')" style="width:100%;border:1px solid #e5e5e5;border-radius:4px;padding:7px 8px;font-size:12px;font-family:'Montserrat',sans-serif;color:#1a1a1a;box-sizing:border-box;background:#fafafa;text-align:center;letter-spacing:2px;">
+                <input type="text" id="fctm-env-zip" placeholder="00000" maxlength="5" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'');_fctmZipInput(this)" style="width:100%;border:1px solid #e5e5e5;border-radius:4px;padding:7px 8px;font-size:12px;font-family:'Montserrat',sans-serif;color:#1a1a1a;box-sizing:border-box;background:#fafafa;text-align:center;letter-spacing:2px;">
               </div>
             </div>
           </div>
@@ -5862,7 +5863,7 @@ function mobGoTo(page) {
       <div class="factura-totales" style="margin-top:12px;">
         <div class="factura-total-fila fctm-input-row" style="align-items:center;gap:10px;padding-bottom:7px;border-bottom:1px solid #e8dfc8;">
           <span style="flex:1;">Descuento global (%)</span>
-          <input type="number" id="fctm-desc-global" min="0" max="100" value="0" oninput="_fctmRecalcular()" class="fctm-input" style="width:64px;text-align:center;padding:4px 8px;">
+          <input type="number" id="fctm-desc-global" min="0" max="100" value="0" oninput="_fctmRecalcular()" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('fctm-envio')?.focus();}" class="fctm-input" style="width:64px;text-align:center;padding:4px 8px;">
         </div>
         <div class="factura-total-fila fctm-input-row" style="align-items:center;gap:10px;padding-bottom:7px;border-bottom:1px solid #e8dfc8;">
           <span style="flex:1;">Envío <span id="fctm-envio-sym" style="font-size:10px;color:#aaa;"></span></span>
@@ -5882,6 +5883,21 @@ function mobGoTo(page) {
         </div>
       </div>
       <div class="factura-nota-final">Gracias por tu compra · Pleaseme Accessories · Cada pieza, una historia</div>
+    </div>
+    <!-- ZIP mismatch popup -->
+    <div id="fctm-zip-popup" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
+      <div style="background:#fff;border-radius:8px;padding:28px 32px;max-width:380px;width:90%;box-shadow:0 16px 60px rgba(0,0,0,0.4);font-family:'Montserrat',sans-serif;">
+        <div style="font-family:'Cinzel',serif;font-size:11px;letter-spacing:3px;color:#C9973A;text-transform:uppercase;margin-bottom:14px;">Verificación de Dirección</div>
+        <div style="font-size:12px;color:#444;line-height:1.7;margin-bottom:18px;">
+          La ciudad ingresada <strong id="fctm-zip-popup-actual" style="color:#c0392b;"></strong> no coincide con el ZIP.<br>
+          La ubicación correcta es:<br>
+          <strong id="fctm-zip-popup-correcta" style="color:#1a7a3a;font-size:13px;display:block;margin-top:6px;"></strong>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button onclick="_fctmZipPopupCancelar()" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:1px;padding:8px 16px;border:1px solid #ddd;background:none;color:#999;cursor:pointer;border-radius:4px;">Mantener</button>
+          <button onclick="_fctmZipPopupAceptar()" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:1px;padding:8px 16px;border:none;background:linear-gradient(135deg,#1a7a3a,#145f2e);color:#fff;cursor:pointer;border-radius:4px;">Actualizar dirección</button>
+        </div>
+      </div>
     </div>
     <div class="factura-footer-bar">
       <button class="btn-fct-cancel" onclick="cerrarFacturaManual()">Cancelar</button>
@@ -6952,6 +6968,64 @@ async function _fctZipInput(inp) {
   } catch(e) { inp.style.borderColor = ''; }
 }
 
+async function _fctmZipInput(inp) {
+  const zip = inp.value;
+  if (zip.length !== 5) return;
+  const pais = document.getElementById('fctm-cli-pais')?.value || '';
+  if (pais !== 'USA') return;
+  inp.style.borderColor = '#C9973A';
+  try {
+    const res  = await fetch('https://api.zippopotam.us/us/' + zip);
+    if (!res.ok) { inp.style.borderColor = 'crimson'; return; }
+    const data = await res.json();
+    const place = data.places && data.places[0];
+    if (!place) { inp.style.borderColor = 'crimson'; return; }
+    const city  = place['place name'] || '';
+    const state = place['state abbreviation'] || place.state || '';
+    const ciudadInp = document.getElementById('fctm-env-ciudad');
+    const estadoInp = document.getElementById('fctm-env-estado');
+    const currentCity = (ciudadInp?.value || '').trim();
+    if (currentCity && currentCity.toLowerCase() !== city.toLowerCase()) {
+      // Mismatch — show correction popup
+      _fctmMostrarCorreccionZip(currentCity, city, state, zip, ciudadInp, estadoInp);
+    } else {
+      if (ciudadInp) ciudadInp.value = city;
+      if (estadoInp && !estadoInp.value.trim()) estadoInp.value = state;
+      const hint = document.getElementById('fctm-dir-hint');
+      if (hint && city) {
+        hint.textContent = '📍 ' + city + (state ? ', ' + state : '') + '  ' + zip + ' — Verifica que la dirección corresponda a esta ubicación';
+        hint.style.display = 'block';
+      }
+    }
+    inp.style.borderColor = 'limegreen';
+    setTimeout(() => { inp.style.borderColor = ''; }, 1500);
+  } catch(e) { inp.style.borderColor = ''; }
+}
+
+function _fctmMostrarCorreccionZip(ciudadActual, ciudadCorrecta, estado, zip, ciudadInp, estadoInp) {
+  const popup = document.getElementById('fctm-zip-popup');
+  if (!popup) return;
+  document.getElementById('fctm-zip-popup-actual').textContent = ciudadActual;
+  document.getElementById('fctm-zip-popup-correcta').textContent = ciudadCorrecta + (estado ? ', ' + estado : '') + '  ZIP ' + zip;
+  popup._ciudadCorrecta = ciudadCorrecta;
+  popup._estado = estado;
+  popup._ciudadInp = ciudadInp;
+  popup._estadoInp = estadoInp;
+  popup.style.display = 'flex';
+}
+
+function _fctmZipPopupAceptar() {
+  const popup = document.getElementById('fctm-zip-popup');
+  if (!popup) return;
+  if (popup._ciudadInp) popup._ciudadInp.value = popup._ciudadCorrecta;
+  if (popup._estadoInp && popup._estado) popup._estadoInp.value = popup._estado;
+  popup.style.display = 'none';
+}
+
+function _fctmZipPopupCancelar() {
+  document.getElementById('fctm-zip-popup').style.display = 'none';
+}
+
 function _buscarYLlenarClientePorTel(tel) {
   if (!tel || !_facturas || !_facturas.length) return;
   const telLimpio = tel.replace(/\D/g,'');
@@ -7367,10 +7441,9 @@ async function _fctmImprimir() {
   }
   _fctmPreparar();
   await _guardarFacturaManual();
-  const overlay = document.getElementById('facturaManualOverlay');
-  overlay.classList.add('printing-manual');
+  document.body.classList.add('printing-fctm');
   window.print();
-  overlay.classList.remove('printing-manual');
+  document.body.classList.remove('printing-fctm');
 }
 
 async function _guardarFacturaManual() {
