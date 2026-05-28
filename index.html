@@ -3716,7 +3716,7 @@ const _t = {
     size:'Size', sizeOpt:'Talla', collarOpts:['18"','20"','22"','24"','26"'],
     cats:{ aretes:'Aretes', anillos:'Anillos', dijes:'Dijes', collares:'Cadenas',
            pulseras:'Brazaletes', tobilleras:'Tobilleras', sets:'Sets',
-           coleccion:'Colección', temporada:'Temporada' }
+           temporada:'Ofertas de temporada' }
   },
   en: {
     catalog:'Catalog', subtitle:'Accessories · Gold Plated', mySelection:'My Selection', noteLabel:'Order notes',
@@ -3737,7 +3737,7 @@ const _t = {
     size:'Size', sizeOpt:'Size', collarOpts:['18"','20"','22"','24"','26"'],
     cats:{ aretes:'Earrings', anillos:'Rings', dijes:'Charms', collares:'Necklaces',
            pulseras:'Bracelets', tobilleras:'Anklets', sets:'Sets',
-           coleccion:'Collection', temporada:'Season' }
+           temporada:'Seasonal Offers' }
   }
 };
 let _lang = localStorage.getItem('pm_lang') || 'es';
@@ -4065,7 +4065,6 @@ const categories = [
   { key: "pulseras",   label: "Brazaletes" },
   { key: "tobilleras", label: "Tobilleras" },
   { key: "sets",       label: "Sets"       },
-  { key: "coleccion",  label: "Colección"  },
   { key: "temporada",  label: "Ofertas de temporada"  },
 ];
 
@@ -5454,21 +5453,6 @@ function getCategoryIllustration(key) {
       <circle cx='90' cy='130' r='5' fill='${GEM}' stroke='${S}' stroke-width='1.5' opacity='0.9'/>
       <circle cx='50' cy='134' r='4' fill='${S}' opacity='0.7' stroke='#FFF0B3' stroke-width='1'/>
       <circle cx='130' cy='134' r='4' fill='${S}' opacity='0.7' stroke='#FFF0B3' stroke-width='1'/>
-    </svg>`,
-
-    coleccion: `<svg viewBox='0 0 180 200' fill='none' xmlns='http://www.w3.org/2000/svg'>${G}
-      <path d='M28,148 L28,85 L62,118 L90,52 L118,118 L152,85 L152,148 Z' fill='${S}' opacity='0.88'/>
-      <path d='M28,148 L28,85 L62,118 L90,52 L118,118 L152,85 L152,148 Z' fill='none' stroke='#FFF0B3' stroke-width='1.5'/>
-      <rect x='26' y='140' width='128' height='18' rx='5' fill='${S}'/>
-      <rect x='26' y='140' width='128' height='18' rx='5' fill='none' stroke='#FFF0B3' stroke-width='1'/>
-      <circle cx='90' cy='57' r='12' fill='${GEM}' opacity='0.92' stroke='${S}' stroke-width='2'/>
-      <circle cx='90' cy='57' r='5' fill='white' opacity='0.28'/>
-      <circle cx='42' cy='120' r='8' fill='${GEM}' opacity='0.85' stroke='${S}' stroke-width='1.5'/>
-      <circle cx='138' cy='120' r='8' fill='${GEM}' opacity='0.85' stroke='${S}' stroke-width='1.5'/>
-      <circle cx='60' cy='149' r='4' fill='${GEM}' opacity='0.8'/>
-      <circle cx='90' cy='149' r='5' fill='${GEM}' opacity='0.9'/>
-      <circle cx='120' cy='149' r='4' fill='${GEM}' opacity='0.8'/>
-      <line x1='28' y1='140' x2='152' y2='140' stroke='white' stroke-width='0.8' opacity='0.25'/>
     </svg>`,
 
     temporada: `<svg viewBox='0 0 180 200' fill='none' xmlns='http://www.w3.org/2000/svg'>${G}
