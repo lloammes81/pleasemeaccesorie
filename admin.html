@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20260528-1';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20260528-2';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -5813,11 +5813,13 @@ function mobGoTo(page) {
 
       <!-- Descuento global + totales -->
       <div class="factura-totales" style="margin-top:12px;">
-        <div class="factura-total-fila" style="align-items:center;gap:10px;flex-wrap:wrap;padding-bottom:8px;border-bottom:1px solid #e8dfc8;">
+        <div class="factura-total-fila" style="align-items:center;gap:10px;padding-bottom:7px;border-bottom:1px solid #e8dfc8;">
           <span style="flex:1;">Descuento global (%)</span>
-          <input type="number" id="fctm-desc-global" min="0" max="100" value="0" oninput="_fctmRecalcular()" class="fctm-input" style="width:60px;text-align:center;padding:4px 8px;">
-          <span style="margin-left:4px;font-size:11px;color:#aaa;">Envío ($)</span>
-          <input type="number" id="fctm-envio" min="0" step="0.01" value="" placeholder="0" oninput="_fctmRecalcular()" class="fctm-input" style="width:72px;text-align:right;padding:4px 8px;">
+          <input type="number" id="fctm-desc-global" min="0" max="100" value="0" oninput="_fctmRecalcular()" class="fctm-input" style="width:64px;text-align:center;padding:4px 8px;">
+        </div>
+        <div class="factura-total-fila" style="align-items:center;gap:10px;padding-bottom:7px;border-bottom:1px solid #e8dfc8;">
+          <span style="flex:1;">Envío <span id="fctm-envio-sym" style="font-size:10px;color:#aaa;"></span></span>
+          <input type="number" id="fctm-envio" min="0" step="0.01" value="" placeholder="0" oninput="_fctmRecalcular()" class="fctm-input" style="width:80px;text-align:right;padding:4px 8px;">
         </div>
         <div class="factura-total-fila" id="fctm-subtotal-row">
           <span>Subtotal</span><span id="fctm-subtotal-val">$0,00</span>
@@ -7001,24 +7003,39 @@ function _fctmEntradaKeydown(e) {
 
 function _fctmAddItem() {
   const nombre = (document.getElementById('fctm-input-nombre').value || '').trim();
-  const qty    = Math.max(1, parseFloat(document.getElementById('fctm-input-qty').value) || 1);
-  const precio = parseFloat(document.getElementById('fctm-input-precio').value) || 0;
-  // Validate: product must exist in catalog
+  const qtyRaw = parseFloat(document.getElementById('fctm-input-qty').value);
+  const precio = parseFloat(document.getElementById('fctm-input-precio').value);
+  // Validate product exists
   const existe = (typeof products !== 'undefined' ? products : [])
     .some(p => p.name && p.name.trim().toLowerCase() === nombre.toLowerCase());
   if (!nombre || !existe) {
     const inp = document.getElementById('fctm-input-nombre');
-    inp.style.borderColor = '#e74c3c';
-    inp.focus();
+    inp.style.borderColor = '#e74c3c'; inp.focus();
+    setTimeout(() => { inp.style.borderColor = ''; }, 1500);
+    return;
+  }
+  // Validate qty
+  if (!qtyRaw || qtyRaw <= 0) {
+    showToast('⚠ La cantidad debe ser mayor a 0');
+    const inp = document.getElementById('fctm-input-qty');
+    inp.style.borderColor = '#e74c3c'; inp.focus(); inp.select();
+    setTimeout(() => { inp.style.borderColor = ''; }, 1500);
+    return;
+  }
+  // Validate precio
+  if (!precio || precio <= 0) {
+    showToast('⚠ El precio debe ser mayor a 0');
+    const inp = document.getElementById('fctm-input-precio');
+    inp.style.borderColor = '#e74c3c'; inp.focus(); inp.select();
     setTimeout(() => { inp.style.borderColor = ''; }, 1500);
     return;
   }
   if (_fctmEditingItemId !== null) {
     const item = _fctmItems.find(i => i.id === _fctmEditingItemId);
-    if (item) { item.nombre = nombre; item.qty = qty; item.precio = precio; }
+    if (item) { item.nombre = nombre; item.qty = qtyRaw; item.precio = precio; }
     _fctmEditingItemId = null;
   } else {
-    _fctmItems.push({ id: ++_fctmItemId, nombre, qty, precio });
+    _fctmItems.push({ id: ++_fctmItemId, nombre, qty: qtyRaw, precio });
   }
   document.getElementById('fctm-input-nombre').value  = '';
   document.getElementById('fctm-input-qty').value     = '1';
@@ -7060,12 +7077,11 @@ function _fctmRenderLista() {
     const pFmt   = sym + item.precio.toLocaleString('es-CO', {minimumFractionDigits:2, maximumFractionDigits:2});
     const last   = idx === _fctmItems.length - 1 ? 'border-bottom:none;' : '';
     const edit   = _fctmEditingItemId === item.id ? ' editing' : '';
-    return `<div class="fctm-list-item${edit}" style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid #e8dfc8;${last}">
+    return `<div class="fctm-list-item" style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid #e8dfc8;${last}">
       <div style="flex:1;font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.nombre}</div>
       <div style="font-size:11px;color:#888;min-width:36px;text-align:center;white-space:nowrap;">×${item.qty}</div>
       <div style="font-size:11px;color:#888;min-width:70px;text-align:right;white-space:nowrap;">${pFmt}</div>
       <div style="font-size:12px;font-weight:600;color:#C9973A;min-width:80px;text-align:right;white-space:nowrap;">${subFmt}</div>
-      <button onclick="_fctmEditItem(${item.id})" style="background:none;border:none;cursor:pointer;font-size:13px;padding:2px 5px;opacity:0.55;flex-shrink:0;" title="Editar">✏</button>
       <button onclick="_fctmRemoveItem(${item.id})" style="background:none;border:none;color:#e74c3c;cursor:pointer;font-size:14px;padding:2px 5px;flex-shrink:0;" title="Eliminar">✕</button>
     </div>`;
   }).join('');
@@ -7123,7 +7139,10 @@ function _fctmGetMoneda() {
 function _fctmPaisChange() {
   const sym = _fctmGetMoneda();
   const lbl = document.getElementById('fctm-moneda-label');
-  if (lbl) lbl.textContent = sym;
+  if (lbl) lbl.textContent = '(' + sym + ')';
+  const envSym = document.getElementById('fctm-envio-sym');
+  if (envSym) envSym.textContent = '(' + sym + ')';
+  _fctmRenderLista();
   _fctmRecalcular();
 }
 
@@ -7233,6 +7252,30 @@ function _fctmCompartirWA() {
 }
 
 async function _fctmImprimir() {
+  // Validate required fields before printing
+  const nombre  = (document.getElementById('fctm-cli-nombre')?.value || '').trim();
+  const pais    = (document.getElementById('fctm-cli-pais')?.value   || '').trim();
+  const tipoPago = (document.getElementById('fctm-tipo-pago')?.value || '').trim();
+  if (!nombre) {
+    showToast('⚠ Ingresa el nombre del cliente');
+    document.getElementById('fctm-cli-nombre')?.focus();
+    return;
+  }
+  if (!pais) {
+    showToast('⚠ Selecciona el país del cliente');
+    document.getElementById('fctm-cli-pais')?.focus();
+    return;
+  }
+  if (!tipoPago) {
+    showToast('⚠ Selecciona el tipo de pago');
+    document.getElementById('fctm-tipo-pago')?.focus();
+    return;
+  }
+  if (!_fctmItems.length) {
+    showToast('⚠ Agrega al menos un producto a la factura');
+    document.getElementById('fctm-input-nombre')?.focus();
+    return;
+  }
   await _guardarFacturaManual();
   const overlay = document.getElementById('facturaManualOverlay');
   overlay.classList.add('printing-manual');
