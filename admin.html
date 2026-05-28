@@ -1744,6 +1744,68 @@ textarea { resize: vertical; min-height: 80px; }
 .fct-autocomplete-item:hover { background:#fffbf2; color:#C9973A; }
 .fct-autocomplete-item span { font-size:9.5px; color:#aaa; }
 .factura-field-ac { position:relative; }
+
+/* ─── FACTURA TEMA CLARO (override dark-theme global) ─── */
+#facturaModal .factura-field input,
+#facturaModal .factura-field select,
+#facturaModal .factura-field textarea {
+  background:#fafafa !important; color:#1a1a1a !important;
+  border:1px solid #e5e5e5 !important;
+}
+#facturaModal .factura-field input::placeholder,
+#facturaModal .factura-field textarea::placeholder { color:#bbb !important; }
+#facturaModal .factura-field input:focus,
+#facturaModal .factura-field select:focus,
+#facturaModal .factura-field textarea:focus {
+  background:#fff !important; border-color:#C9973A !important;
+}
+
+/* ─── FACTURA TEMA OSCURO (Pleaseme) ─── */
+#facturaModal.tema-oscuro { background:#111 !important; color:#f0e6d0 !important; }
+#facturaModal.tema-oscuro .factura-body { background:#111; }
+#facturaModal.tema-oscuro .factura-empresa-nombre { color:#E8C96D; }
+#facturaModal.tema-oscuro .factura-empresa-sub { color:#C9973A; }
+#facturaModal.tema-oscuro .factura-empresa-info { color:#8a7a65; }
+#facturaModal.tema-oscuro .factura-divider { border-color:rgba(201,151,58,0.2); }
+#facturaModal.tema-oscuro .factura-divider-gold { border-color:#C9973A; }
+#facturaModal.tema-oscuro .factura-seccion-title { color:#C9973A; border-color:rgba(201,151,58,0.2); }
+#facturaModal.tema-oscuro .factura-num-label { color:rgba(201,151,58,0.5); }
+#facturaModal.tema-oscuro .factura-num-val { color:#E8C96D; }
+#facturaModal.tema-oscuro .factura-fecha-val { color:#7a6e5c; }
+#facturaModal.tema-oscuro .factura-field label { color:rgba(201,151,58,0.65); }
+#facturaModal.tema-oscuro .factura-field input,
+#facturaModal.tema-oscuro .factura-field select,
+#facturaModal.tema-oscuro .factura-field textarea {
+  background:#1e1b14 !important; color:#f0e6d0 !important;
+  border:1px solid rgba(201,151,58,0.25) !important;
+}
+#facturaModal.tema-oscuro .factura-field input::placeholder,
+#facturaModal.tema-oscuro .factura-field textarea::placeholder { color:#5a4e3a !important; }
+#facturaModal.tema-oscuro .factura-field input:focus,
+#facturaModal.tema-oscuro .factura-field select:focus,
+#facturaModal.tema-oscuro .factura-field textarea:focus {
+  background:#231f17 !important; border-color:#C9973A !important;
+}
+#facturaModal.tema-oscuro .factura-field select {
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23C9973A' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E") !important;
+  background-repeat:no-repeat !important; background-position:right 10px center !important;
+}
+#facturaModal.tema-oscuro .factura-confirm-row { background:rgba(201,151,58,0.07); border-color:rgba(201,151,58,0.2); }
+#facturaModal.tema-oscuro .factura-confirm-row label { color:#c0a870; }
+#facturaModal.tema-oscuro .factura-items-table thead tr { background:linear-gradient(90deg,#0a0804,#1a1610); }
+#facturaModal.tema-oscuro .factura-items-table td { color:#c0b090; border-color:rgba(201,151,58,0.1); }
+#facturaModal.tema-oscuro .factura-items-table tbody tr:nth-child(even) td { background:rgba(201,151,58,0.04); }
+#facturaModal.tema-oscuro .factura-totales { background:rgba(201,151,58,0.05); border-color:rgba(201,151,58,0.2); }
+#facturaModal.tema-oscuro .factura-total-fila { color:#8a7a65; }
+#facturaModal.tema-oscuro .factura-total-fila.grande { color:#E8C96D; border-color:rgba(201,151,58,0.3); }
+#facturaModal.tema-oscuro .factura-nota-final { background:rgba(201,151,58,0.04); border-color:rgba(201,151,58,0.15); color:#5a4e3a; }
+#facturaModal.tema-oscuro .factura-footer-bar { background:#1a1610; border-color:rgba(201,151,58,0.2); }
+#facturaModal.tema-oscuro .btn-fct-cancel { color:#8a7a65; border-color:rgba(201,151,58,0.25); }
+#facturaModal.tema-oscuro .btn-fct-cancel:hover { color:#C9973A; border-color:rgba(201,151,58,0.5); }
+#facturaModal.tema-oscuro .fct-autocomplete { background:#1e1b14; border-color:rgba(201,151,58,0.2); }
+#facturaModal.tema-oscuro .fct-autocomplete-item { color:#c0b090; }
+#facturaModal.tema-oscuro .fct-autocomplete-item:hover { background:rgba(201,151,58,0.1); color:#E8C96D; }
+#facturaModal.tema-oscuro .fct-geo-hint { background:rgba(201,151,58,0.08); border-color:rgba(201,151,58,0.2); color:#8a7a65; }
 /* Bloque cliente estilo factura empresa (solo en impresión) */
 .fct-cli-print-block { display:none; }
 @media print {
@@ -5397,7 +5459,12 @@ function mobGoTo(page) {
   <div class="factura-modal" id="facturaModal">
     <div class="factura-topbar">
       <span class="factura-topbar-title">FACTURA · RECIBO</span>
-      <button onclick="cerrarFactura()">✕ Cerrar</button>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button id="fct-tema-btn" onclick="toggleFacturaTema()" title="Cambiar tema" style="display:inline-flex;align-items:center;gap:5px;">
+          <span id="fct-tema-icon">☀</span> <span id="fct-tema-label">Tema claro</span>
+        </button>
+        <button onclick="cerrarFactura()">✕ Cerrar</button>
+      </div>
     </div>
     <div class="factura-gold-band"></div>
     <div class="factura-body" id="facturaBody">
@@ -5695,6 +5762,28 @@ function cerrarFactura() {
   document.getElementById('facturaOverlay').classList.remove('open');
   document.body.style.overflow = '';
 }
+
+function toggleFacturaTema() {
+  const modal = document.getElementById('facturaModal');
+  const isOscuro = modal.classList.toggle('tema-oscuro');
+  localStorage.setItem('fct_tema', isOscuro ? 'oscuro' : 'claro');
+  const icon  = document.getElementById('fct-tema-icon');
+  const label = document.getElementById('fct-tema-label');
+  if (isOscuro) { icon.textContent = '✦'; label.textContent = 'Tema oscuro'; }
+  else          { icon.textContent = '☀'; label.textContent = 'Tema claro'; }
+}
+(function() {
+  if (localStorage.getItem('fct_tema') === 'oscuro') {
+    const modal = document.getElementById('facturaModal');
+    if (modal) {
+      modal.classList.add('tema-oscuro');
+      const icon  = document.getElementById('fct-tema-icon');
+      const label = document.getElementById('fct-tema-label');
+      if (icon)  icon.textContent  = '✦';
+      if (label) label.textContent = 'Tema oscuro';
+    }
+  }
+})();
 
 function _generarPdfFactura() {
   const { jsPDF } = window.jspdf;
