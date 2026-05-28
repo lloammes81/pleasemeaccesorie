@@ -4183,11 +4183,9 @@ fetchProductsFromFirebase()
 // Viene del admin; si no está configurado se usa el valor por defecto
 function formatPhoneDisplay(raw) {
   const d = (raw || '').replace(/\D/g, '');
-  if (d.length === 12 && d.startsWith('57')) {
-    return '+57 ' + d.slice(2,5) + ' ' + d.slice(5,8) + ' ' + d.slice(8);
-  }
-  if (d.length === 10) {
-    return d.slice(0,3) + ' ' + d.slice(3,6) + ' ' + d.slice(6);
+  const local = d.length >= 10 ? d.slice(-10) : d;
+  if (local.length === 10) {
+    return '(' + local.slice(0,3) + ') ' + local.slice(3,6) + ' - ' + local.slice(6);
   }
   return d ? '+' + d : '';
 }
