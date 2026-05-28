@@ -4558,7 +4558,8 @@ async function openCategoryPanel(category) {
     const porOferta    = products.filter(p => ofertaIds.has(p.id) && p.category !== 'temporada');
     catProducts = [...porOferta, ...porCategoria];
   } else {
-    catProducts = products.filter(p => p.category === category);
+    const ofertaExcluir = (_seasonalOffer && _seasonalOffer.active) ? new Set(_seasonalOffer.productIds || []) : new Set();
+    catProducts = products.filter(p => p.category === category && !ofertaExcluir.has(p.id));
   }
 
   catProducts.sort((a, b) => (parseFloat(String(a.price)) || 0) - (parseFloat(String(b.price)) || 0));
@@ -5495,7 +5496,8 @@ function categoryCardHTML(cat, i) {
     const porOferta    = products.filter(p => ofertaIds.has(p.id) && p.category !== 'temporada');
     catProducts = [...porOferta, ...porCategoria];
   } else {
-    catProducts = products.filter(p => p.category === cat.key);
+    const ofertaExcluir = (_seasonalOffer && _seasonalOffer.active) ? new Set(_seasonalOffer.productIds || []) : new Set();
+    catProducts = products.filter(p => p.category === cat.key && !ofertaExcluir.has(p.id));
   }
   const count = catProducts.length;
   const illustration = getCategoryIllustration(cat.key);
