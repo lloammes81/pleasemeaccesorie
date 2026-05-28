@@ -6465,8 +6465,31 @@ async function _setEstadoFactura(docId, estado, chk) {
   if (f) f.estado = nuevoEstado;
   try {
     await _db.collection('facturas_procesadas').doc(docId).update({ estado: nuevoEstado });
-    loadRealizados();
+    // Actualizar badge visual en la tarjeta de Facturas Procesadas
+    _actualizarBadgeFactura(docId, nuevoEstado);
+    // Sincronizar con Pedidos a Crédito
+    await loadRealizados();
+    if (nuevoEstado === 'pendiente') {
+      showToast('⏳ Factura movida a Pedidos a Crédito');
+    } else if (nuevoEstado === 'pagada') {
+      showToast('✓ Factura marcada como Pagada');
+    }
   } catch(e) { showToast('Error al guardar estado: ' + e.message); }
+}
+
+function _actualizarBadgeFactura(docId, estado) {
+  const card = document.getElementById('fcard-' + docId);
+  if (!card) return;
+  const head = card.querySelector('.pedido-card-head');
+  if (!head) return;
+  // Actualizar borde de la tarjeta
+  if (estado === 'pendiente') {
+    card.style.borderColor = 'rgba(230,126,34,0.5)';
+  } else if (estado === 'pagada') {
+    card.style.borderColor = 'rgba(46,160,67,0.4)';
+  } else {
+    card.style.borderColor = 'rgba(201,151,58,0.3)';
+  }
 }
 
 function anularFactura(docId) {
