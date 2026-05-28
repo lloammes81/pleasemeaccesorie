@@ -6147,6 +6147,7 @@ async function _setEstadoFactura(docId, estado, chk) {
   if (f) f.estado = nuevoEstado;
   try {
     await _db.collection('facturas_procesadas').doc(docId).update({ estado: nuevoEstado });
+    loadRealizados();
   } catch(e) { showToast('Error al guardar estado: ' + e.message); }
 }
 
