@@ -4149,21 +4149,29 @@ let products = [];
 if (products.length === 0) renderGrid();
 
 // ── Persistencia del carrito ────────────────────────────────────────────
+// IMPORTANTE: `cart` se declara aquí (antes que saveCart/restoreCart) para que
+// la restauración desde localStorage funcione. Antes estaba declarado más abajo
+// con `let cart = []` y la TDZ hacía que restoreCart fallara silenciosamente,
+// dejando el carrito vacío al recargar la página.
+let cart = []; // [{uid, id, qty, customMedida}]
+
 function saveCart() {
   try { localStorage.setItem('pm_cart', JSON.stringify(cart)); } catch(e) {}
 }
 
-(function restoreCart() {
+function restoreCartFromStorage() {
   try {
     const saved = localStorage.getItem('pm_cart');
     if (!saved) return;
     const data = JSON.parse(saved);
     if (Array.isArray(data) && data.length > 0) {
       cart = data;
-      updateCartUI();
     }
   } catch(e) {}
-})();
+}
+restoreCartFromStorage();
+// Refrescar badge/panel cuando updateCartUI esté disponible (está hoisted como function).
+try { if (typeof updateCartUI === 'function') updateCartUI(); } catch(e) {}
 
 fetchProductsFromFirebase()
   .then(data => {
@@ -4209,7 +4217,8 @@ let activeCategory = "";
 let currentModalId = null;
 
 // ─── CART STATE ──────────────────────────────────────────────────────
-let cart = []; // [{id, qty}]
+// `cart` ya fue declarado arriba (en el bloque de persistencia) para que
+// restoreCartFromStorage() pueda restaurar antes de cualquier render.
 
 function cartCount() { return cart.reduce((s, i) => s + i.qty, 0); }
 
