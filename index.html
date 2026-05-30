@@ -13,6 +13,18 @@
 <meta name="msapplication-tap-highlight" content="no">
 <meta name="apple-touch-fullscreen" content="yes">
 <title>Catálogo — Pleaseme Accessories</title>
+<!-- Open Graph / WhatsApp preview -->
+<meta property="og:type"        content="website">
+<meta property="og:url"         content="https://pleasemecatalogo.com/">
+<meta property="og:title"       content="Pleaseme Accessories · Oro Laminado">
+<meta property="og:description" content="✨ Accesorios y joyas en oro laminado 14k. Descubre nuestra colección.">
+<meta property="og:image"       content="https://pleasemecatalogo.com/logo.png">
+<meta property="og:image:width"  content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt"   content="Pleaseme Accessories">
+<meta property="og:site_name"   content="Pleaseme Accessories">
+<meta name="twitter:card"       content="summary_large_image">
+<meta name="twitter:image"      content="https://pleasemecatalogo.com/logo.png">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="pleaseme.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -3296,6 +3308,66 @@
     .cat-cart-btn { width: 34px; height: 34px; }
   }
 
+  /* ─── RESPONSIVE PANTALLAS GRANDES ─── */
+  @media (min-width: 768px) {
+    .catalog-grid { max-width: 700px; }
+    .cat-card { max-width: 100%; }
+    .oferta-card { max-width: 100%; }
+    .modal { max-width: 720px; }
+    .modal-inner { grid-template-columns: 260px 1fr; }
+    .modal-visual { max-height: none; min-height: 300px; }
+    .historial-modal { max-width: 680px; }
+  }
+
+  @media (min-width: 1024px) {
+    header { padding: calc(44px + env(safe-area-inset-top)) 48px 28px; }
+    .catalog-grid {
+      max-width: 960px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: start;
+      gap: 0 8px;
+    }
+    .catalog-section-label { grid-column: 1 / -1; }
+    .oferta-card { grid-column: 1 / -1; max-width: 100%; }
+    .cat-card + .cat-card::after { display: none; }
+    .cat-card {
+      max-width: 100%;
+      border-bottom: 1px solid rgba(201,151,58,0.1);
+    }
+    .cat-card:hover { transform: translateY(-3px); }
+    .cat-card:active { transform: translateY(-1px) scale(0.99); }
+    .cat-card::before {
+      background: radial-gradient(ellipse at 50% 20%,
+        rgba(201,151,58,0.10) 0%, transparent 70%);
+    }
+    .cat-panel {
+      left: 50%;
+      transform: translateX(-50%) translateY(100%);
+      max-width: 960px;
+      border-left: 1px solid var(--border-gold);
+      border-right: 1px solid var(--border-gold);
+    }
+    .cat-panel.open { transform: translateX(-50%) translateY(0); }
+    .cat-panel-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-content: start;
+      padding: 14px;
+      gap: 12px;
+    }
+    .modal { max-width: 820px; }
+    .modal-inner { grid-template-columns: 300px 1fr; }
+  }
+
+  @media (min-width: 1440px) {
+    .catalog-grid { max-width: 1200px; }
+    .cat-panel { max-width: 1200px; }
+    .cat-panel-body { grid-template-columns: repeat(3, 1fr); }
+    .modal { max-width: 900px; }
+    .modal-inner { grid-template-columns: 340px 1fr; }
+  }
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -3333,8 +3405,7 @@
 })();
 </script>
 
-<!-- TAB WARNING -->
-<div id="tabWarning" style="display:none;position:fixed;top:0;left:0;width:100%;z-index:9999;background:linear-gradient(90deg,#8B6914,#C49A2A,#8B6914);padding:11px 50px;text-align:center;font-family:'Cinzel',serif;font-size:10px;letter-spacing:2.5px;color:#0A0804;text-transform:uppercase;box-shadow:0 2px 12px rgba(0,0,0,0.3);">⚠ &nbsp; El catálogo ya está abierto en otra pestaña &nbsp; <button onclick="document.getElementById('tabWarning').style.display='none'" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.2);border:none;color:#0A0804;width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;">×</button></div>
+
 
 <div class="top-bar"></div>
 <div id="announcementBanner">
@@ -3409,10 +3480,11 @@
   <p class="footer-text" id="footerTagline">Cada pieza, una historia<br>Oro laminado de alta calidad</p>
   <div id="footerContactInfo" style="margin-top:18px;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;color:var(--text-muted);display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;"></div>
   <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;margin-top:24px;gap:10px;">
-    <button onclick="shareCatalog()" style="display:inline-flex;align-items:center;gap:7px;font-family:'Cinzel',serif;font-size:8px;letter-spacing:2px;color:rgba(154,140,118,0.55);background:none;text-transform:uppercase;border:1px solid rgba(154,140,118,0.2);padding:8px 16px;cursor:pointer;transition:all 0.3s;" onmouseover="this.style.color='#25d366';this.style.borderColor='rgba(37,211,102,0.5)'" onmouseout="this.style.color='rgba(154,140,118,0.55)';this.style.borderColor='rgba(154,140,118,0.2)'">
+    <button onclick="shareCatalog()" style="display:inline-flex;align-items:center;gap:7px;font-family:'Cinzel',serif;font-size:8px;letter-spacing:2px;color:rgba(154,140,118,0.55);background:none;text-transform:uppercase;border:1px solid rgba(201,151,58,0.5);box-shadow:0 0 10px rgba(201,151,58,0.45),0 0 4px rgba(201,151,58,0.3);padding:8px 16px;cursor:pointer;transition:all 0.3s;" onmouseover="this.style.color='#25d366';this.style.borderColor='rgba(37,211,102,0.5)';this.style.boxShadow='0 0 10px rgba(37,211,102,0.35)'" onmouseout="this.style.color='rgba(154,140,118,0.55)';this.style.borderColor='rgba(201,151,58,0.5)';this.style.boxShadow='0 0 10px rgba(201,151,58,0.45),0 0 4px rgba(201,151,58,0.3)'">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
       <span data-i18n="shareCatalog">Compartir catálogo</span>
     </button>
+    <span id="footerAdminPhone" style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:2.5px;color:#E8C96D;text-shadow:0 0 10px rgba(232,201,109,0.7),0 0 20px rgba(201,151,58,0.4);font-weight:400;"></span>
   </div>
   <!-- REDES SOCIALES -->
   <div class="footer-social" id="footerSocial">
@@ -3656,7 +3728,7 @@ const _t = {
     size:'Size', sizeOpt:'Talla', collarOpts:['18"','20"','22"','24"','26"'],
     cats:{ aretes:'Aretes', anillos:'Anillos', dijes:'Dijes', collares:'Cadenas',
            pulseras:'Brazaletes', tobilleras:'Tobilleras', sets:'Sets',
-           coleccion:'Colección', temporada:'Temporada' }
+           temporada:'Ofertas de temporada' }
   },
   en: {
     catalog:'Catalog', subtitle:'Accessories · Gold Plated', mySelection:'My Selection', noteLabel:'Order notes',
@@ -3677,7 +3749,7 @@ const _t = {
     size:'Size', sizeOpt:'Size', collarOpts:['18"','20"','22"','24"','26"'],
     cats:{ aretes:'Earrings', anillos:'Rings', dijes:'Charms', collares:'Necklaces',
            pulseras:'Bracelets', tobilleras:'Anklets', sets:'Sets',
-           coleccion:'Collection', temporada:'Season' }
+           temporada:'Seasonal Offers' }
   }
 };
 let _lang = localStorage.getItem('pm_lang') || 'es';
@@ -4005,7 +4077,6 @@ const categories = [
   { key: "pulseras",   label: "Brazaletes" },
   { key: "tobilleras", label: "Tobilleras" },
   { key: "sets",       label: "Sets"       },
-  { key: "coleccion",  label: "Colección"  },
   { key: "temporada",  label: "Ofertas de temporada"  },
 ];
 
@@ -4078,21 +4149,29 @@ let products = [];
 if (products.length === 0) renderGrid();
 
 // ── Persistencia del carrito ────────────────────────────────────────────
+// IMPORTANTE: `cart` se declara aquí (antes que saveCart/restoreCart) para que
+// la restauración desde localStorage funcione. Antes estaba declarado más abajo
+// con `let cart = []` y la TDZ hacía que restoreCart fallara silenciosamente,
+// dejando el carrito vacío al recargar la página.
+let cart = []; // [{uid, id, qty, customMedida}]
+
 function saveCart() {
   try { localStorage.setItem('pm_cart', JSON.stringify(cart)); } catch(e) {}
 }
 
-(function restoreCart() {
+function restoreCartFromStorage() {
   try {
     const saved = localStorage.getItem('pm_cart');
     if (!saved) return;
     const data = JSON.parse(saved);
     if (Array.isArray(data) && data.length > 0) {
       cart = data;
-      updateCartUI();
     }
   } catch(e) {}
-})();
+}
+restoreCartFromStorage();
+// Refrescar badge/panel cuando updateCartUI esté disponible (está hoisted como function).
+try { if (typeof updateCartUI === 'function') updateCartUI(); } catch(e) {}
 
 fetchProductsFromFirebase()
   .then(data => {
@@ -4118,6 +4197,14 @@ fetchProductsFromFirebase()
 
 // ─── WHATSAPP NUMBER ─────────────────────────────────────────────────
 // Viene del admin; si no está configurado se usa el valor por defecto
+function formatPhoneDisplay(raw) {
+  const d = (raw || '').replace(/\D/g, '');
+  const local = d.length >= 10 ? d.slice(-10) : d;
+  if (local.length === 10) {
+    return '(' + local.slice(0,3) + ') ' + local.slice(3,6) + ' - ' + local.slice(6);
+  }
+  return d ? '+' + d : '';
+}
 function getWhatsAppNumber() {
   try {
     const c = JSON.parse(localStorage.getItem('pm_contact') || '{}');
@@ -4130,7 +4217,8 @@ let activeCategory = "";
 let currentModalId = null;
 
 // ─── CART STATE ──────────────────────────────────────────────────────
-let cart = []; // [{id, qty}]
+// `cart` ya fue declarado arriba (en el bloque de persistencia) para que
+// restoreCartFromStorage() pueda restaurar antes de cualquier render.
 
 function cartCount() { return cart.reduce((s, i) => s + i.qty, 0); }
 
@@ -4491,7 +4579,8 @@ async function openCategoryPanel(category) {
     const porOferta    = products.filter(p => ofertaIds.has(p.id) && p.category !== 'temporada');
     catProducts = [...porOferta, ...porCategoria];
   } else {
-    catProducts = products.filter(p => p.category === category);
+    const ofertaExcluir = (_seasonalOffer && _seasonalOffer.active) ? new Set(_seasonalOffer.productIds || []) : new Set();
+    catProducts = products.filter(p => p.category === category && !ofertaExcluir.has(p.id));
   }
 
   catProducts.sort((a, b) => (parseFloat(String(a.price)) || 0) - (parseFloat(String(b.price)) || 0));
@@ -5388,21 +5477,6 @@ function getCategoryIllustration(key) {
       <circle cx='130' cy='134' r='4' fill='${S}' opacity='0.7' stroke='#FFF0B3' stroke-width='1'/>
     </svg>`,
 
-    coleccion: `<svg viewBox='0 0 180 200' fill='none' xmlns='http://www.w3.org/2000/svg'>${G}
-      <path d='M28,148 L28,85 L62,118 L90,52 L118,118 L152,85 L152,148 Z' fill='${S}' opacity='0.88'/>
-      <path d='M28,148 L28,85 L62,118 L90,52 L118,118 L152,85 L152,148 Z' fill='none' stroke='#FFF0B3' stroke-width='1.5'/>
-      <rect x='26' y='140' width='128' height='18' rx='5' fill='${S}'/>
-      <rect x='26' y='140' width='128' height='18' rx='5' fill='none' stroke='#FFF0B3' stroke-width='1'/>
-      <circle cx='90' cy='57' r='12' fill='${GEM}' opacity='0.92' stroke='${S}' stroke-width='2'/>
-      <circle cx='90' cy='57' r='5' fill='white' opacity='0.28'/>
-      <circle cx='42' cy='120' r='8' fill='${GEM}' opacity='0.85' stroke='${S}' stroke-width='1.5'/>
-      <circle cx='138' cy='120' r='8' fill='${GEM}' opacity='0.85' stroke='${S}' stroke-width='1.5'/>
-      <circle cx='60' cy='149' r='4' fill='${GEM}' opacity='0.8'/>
-      <circle cx='90' cy='149' r='5' fill='${GEM}' opacity='0.9'/>
-      <circle cx='120' cy='149' r='4' fill='${GEM}' opacity='0.8'/>
-      <line x1='28' y1='140' x2='152' y2='140' stroke='white' stroke-width='0.8' opacity='0.25'/>
-    </svg>`,
-
     temporada: `<svg viewBox='0 0 180 200' fill='none' xmlns='http://www.w3.org/2000/svg'>${G}
       <ellipse cx='90' cy='65' rx='13' ry='30' fill='${S}' opacity='0.75'/>
       <ellipse cx='90' cy='135' rx='13' ry='30' fill='${S}' opacity='0.75'/>
@@ -5443,7 +5517,8 @@ function categoryCardHTML(cat, i) {
     const porOferta    = products.filter(p => ofertaIds.has(p.id) && p.category !== 'temporada');
     catProducts = [...porOferta, ...porCategoria];
   } else {
-    catProducts = products.filter(p => p.category === cat.key);
+    const ofertaExcluir = (_seasonalOffer && _seasonalOffer.active) ? new Set(_seasonalOffer.productIds || []) : new Set();
+    catProducts = products.filter(p => p.category === cat.key && !ofertaExcluir.has(p.id));
   }
   const count = catProducts.length;
   const illustration = getCategoryIllustration(cat.key);
@@ -6245,9 +6320,25 @@ function cerrarBanner() {
     data.sessions.push({
       ts: now.toISOString(),
       date: now.toLocaleDateString('es-CO', {day:'2-digit',month:'short',year:'numeric'}),
-      time: now.toLocaleTimeString('es-CO', {hour:'2-digit',minute:'2-digit'})
+      time: now.toLocaleTimeString('es-CO', {hour:'2-digit',minute:'2-digit'}),
+      city: '', country: ''
     });
     localStorage.setItem(key, JSON.stringify(data));
+    // Geolocalización por IP (asíncrono, no bloquea la carga)
+    fetch('https://ipapi.co/json/')
+      .then(r => r.json())
+      .then(geo => {
+        try {
+          const d2 = JSON.parse(localStorage.getItem(key) || '{}');
+          const last = (d2.sessions || []).slice(-1)[0];
+          if (last) {
+            last.city    = geo.city    || geo.region || '';
+            last.country = geo.country_name || geo.country || '';
+            last.ip      = geo.ip || '';
+            localStorage.setItem(key, JSON.stringify(d2));
+          }
+        } catch(e) {}
+      }).catch(() => {});
   } catch(e) {}
 })();
 
@@ -6273,6 +6364,12 @@ function applyContactInfo(c) {
     }
     if (fb && c.fb_link) fb.href = c.fb_link;
     if (tt && c.tiktok_link) tt.href = c.tiktok_link;
+    // Teléfono del administrador debajo del botón compartir
+    const phoneEl = document.getElementById('footerAdminPhone');
+    if (phoneEl) {
+      const raw = (c.whatsapp && c.whatsapp.trim()) ? c.whatsapp.trim() : getWhatsAppNumber();
+      phoneEl.textContent = formatPhoneDisplay(raw);
+    }
   } catch(e) {}
 }
 
@@ -6504,12 +6601,9 @@ renderInfoSections();
     bc.onmessage = function(e) {
       if (e.data === 'ping') {
         bc.postMessage('pong');
+        try { window.focus(); } catch(e) {}
       } else if (e.data === 'pong') {
-        const w = document.getElementById('tabWarning');
-        if (w) {
-          w.style.display = 'block';
-          setTimeout(() => { w.style.display = 'none'; }, 8000);
-        }
+        window.close();
       }
     };
     setTimeout(() => bc.postMessage('ping'), 200);

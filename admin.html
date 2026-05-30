@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20260526-2';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20260528-6';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -1709,8 +1709,8 @@ textarea { resize: vertical; min-height: 80px; }
 .btn-fct-print:hover { background:linear-gradient(135deg,#b08530,#9a7428); }
 .btn-fct-cancel { background:transparent; color:#999; border:1px solid #ddd; }
 .btn-fct-cancel:hover { border-color:#bbb; color:#666; }
-.btn-fct-wa { background:linear-gradient(135deg,#25D366,#1da851); color:#fff; border:none; box-shadow:0 2px 8px rgba(37,211,102,0.3); display:flex; align-items:center; gap:6px; }
-.btn-fct-wa:hover { background:linear-gradient(135deg,#1da851,#128c3e); }
+.btn-fct-wa { background:linear-gradient(135deg,#25D366,#128C7E); color:#fff; border:none; box-shadow:0 2px 8px rgba(37,211,102,0.3); display:inline-flex; align-items:center; gap:6px; }
+.btn-fct-wa:hover { background:linear-gradient(135deg,#1ebe58,#0e7a6e); }
 
 /* ─── TOGGLE NOTIF ─── */
 .notif-toggle-wrap { display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid rgba(201,151,58,0.12); }
@@ -1756,11 +1756,144 @@ textarea { resize: vertical; min-height: 80px; }
 .fct-autocomplete-item:hover { background:#fffbf2; color:#C9973A; }
 .fct-autocomplete-item span { font-size:9.5px; color:#aaa; }
 .factura-field-ac { position:relative; }
+
+/* ─── FACTURA TEMA CLARO (override dark-theme global) ─── */
+#facturaModal .factura-field input,
+#facturaModal .factura-field select,
+#facturaModal .factura-field textarea {
+  background:#fafafa !important; color:#1a1a1a !important;
+  border:1px solid #e5e5e5 !important;
+}
+#facturaModal .factura-field input::placeholder,
+#facturaModal .factura-field textarea::placeholder { color:#bbb !important; }
+#facturaModal .factura-field input:focus,
+#facturaModal .factura-field select:focus,
+#facturaModal .factura-field textarea:focus {
+  background:#fff !important; border-color:#C9973A !important;
+}
+
+/* ─── FACTURA TEMA OSCURO (Pleaseme) ─── */
+#facturaModal.tema-oscuro { background:#111 !important; color:#f0e6d0 !important; }
+#facturaModal.tema-oscuro .factura-body { background:#111; }
+#facturaModal.tema-oscuro .factura-empresa-nombre { color:#E8C96D; }
+#facturaModal.tema-oscuro .factura-empresa-sub { color:#C9973A; }
+#facturaModal.tema-oscuro .factura-empresa-info { color:#8a7a65; }
+#facturaModal.tema-oscuro .factura-divider { border-color:rgba(201,151,58,0.2); }
+#facturaModal.tema-oscuro .factura-divider-gold { border-color:#C9973A; }
+#facturaModal.tema-oscuro .factura-seccion-title { color:#C9973A; border-color:rgba(201,151,58,0.2); }
+#facturaModal.tema-oscuro .factura-num-label { color:rgba(201,151,58,0.5); }
+#facturaModal.tema-oscuro .factura-num-val { color:#E8C96D; }
+#facturaModal.tema-oscuro .factura-fecha-val { color:#7a6e5c; }
+#facturaModal.tema-oscuro .factura-field label { color:rgba(201,151,58,0.65); }
+#facturaModal.tema-oscuro .factura-field input,
+#facturaModal.tema-oscuro .factura-field select,
+#facturaModal.tema-oscuro .factura-field textarea {
+  background:#1e1b14 !important; color:#f0e6d0 !important;
+  border:1px solid rgba(201,151,58,0.25) !important;
+}
+#facturaModal.tema-oscuro .factura-field input::placeholder,
+#facturaModal.tema-oscuro .factura-field textarea::placeholder { color:#5a4e3a !important; }
+#facturaModal.tema-oscuro .factura-field input:focus,
+#facturaModal.tema-oscuro .factura-field select:focus,
+#facturaModal.tema-oscuro .factura-field textarea:focus {
+  background:#231f17 !important; border-color:#C9973A !important;
+}
+#facturaModal.tema-oscuro .factura-field select {
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23C9973A' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E") !important;
+  background-repeat:no-repeat !important; background-position:right 10px center !important;
+}
+#facturaModal.tema-oscuro .factura-confirm-row { background:rgba(201,151,58,0.07); border-color:rgba(201,151,58,0.2); }
+#facturaModal.tema-oscuro .factura-confirm-row label { color:#c0a870; }
+#facturaModal.tema-oscuro .factura-items-table thead tr { background:linear-gradient(90deg,#0a0804,#1a1610); }
+#facturaModal.tema-oscuro .factura-items-table td { color:#c0b090; border-color:rgba(201,151,58,0.1); }
+#facturaModal.tema-oscuro .factura-items-table tbody tr:nth-child(even) td { background:rgba(201,151,58,0.04); }
+#facturaModal.tema-oscuro .factura-totales { background:rgba(201,151,58,0.05); border-color:rgba(201,151,58,0.2); }
+#facturaModal.tema-oscuro .factura-total-fila { color:#8a7a65; }
+#facturaModal.tema-oscuro .factura-total-fila.grande { color:#E8C96D; border-color:rgba(201,151,58,0.3); }
+#facturaModal.tema-oscuro .factura-nota-final { background:rgba(201,151,58,0.04); border-color:rgba(201,151,58,0.15); color:#5a4e3a; }
+#facturaModal.tema-oscuro .factura-footer-bar { background:#1a1610; border-color:rgba(201,151,58,0.2); }
+#facturaModal.tema-oscuro .btn-fct-cancel { color:#8a7a65; border-color:rgba(201,151,58,0.25); }
+#facturaModal.tema-oscuro .btn-fct-cancel:hover { color:#C9973A; border-color:rgba(201,151,58,0.5); }
+#facturaModal.tema-oscuro .fct-autocomplete { background:#1e1b14; border-color:rgba(201,151,58,0.2); }
+#facturaModal.tema-oscuro .fct-autocomplete-item { color:#c0b090; }
+#facturaModal.tema-oscuro .fct-autocomplete-item:hover { background:rgba(201,151,58,0.1); color:#E8C96D; }
+#facturaModal.tema-oscuro .fct-geo-hint { background:rgba(201,151,58,0.08); border-color:rgba(201,151,58,0.2); color:#8a7a65; }
+#facturaManualModal.tema-oscuro { background:#111 !important; color:#f0e6d0 !important; }
+
+/* ─── FCTM inputs: inherit theme from modal ─── */
+.fctm-input {
+  border:1px solid #e5e5e5; border-radius:3px; padding:5px 7px;
+  font-size:11px; font-family:'Montserrat',sans-serif;
+  background:#fafafa; color:#1a1a1a; box-sizing:border-box;
+  width:100%; transition:border-color 0.2s, background 0.2s;
+}
+.fctm-input:focus { outline:none; border-color:#C9973A; background:#fff; }
+#facturaManualModal.tema-oscuro .fctm-input {
+  background:#1e1b14 !important; color:#f0e6d0 !important;
+  border-color:rgba(201,151,58,0.25) !important;
+}
+#facturaManualModal.tema-oscuro .fctm-input:focus {
+  background:#231f17 !important; border-color:#C9973A !important;
+}
+#facturaManualModal.tema-oscuro .fctm-input::placeholder { color:#5a4e3a !important; }
+#facturaManualModal.tema-oscuro .fctm-prod-sub { color:#c0b090 !important; }
+#facturaManualModal.tema-oscuro #fctm-autocomplete-list { background:#1a1610 !important; border-color:rgba(201,151,58,0.25) !important; }
+#facturaManualModal.tema-oscuro #fctm-items-list { border-color:rgba(201,151,58,0.2) !important; }
+.fctm-ac-item { padding:8px 12px;cursor:pointer;font-size:12px;font-family:'Montserrat',sans-serif;border-bottom:1px solid #f0ece4; }
+.fctm-ac-item:last-child { border-bottom:none; }
+.fctm-ac-item:hover { background:rgba(201,151,58,0.1);color:#C9973A; }
+#facturaManualModal.tema-oscuro .fctm-ac-item { color:#e0d4bc;border-color:rgba(201,151,58,0.1); }
+#facturaManualModal.tema-oscuro .fctm-ac-item:hover { background:rgba(201,151,58,0.15); }
+.fctm-list-item { transition:background 0.15s; }
+.fctm-list-item:hover { background:rgba(201,151,58,0.05); }
+.fctm-list-item.editing { background:rgba(201,151,58,0.08);outline:1px solid rgba(201,151,58,0.35); }
+#facturaManualModal.tema-oscuro .fctm-list-item { border-color:rgba(201,151,58,0.12) !important;color:#c0b090; }
+#facturaManualModal.tema-oscuro .fctm-list-item:hover { background:rgba(201,151,58,0.07); }
+#facturaManualModal.tema-oscuro .fctm-list-item.editing { background:rgba(201,151,58,0.12); }
+#facturaManualModal.tema-oscuro .factura-total-fila { color:#8a7a65; }
+#facturaManualModal.tema-oscuro #fctm-desc-row { color:#e07a5f !important; }
+#facturaManualModal.tema-oscuro .factura-body { background:#111; }
+#facturaManualModal.tema-oscuro .factura-empresa-nombre { color:#E8C96D; }
+#facturaManualModal.tema-oscuro .factura-empresa-sub { color:#C9973A; }
+#facturaManualModal.tema-oscuro .factura-empresa-info { color:#8a7a65; }
+#facturaManualModal.tema-oscuro .factura-divider { border-color:rgba(201,151,58,0.2); }
+#facturaManualModal.tema-oscuro .factura-divider-gold { border-color:#C9973A; }
+#facturaManualModal.tema-oscuro .factura-seccion-title { color:#C9973A; border-color:rgba(201,151,58,0.2); }
+#facturaManualModal.tema-oscuro .factura-num-label { color:rgba(201,151,58,0.5); }
+#facturaManualModal.tema-oscuro .factura-num-val { color:#E8C96D; }
+#facturaManualModal.tema-oscuro .factura-fecha-val { color:#7a6e5c; }
+#facturaManualModal.tema-oscuro .factura-field label { color:rgba(201,151,58,0.65); }
+#facturaManualModal.tema-oscuro .factura-field input,
+#facturaManualModal.tema-oscuro .factura-field select,
+#facturaManualModal.tema-oscuro .factura-field textarea {
+  background:#1a1710 !important; border-color:rgba(201,151,58,0.2) !important; color:#f0e6d0 !important; }
+#facturaManualModal.tema-oscuro .factura-field input::placeholder,
+#facturaManualModal.tema-oscuro .factura-field textarea::placeholder { color:#5a4e3a !important; }
+#facturaManualModal.tema-oscuro .factura-field input:focus,
+#facturaManualModal.tema-oscuro .factura-field select:focus,
+#facturaManualModal.tema-oscuro .factura-field textarea:focus {
+  border-color:rgba(201,151,58,0.5) !important; outline:none; }
+#facturaManualModal.tema-oscuro .factura-field select {
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23C9973A' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); }
+#facturaManualModal.tema-oscuro .factura-items-table thead tr { background:linear-gradient(90deg,#0a0804,#1a1610); }
+#facturaManualModal.tema-oscuro .factura-items-table td { color:#c0b090; border-color:rgba(201,151,58,0.1); }
+#facturaManualModal.tema-oscuro .factura-items-table tbody tr:nth-child(even) td { background:rgba(201,151,58,0.04); }
+#facturaManualModal.tema-oscuro .factura-totales { background:rgba(201,151,58,0.05); border-color:rgba(201,151,58,0.2); }
+#facturaManualModal.tema-oscuro .factura-total-fila { color:#8a7a65; }
+#facturaManualModal.tema-oscuro .factura-total-fila.grande { color:#E8C96D; border-color:rgba(201,151,58,0.3); }
+#facturaManualModal.tema-oscuro .factura-nota-final { background:rgba(201,151,58,0.04); border-color:rgba(201,151,58,0.15); color:#5a4e3a; }
+#facturaManualModal.tema-oscuro .factura-footer-bar { background:#1a1610; border-color:rgba(201,151,58,0.2); }
+#facturaManualModal.tema-oscuro .btn-fct-cancel { color:#8a7a65; border-color:rgba(201,151,58,0.25); }
+#facturaManualModal.tema-oscuro .btn-fct-cancel:hover { color:#C9973A; border-color:rgba(201,151,58,0.5); }
 /* Bloque cliente estilo factura empresa (solo en impresión) */
 .fct-cli-print-block { display:none; }
+.fctm-cli-print-block { display:none; }
+.fctm-print-section { display:none; }
 @media print {
-  body > *:not(#facturaOverlay) { display:none !important; }
-  .factura-overlay { display:block !important; background:none; padding:0; position:static; overflow:visible; }
+  /* Hide everything, then selectively reveal only the active invoice */
+  body > * { display:none !important; }
+  body:not(.printing-fctm) #facturaOverlay { display:block !important; background:none !important; padding:0; position:static; overflow:visible; }
+  body.printing-fctm #facturaManualOverlay { display:block !important; background:none !important; padding:0; position:static; overflow:visible; }
   .factura-modal { box-shadow:none; border-radius:0; max-width:100%; }
   .factura-topbar, .factura-footer-bar { display:none !important; }
   .factura-gold-band, .factura-items-table thead tr, .factura-totales { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
@@ -1785,6 +1918,17 @@ textarea { resize: vertical; min-height: 80px; }
     font-size:11px; color:#444; line-height:1.8; font-family:'Montserrat',sans-serif;
   }
   .fct-cli-print-linea strong { color:#1a1a1a; }
+  /* Manual invoice print view */
+  #facturaManualModal .factura-cols { display:none !important; }
+  .fctm-cli-print-block {
+    display:grid !important; grid-template-columns:1fr 1fr; gap:20px;
+    margin-bottom:22px; border:1.5px solid #e8dfc8; border-radius:6px; padding:16px 20px;
+  }
+  .fctm-entrada-bar { display:none !important; }
+  #fctm-items-list { display:none !important; }
+  .fctm-print-section { display:block !important; }
+  .fctm-input-row { display:none !important; }
+  .fctm-print-section .factura-items-table { margin-top:0; }
 }
 /* ─── MODAL CONFIRMACIÓN CÓDIGO ALEATORIO ─── */
 .confirm-code-overlay {
@@ -1919,9 +2063,26 @@ textarea { resize: vertical; min-height: 80px; }
 .btn-anular-cancel:hover { border-color:#bbb;color:#666; }
 .btn-anular-confirm { background:#c0392b;border:none;color:#fff;box-shadow:0 2px 8px rgba(192,57,43,0.3); }
 .btn-anular-confirm:hover { background:#a93226; }
+
+/* ─── RESPONSIVE PANTALLAS GRANDES ─── */
+@media (min-width: 1200px) {
+  :root { --sidebar-w: 260px; }
+  .page { padding: 28px 40px; }
+  .topbar { padding: 0 40px; }
+  .login-box { width: 400px; padding: 60px 56px; }
+}
+
+@media (min-width: 1600px) {
+  :root { --sidebar-w: 280px; }
+  .page { padding: 36px 56px; }
+  .topbar { padding: 0 56px; }
+  body { font-size: 14px; }
+  .nav-item { font-size: 13.5px; }
+}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 </head>
 <body>
 
@@ -2020,14 +2181,22 @@ textarea { resize: vertical; min-height: 80px; }
         Pedidos
       </button>
       <button class="nav-item" onclick="goTo('realizados')" id="nav-realizados">
-        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        Pedidos Realizados
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        Pedidos a Crédito
       </button>
       <button class="nav-item" onclick="goTo('facturas')" id="nav-facturas">
         <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         Facturas Procesadas
       </button>
-      <button class="nav-item" onclick="goTo('config')" id="nav-config">
+      <button class="nav-item" onclick="abrirFacturaManual()" id="nav-factura-manual" style="color:var(--gold);">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+        Factura Manual
+      </button>
+      <button class="nav-item" onclick="goTo('historia')" id="nav-historia">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" width="16" height="16"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Historia Facturas
+      </button>
+      <button class="nav-item" onclick="goTo('config')" id="nav-config"> id="nav-config">
         <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
         Configuración
       </button>
@@ -2184,6 +2353,7 @@ textarea { resize: vertical; min-height: 80px; }
               <th>#</th>
               <th>Fecha</th>
               <th>Hora</th>
+              <th>Ubicación</th>
             </tr>
           </thead>
           <tbody id="visitTableBody"></tbody>
@@ -2725,12 +2895,12 @@ textarea { resize: vertical; min-height: 80px; }
       <div id="pedidosLista"><p class="pedidos-empty">Cargando pedidos…</p></div>
     </div>
 
-    <!-- PAGE: PEDIDOS REALIZADOS -->
+    <!-- PAGE: PEDIDOS A CRÉDITO -->
     <div class="page" id="page-realizados">
       <div class="realizados-filtros">
-        <span class="realizados-badge">
-          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-          Pedidos completados
+        <span class="realizados-badge" style="background:rgba(230,126,34,0.12);border-color:rgba(230,126,34,0.4);color:#e67e22;">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+          Facturas pendientes de pago
         </span>
         <button class="btn" onclick="loadRealizados()" style="white-space:nowrap">↺ Actualizar</button>
       </div>
@@ -2747,8 +2917,23 @@ textarea { resize: vertical; min-height: 80px; }
         <input class="pedidos-search" id="facturasSearch" type="text"
           placeholder="Buscar por número de factura o cliente…" oninput="filtrarFacturas()">
         <button class="btn" onclick="loadFacturas()" style="white-space:nowrap">↺ Actualizar</button>
+
       </div>
       <div id="facturasLista"><p class="pedidos-empty">Cargando facturas…</p></div>
+    </div>
+
+    <!-- PAGE: HISTORIA FACTURAS MANUALES -->
+    <div class="page" id="page-historia">
+      <div class="realizados-filtros">
+        <span class="realizados-badge" style="background:rgba(201,151,58,0.12);border-color:rgba(201,151,58,0.4);color:#C9973A;">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Facturas manuales
+        </span>
+        <input class="pedidos-search" id="historiaSearch" type="text"
+          placeholder="Buscar por número o cliente…" oninput="filtrarHistoria()">
+        <button class="btn" onclick="loadHistoria()" style="white-space:nowrap">↺ Actualizar</button>
+      </div>
+      <div id="historiaLista"><p class="pedidos-empty">Cargando historial…</p></div>
     </div>
 
     <!-- PAGE: CONFIGURACIÓN -->
@@ -3456,7 +3641,7 @@ function goTo(page) {
   document.getElementById('page-' + page).classList.add('active');
   document.getElementById('nav-' + page).classList.add('active');
 
-  const titles = { productos: 'Productos', contacto: 'Información de contacto', banner: 'Banner de anuncio', visitas: 'Visitas al catálogo', info: 'Información del catálogo', config: 'Configuración · API Keys', pedidos: 'Pedidos de clientes', realizados: 'Pedidos Realizados', facturas: 'Facturas Procesadas', ofertas: 'Ofertas de temporada' };
+  const titles = { productos: 'Productos', contacto: 'Información de contacto', banner: 'Banner de anuncio', visitas: 'Visitas al catálogo', info: 'Información del catálogo', config: 'Configuración · API Keys', pedidos: 'Pedidos de clientes', realizados: 'Pedidos a Crédito', facturas: 'Facturas Procesadas', ofertas: 'Ofertas de temporada', historia: 'Historia de Facturas Manuales' };
   document.getElementById('topbarTitle').textContent = titles[page] || '';
 
   const topAction = document.getElementById('topbarAction');
@@ -3468,6 +3653,7 @@ function goTo(page) {
   if (page === 'pedidos') loadPedidos();
   if (page === 'realizados') loadRealizados();
   if (page === 'facturas') loadFacturas();
+  if (page === 'historia') loadHistoria();
   if (page === 'ofertas') loadOfertas();
   if (page === 'productos') {
     topAction.style.display = '';
@@ -3588,52 +3774,53 @@ let _realizados = [];
 async function loadRealizados() {
   const lista = document.getElementById('realizadosLista');
   if (!lista) return;
-  lista.innerHTML = '<p class="pedidos-empty">Cargando pedidos realizados…</p>';
+  lista.innerHTML = '<p class="pedidos-empty">Cargando pedidos a crédito…</p>';
   try {
-    const snap = await _db.collection('pedidos').where('realizado','==',true).orderBy('fecha','desc').limit(200).get();
+    const snap = await _db.collection('facturas_procesadas')
+      .where('estado', '==', 'pendiente')
+      .orderBy('fecha', 'desc').limit(200).get();
     _realizados = snap.docs.map(doc => ({ _docId: doc.id, ...doc.data() }));
     if (!_realizados.length) {
-      lista.innerHTML = '<p class="pedidos-empty">Aún no hay pedidos marcados como realizados.</p>';
+      lista.innerHTML = '<p class="pedidos-empty">No hay facturas pendientes de pago.</p>';
       return;
     }
-    lista.innerHTML = _realizados.map(p => {
-      const fecha = p.fecha ? new Date(p.fecha.seconds * 1000).toLocaleString('es-CO', { dateStyle:'short', timeStyle:'short' }) : '—';
-      const totalFinal = Number(p.total_final || p.total || 0).toLocaleString('es-CO');
-      const itemsRows = (p.items || []).map(it =>
+    lista.innerHTML = _realizados.map(f => {
+      const fecha = f.fecha ? new Date(f.fecha.seconds * 1000).toLocaleString('es-CO', { dateStyle:'short', timeStyle:'short' }) : '—';
+      const total = Number(f.total || 0).toLocaleString('es-CO');
+      const cliente = (f.cliente && f.cliente.nombre) ? f.cliente.nombre : '<em style="color:#888">Sin nombre</em>';
+      const tel   = (f.cliente && f.cliente.tel) ? f.cliente.tel : '';
+      const dir   = (f.cliente && f.cliente.direccion) ? f.cliente.direccion : '';
+      const itemsRows = (f.items || []).map(it =>
         `<tr>
           <td><div class="pedido-item-cell">${it.photo ? `<img class="pedido-item-thumb" src="${it.photo}" alt="${it.name||''}" onclick="abrirLightbox('${it.photo}')">` : ''}<span>${it.name||'—'}</span></div></td>
           <td>${it.category||''}</td>
           <td style="text-align:center">${it.qty}</td>
           <td style="text-align:right">$${it.price||'—'}</td>
         </tr>`).join('');
-      const imgHtml = p.img_url
-        ? `<div class="pedido-img"><img src="${p.img_url}" alt="Resumen" onclick="abrirLightbox('${p.img_url}')" title="Ver imagen completa"></div>`
-        : `<div class="pedido-sin-img">Sin imagen</div>`;
-      const descHtml = (p.subtotal && p.subtotal !== p.total_final)
-        ? `<p style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Subtotal: $${Number(p.subtotal).toLocaleString('es-CO')} · Desc. ${p.descuento||0}%</p>` : '';
       return `
-        <div class="pedido-card" id="rcard-${p._docId}" style="border-color:rgba(46,160,67,0.3);">
-          <div class="pedido-card-head" onclick="toggleRealizado('${p._docId}')">
-            <span class="pedido-numero">${p.numero||'—'}</span>
-            <span style="font-size:9px;letter-spacing:1px;color:#2ea043;background:rgba(46,160,67,0.1);border:1px solid rgba(46,160,67,0.3);padding:2px 8px;border-radius:10px;">✓ Realizado</span>
+        <div class="pedido-card" id="rcard-${f._docId}" style="border-color:rgba(230,126,34,0.35);">
+          <div class="pedido-card-head" onclick="toggleRealizado('${f._docId}')">
+            <span class="pedido-numero">${f.pedido_numero || f.numero || '—'}</span>
+            <span style="font-size:9px;letter-spacing:1px;color:#e67e22;background:rgba(230,126,34,0.1);border:1px solid rgba(230,126,34,0.3);padding:2px 8px;border-radius:10px;">⏳ Pendiente</span>
             <span class="pedido-fecha">${fecha}</span>
-            <span class="pedido-total-head">$${totalFinal}</span>
-            <svg class="pedido-arrow" id="rarrow-${p._docId}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
+            <span class="pedido-total-head">$${total}</span>
+            <svg class="pedido-arrow" id="rarrow-${f._docId}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
-          <div class="pedido-body" id="rbody-${p._docId}">
-            ${imgHtml}
+          <div class="pedido-body" id="rbody-${f._docId}">
             <div>
+              <p style="font-size:12px;color:var(--text-mid);margin-bottom:10px;">
+                <strong>${cliente}</strong>${tel ? ' · ' + tel : ''}
+                ${dir ? `<br><span style="font-size:11px;color:var(--text-muted);">${dir}</span>` : ''}
+              </p>
               <table class="pedido-items-table">
                 <thead><tr><th>Artículo</th><th>Categoría</th><th style="text-align:center">Cant.</th><th style="text-align:right">Precio</th></tr></thead>
                 <tbody>${itemsRows}</tbody>
               </table>
-              ${descHtml}
-              <p class="pedido-total-row">Total: $${totalFinal}</p>
-              ${p.nota ? `<p class="pedido-nota"><strong>Nota:</strong> ${p.nota}</p>` : ''}
+              <p class="pedido-total-row">Total: $${total}</p>
               <div class="pedido-actions">
-                <button class="btn btn-primary" style="font-size:11px;padding:5px 14px;display:flex;align-items:center;gap:6px;" onclick="abrirFactura('${p._docId}')">
-                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                  Crear Factura
+                <button class="btn btn-primary" style="font-size:11px;padding:5px 16px;display:flex;align-items:center;gap:6px;background:linear-gradient(135deg,#2ea043,#25863a);" onclick="marcarCreditoPagado('${f._docId}')">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                  Marcar como Pagada
                 </button>
               </div>
             </div>
@@ -3643,6 +3830,23 @@ async function loadRealizados() {
   } catch(e) {
     lista.innerHTML = '<p class="pedidos-empty">Error al cargar: ' + e.message + '</p>';
   }
+}
+
+async function marcarCreditoPagado(docId) {
+  if (!confirm('¿Marcar esta factura como pagada? Se eliminará de Pedidos a Crédito.')) return;
+  try {
+    await _db.collection('facturas_procesadas').doc(docId).update({ estado: 'pagada' });
+    const f = _facturas.find(x => x._docId === docId);
+    if (f) f.estado = 'pagada';
+    _realizados = _realizados.filter(r => r._docId !== docId);
+    const card = document.getElementById('rcard-' + docId);
+    if (card) card.remove();
+    const lista = document.getElementById('realizadosLista');
+    if (lista && !lista.querySelector('.pedido-card')) {
+      lista.innerHTML = '<p class="pedidos-empty">No hay facturas pendientes de pago.</p>';
+    }
+    showToast('✓ Factura marcada como pagada');
+  } catch(e) { showToast('Error: ' + e.message); }
 }
 
 function toggleRealizado(docId) {
@@ -4619,12 +4823,16 @@ function loadVisitas() {
       empty.style.display = '';
     } else {
       empty.style.display = 'none';
-      tbody.innerHTML = sessions.slice(0, 30).map((s, i) => `
+      tbody.innerHTML = sessions.slice(0, 30).map((s, i) => {
+        const ubicacion = [s.city, s.country].filter(Boolean).join(', ') || '<span style="color:var(--text-muted);font-size:10px;">—</span>';
+        return `
         <tr>
           <td style="color:var(--text-muted);font-size:11px;">${sessions.length - i}</td>
           <td>${s.date}</td>
           <td style="color:var(--gold-deep);font-weight:500;">${s.time}</td>
-        </tr>`).join('');
+          <td style="font-size:11px;">${ubicacion}</td>
+        </tr>`;
+      }).join('');
     }
   } catch(e) { console.error(e); }
 }
@@ -5473,7 +5681,12 @@ function mobGoTo(page) {
   <div class="factura-modal" id="facturaModal">
     <div class="factura-topbar">
       <span class="factura-topbar-title">FACTURA · RECIBO</span>
-      <button onclick="cerrarFactura()">✕ Cerrar</button>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button id="fct-tema-btn" onclick="toggleFacturaTema()" title="Cambiar tema" style="display:inline-flex;align-items:center;gap:5px;">
+          <span id="fct-tema-icon">☀</span> <span id="fct-tema-label">Tema claro</span>
+        </button>
+        <button onclick="cerrarFactura()">✕ Cerrar</button>
+      </div>
     </div>
     <div class="factura-gold-band"></div>
     <div class="factura-body" id="facturaBody">
@@ -5611,13 +5824,226 @@ function mobGoTo(page) {
     </div>
     <div class="factura-footer-bar">
       <button class="btn-fct-cancel" onclick="cerrarFactura()">Cancelar</button>
-      <button class="btn-fct-wa" onclick="compartirFacturaWhatsApp()">
-        <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.118 1.528 5.843L0 24l6.335-1.484A11.93 11.93 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.795 9.795 0 0 1-5.012-1.374l-.36-.214-3.732.875.936-3.636-.235-.374A9.795 9.795 0 0 1 2.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/></svg>
+      <button class="btn-fct-wa" onclick="compartirWhatsApp()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.558 4.122 1.532 5.857L.057 23.882l6.184-1.622A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.969 0-3.81-.54-5.385-1.479l-.386-.229-3.668.962.98-3.579-.252-.4A9.954 9.954 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
         Enviar por WhatsApp
       </button>
       <button class="btn-fct-print" onclick="imprimirFactura()">
-        &#128438; Imprimir / Guardar PDF
+        &#128438; Imprimir
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FACTURA MANUAL -->
+<div class="factura-overlay" id="facturaManualOverlay">
+  <div class="factura-modal" id="facturaManualModal">
+    <div class="factura-topbar">
+      <span class="factura-topbar-title">FACTURA MANUAL</span>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button id="fctm-tema-btn" onclick="toggleFacturaManualTema()" title="Cambiar tema" style="display:inline-flex;align-items:center;gap:5px;">
+          <span id="fctm-tema-icon">☀</span> <span id="fctm-tema-label">Tema claro</span>
+        </button>
+        <button onclick="cerrarFacturaManual()">✕ Cerrar</button>
+      </div>
+    </div>
+    <div class="factura-gold-band"></div>
+    <div class="factura-body">
+      <!-- Cabecera -->
+      <div class="factura-head-row">
+        <div class="factura-empresa">
+          <img src="logo.png" class="factura-logo" alt="Logo" onerror="this.style.display='none'">
+          <div class="factura-empresa-texto">
+            <div class="factura-empresa-nombre">Pleaseme Accessories</div>
+            <div class="factura-empresa-sub">Accesorios en Oro Laminado</div>
+            <div class="factura-empresa-info" id="fctm-empresa-info"></div>
+          </div>
+        </div>
+        <div class="factura-num-bloque">
+          <div class="factura-num-label">Factura N°</div>
+          <div class="factura-num-val" id="fctm-numero">—</div>
+          <div class="factura-fecha-val" id="fctm-fecha"></div>
+        </div>
+      </div>
+      <hr class="factura-divider">
+
+      <!-- Datos cliente + envío -->
+      <div class="factura-cols">
+        <div>
+          <div class="factura-seccion-title">Datos del cliente</div>
+          <div class="factura-field">
+            <label>Nombre completo</label>
+            <input type="text" id="fctm-cli-nombre" placeholder="Nombre del cliente" style="text-transform:uppercase;">
+          </div>
+          <div class="factura-field">
+            <label>Teléfono</label>
+            <input type="tel" id="fctm-cli-tel" placeholder="+1 (000) 000-0000" inputmode="tel" oninput="_fctmTelInput(this)">
+          </div>
+          <div class="factura-field">
+            <label>País</label>
+            <select id="fctm-cli-pais" onchange="_fctmPaisChange()">
+              <option value="">Seleccionar país…</option>
+              <option value="USA">🇺🇸 USA – Estados Unidos</option>
+              <option value="DOM REP">🇩🇴 DOM REP – República Dominicana</option>
+            </select>
+          </div>
+          <div class="factura-field factura-field-ac">
+            <label>Dirección</label>
+            <input type="text" id="fctm-cli-dir" placeholder="Calle / Av. / Número" autocomplete="off" oninput="_fctmDirInput(this)" onblur="_fctmDirBlur()">
+            <div id="fctm-dir-sugerencias" class="fct-autocomplete" style="display:none;"></div>
+            <div class="fct-dir-hint" id="fctm-dir-hint"></div>
+          </div>
+          <div class="factura-field">
+            <label>Tipo de pago</label>
+            <select id="fctm-tipo-pago">
+              <option value="">Seleccionar…</option>
+              <option value="Cash">💵 Cash</option>
+              <option value="Transferencia">💳 Transferencia</option>
+              <option value="Depósito">🏦 Depósito</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <div class="factura-seccion-title">Dirección de envío</div>
+          <div class="factura-field">
+            <div style="display:flex;gap:8px;align-items:flex-end;">
+              <div style="flex:1;">
+                <label style="display:block;font-size:9.5px;color:#999;margin-bottom:3px;letter-spacing:0.5px;text-transform:uppercase;">Ciudad</label>
+                <input type="text" id="fctm-env-ciudad" placeholder="Ciudad" style="width:100%;border:1px solid #e5e5e5;border-radius:4px;padding:7px 10px;font-size:12px;font-family:'Montserrat',sans-serif;color:#1a1a1a;box-sizing:border-box;background:#fafafa;">
+              </div>
+              <div style="width:82px;">
+                <label style="display:block;font-size:9.5px;color:#999;margin-bottom:3px;letter-spacing:0.5px;text-transform:uppercase;">ZIP</label>
+                <input type="text" id="fctm-env-zip" placeholder="00000" maxlength="5" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'');_fctmZipInput(this)" style="width:100%;border:1px solid #e5e5e5;border-radius:4px;padding:7px 8px;font-size:12px;font-family:'Montserrat',sans-serif;color:#1a1a1a;box-sizing:border-box;background:#fafafa;text-align:center;letter-spacing:2px;">
+              </div>
+            </div>
+          </div>
+          <div class="factura-field">
+            <label>Estado</label>
+            <input type="text" id="fctm-env-estado" placeholder="Estado / Departamento">
+          </div>
+          <div class="factura-field">
+            <label>Suite / Apt / Unit</label>
+            <input type="text" id="fctm-env-suite" placeholder="Suite 101, Apt 2B…">
+          </div>
+          <div class="factura-field">
+            <label>Lock Num</label>
+            <input type="text" id="fctm-cli-locker" placeholder="Lock #123">
+          </div>
+          <div class="factura-field">
+            <label>Referencia adicional</label>
+            <input type="text" id="fctm-env-ref" placeholder="Barrio, edificio, referencia…">
+          </div>
+        </div>
+      </div>
+
+      <hr class="factura-divider">
+
+      <!-- Bloque cliente — solo visible en impresión -->
+      <div class="fctm-cli-print-block" id="fctmCliPrintBlock">
+        <div class="fct-cli-print-col">
+          <div class="fct-cli-print-label">Facturar a / Bill To</div>
+          <div class="fct-cli-print-nombre" id="fctmPrintNombre"></div>
+          <div class="fct-cli-print-linea" id="fctmPrintTel"></div>
+          <div class="fct-cli-print-linea" id="fctmPrintDir"></div>
+          <div class="fct-cli-print-linea" id="fctmPrintPago"></div>
+        </div>
+        <div class="fct-cli-print-col">
+          <div class="fct-cli-print-label">Destino / Ship To</div>
+          <div class="fct-cli-print-linea" id="fctmPrintCiudad"></div>
+          <div class="fct-cli-print-linea" id="fctmPrintEstado"></div>
+          <div class="fct-cli-print-linea" id="fctmPrintPais"></div>
+          <div class="fct-cli-print-linea" id="fctmPrintRef"></div>
+        </div>
+      </div>
+      <hr class="factura-divider" style="display:none;margin-top:0;" id="fctm-print-divider2">
+
+      <!-- Productos manuales -->
+      <div class="factura-seccion-title" style="margin-bottom:10px;">Productos</div>
+      <!-- Barra de entrada superior -->
+      <div class="fctm-entrada-bar" style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px;flex-wrap:wrap;">
+        <div style="position:relative;flex:1;min-width:180px;">
+          <label style="display:block;font-size:9.5px;color:#999;margin-bottom:3px;letter-spacing:0.5px;text-transform:uppercase;">Producto</label>
+          <input type="text" id="fctm-input-nombre" placeholder="Nombre del producto..." autocomplete="off" class="fctm-input" style="width:100%;padding:7px 10px;" oninput="_fctmAutocompleteFiltrar()" onkeydown="_fctmEntradaKeydown(event)">
+          <div id="fctm-autocomplete-list" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #e0d6c4;border-top:none;border-radius:0 0 4px 4px;max-height:160px;overflow-y:auto;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.1);"></div>
+        </div>
+        <div style="width:64px;">
+          <label style="display:block;font-size:9.5px;color:#999;margin-bottom:3px;letter-spacing:0.5px;text-transform:uppercase;">Cant.</label>
+          <input type="number" id="fctm-input-qty" value="1" min="1" class="fctm-input" style="width:100%;text-align:center;padding:7px 6px;" onkeydown="_fctmEntradaKeydown(event)">
+        </div>
+        <div style="width:100px;">
+          <label style="display:block;font-size:9.5px;color:#999;margin-bottom:3px;letter-spacing:0.5px;text-transform:uppercase;">Precio <span id="fctm-moneda-label" style="font-weight:400;opacity:0.7;"></span></label>
+          <input type="number" id="fctm-input-precio" value="" min="0" step="0.01" placeholder="0.00" class="fctm-input" style="width:100%;text-align:right;padding:7px 8px;" onkeydown="_fctmEntradaKeydown(event)">
+        </div>
+        <button onclick="_fctmAddItem()" title="Agregar (Enter)" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:1px;color:#C9973A;background:rgba(201,151,58,0.12);border:1px solid rgba(201,151,58,0.4);padding:0 16px;cursor:pointer;border-radius:4px;white-space:nowrap;height:35px;">+ Agregar</button>
+      </div>
+      <!-- Listbox de productos -->
+      <div id="fctm-items-list" style="border:1px solid #e8dfc8;border-radius:4px;min-height:56px;margin-bottom:4px;overflow:hidden;"></div>
+
+      <!-- Tabla profesional — solo en impresión -->
+      <div class="fctm-print-section">
+        <table class="factura-items-table" id="fctm-print-table" style="margin-top:4px;">
+          <thead>
+            <tr>
+              <th style="width:50%">Artículo</th>
+              <th style="text-align:center">Cant.</th>
+              <th style="text-align:right">Precio unit.</th>
+              <th style="text-align:right">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody id="fctm-print-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Descuento global + totales -->
+      <div class="factura-totales" style="margin-top:12px;">
+        <div class="factura-total-fila fctm-input-row" style="align-items:center;gap:10px;padding-bottom:7px;border-bottom:1px solid #e8dfc8;">
+          <span style="flex:1;">Descuento global (%)</span>
+          <input type="number" id="fctm-desc-global" min="0" max="100" value="0" oninput="_fctmRecalcular()" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('fctm-envio')?.focus();}" class="fctm-input" style="width:64px;text-align:center;padding:4px 8px;">
+        </div>
+        <div class="factura-total-fila fctm-input-row" style="align-items:center;gap:10px;padding-bottom:7px;border-bottom:1px solid #e8dfc8;">
+          <span style="flex:1;">Envío <span id="fctm-envio-sym" style="font-size:10px;color:#aaa;"></span></span>
+          <input type="number" id="fctm-envio" min="0" step="0.01" value="" placeholder="0" oninput="_fctmRecalcular()" class="fctm-input" style="width:80px;text-align:right;padding:4px 8px;">
+        </div>
+        <div class="factura-total-fila" id="fctm-subtotal-row">
+          <span>Subtotal</span><span id="fctm-subtotal-val">$0,00</span>
+        </div>
+        <div class="factura-total-fila" id="fctm-desc-row" style="display:none;color:#e74c3c;">
+          <span id="fctm-desc-label">Descuento (0%)</span><span id="fctm-desc-val">-$0,00</span>
+        </div>
+        <div class="factura-total-fila" id="fctm-envio-row" style="display:none;">
+          <span>Envío</span><span id="fctm-envio-val">$0,00</span>
+        </div>
+        <div class="factura-total-fila grande">
+          <span>TOTAL</span><span id="fctm-total-val">$0,00</span>
+        </div>
+      </div>
+      <div class="factura-nota-final">Gracias por tu compra · Pleaseme Accessories · Cada pieza, una historia</div>
+    </div>
+    <!-- ZIP mismatch popup -->
+    <div id="fctm-zip-popup" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
+      <div style="background:#fff;border-radius:8px;padding:28px 32px;max-width:380px;width:90%;box-shadow:0 16px 60px rgba(0,0,0,0.4);font-family:'Montserrat',sans-serif;">
+        <div style="font-family:'Cinzel',serif;font-size:11px;letter-spacing:3px;color:#C9973A;text-transform:uppercase;margin-bottom:14px;">Verificación de Dirección</div>
+        <div style="font-size:12px;color:#444;line-height:1.7;margin-bottom:18px;">
+          La ciudad ingresada <strong id="fctm-zip-popup-actual" style="color:#c0392b;"></strong> no coincide con el ZIP.<br>
+          La ubicación correcta es:<br>
+          <strong id="fctm-zip-popup-correcta" style="color:#1a7a3a;font-size:13px;display:block;margin-top:6px;"></strong>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button onclick="_fctmZipPopupCancelar()" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:1px;padding:8px 16px;border:1px solid #ddd;background:none;color:#999;cursor:pointer;border-radius:4px;">Mantener</button>
+          <button onclick="_fctmZipPopupAceptar()" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:1px;padding:8px 16px;border:none;background:linear-gradient(135deg,#1a7a3a,#145f2e);color:#fff;cursor:pointer;border-radius:4px;">Actualizar dirección</button>
+        </div>
+      </div>
+    </div>
+    <div class="factura-footer-bar">
+      <button class="btn-fct-cancel" onclick="cerrarFacturaManual()">Cancelar</button>
+      <button onclick="_fctmGuardarPendiente()" title="Guardar sin imprimir" style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:1.5px;padding:9px 18px;border-radius:4px;cursor:pointer;background:transparent;border:1.5px solid rgba(201,151,58,0.5);color:#C9973A;transition:all 0.2s;" onmouseover="this.style.background='rgba(201,151,58,0.1)'" onmouseout="this.style.background='transparent'">
+        ⏳ Pendiente
+      </button>
+      <button class="btn-fct-wa" onclick="_fctmCompartirWA()" style="display:inline-flex;align-items:center;gap:6px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.558 4.122 1.532 5.857L.057 23.882l6.184-1.622A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.969 0-3.81-.54-5.385-1.479l-.386-.229-3.668.962.98-3.579-.252-.4A9.954 9.954 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+        Enviar por WhatsApp
+      </button>
+      <button class="btn-fct-print" onclick="_fctmImprimir()">&#128438; Imprimir</button>
     </div>
   </div>
 </div>
@@ -5772,6 +6198,259 @@ function cerrarFactura() {
   document.body.style.overflow = '';
 }
 
+function toggleFacturaTema() {
+  const modal = document.getElementById('facturaModal');
+  const isOscuro = modal.classList.toggle('tema-oscuro');
+  localStorage.setItem('fct_tema', isOscuro ? 'oscuro' : 'claro');
+  const icon  = document.getElementById('fct-tema-icon');
+  const label = document.getElementById('fct-tema-label');
+  if (isOscuro) { icon.textContent = '✦'; label.textContent = 'Tema oscuro'; }
+  else          { icon.textContent = '☀'; label.textContent = 'Tema claro'; }
+}
+(function() {
+  if (localStorage.getItem('fct_tema') === 'oscuro') {
+    const modal = document.getElementById('facturaModal');
+    if (modal) {
+      modal.classList.add('tema-oscuro');
+      const icon  = document.getElementById('fct-tema-icon');
+      const label = document.getElementById('fct-tema-label');
+      if (icon)  icon.textContent  = '✦';
+      if (label) label.textContent = 'Tema oscuro';
+    }
+  }
+})();
+
+function _generarPdfFactura() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const pageW = 210, margin = 18;
+
+  const nombre  = document.getElementById('fct-cli-nombre').value.trim().toUpperCase();
+  const tel     = document.getElementById('fct-cli-tel').value.trim();
+  const dir     = document.getElementById('fct-cli-dir').value.trim();
+  const lock    = document.getElementById('fct-cli-locker').value.trim();
+  const ciudad  = document.getElementById('fct-env-ciudad').value.trim();
+  const zip     = document.getElementById('fct-env-zip').value.trim();
+  const estado  = _fctGetEstadoValor();
+  const pais    = document.getElementById('fct-cli-pais').value.trim();
+  const ref     = document.getElementById('fct-env-ref').value.trim();
+  const docId   = _facturaCurrentPedidoId;
+  const p       = _pedidos.find(x => x._docId === docId) || _realizados.find(x => x._docId === docId);
+  const numero  = p ? (p.numero || '—') : '—';
+  const items   = p ? (p.items || []) : [];
+  const subtotal  = p ? Number(p.subtotal || 0) : 0;
+  const total     = p ? Number(p.total_final || p.total || 0) : 0;
+  const descuento = p ? Number(p.descuento || 0) : 0;
+  const fecha   = new Date().toLocaleDateString('es-CO');
+
+  let y = 18;
+
+  // ── HEADER OSCURO ──
+  doc.setFillColor(26, 22, 16);
+  doc.rect(0, 0, pageW, 40, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(20);
+  doc.setTextColor(201, 151, 58);
+  doc.text('PLEASEME', margin, y + 7);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(154, 140, 118);
+  doc.text('ACCESSORIES · Oro laminado de alta calidad', margin, y + 13);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(201, 151, 58);
+  doc.text('FACTURA', pageW - margin, y + 7, { align: 'right' });
+  doc.setFontSize(15);
+  doc.setTextColor(255, 240, 179);
+  doc.text('#' + numero, pageW - margin, y + 16, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(154, 140, 118);
+  doc.text(fecha, pageW - margin, y + 23, { align: 'right' });
+
+  y = 48;
+
+  // ── CLIENTE ──
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7);
+  doc.setTextColor(139, 105, 20);
+  doc.text('FACTURAR A', margin, y);
+  doc.setDrawColor(201, 151, 58);
+  doc.setLineWidth(0.4);
+  doc.line(margin, y + 1.5, margin + 40, y + 1.5);
+  y += 5;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(26, 22, 16);
+  doc.text(nombre || '—', margin, y);
+  y += 5;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(60, 50, 40);
+  if (tel) { doc.text('Tel: ' + tel, margin, y); y += 5; }
+  if (dir) { const lines = doc.splitTextToSize('Dir: ' + dir, 80); doc.text(lines, margin, y); y += lines.length * 5; }
+  if (lock) { doc.text('Locker: ' + lock, margin, y); y += 5; }
+  if (pais) { doc.text('País: ' + pais, margin, y); y += 5; }
+
+  // ── ENVÍO (columna derecha) ──
+  const rx = pageW / 2 + 5;
+  let ry = 48;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7);
+  doc.setTextColor(139, 105, 20);
+  doc.text('ENVÍO A', rx, ry);
+  doc.line(rx, ry + 1.5, rx + 30, ry + 1.5);
+  ry += 5;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(60, 50, 40);
+  if (ciudad) { doc.text('Ciudad: ' + ciudad + (zip ? '  ZIP: ' + zip : ''), rx, ry); ry += 5; }
+  if (estado) { doc.text('Estado: ' + estado, rx, ry); ry += 5; }
+  if (ref) { doc.text('Ref: ' + ref, rx, ry); ry += 5; }
+
+  y = Math.max(y, ry) + 10;
+
+  // ── TABLA ARTÍCULOS ──
+  doc.setFillColor(26, 22, 16);
+  doc.rect(margin, y, pageW - 2 * margin, 7, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.setTextColor(201, 151, 58);
+  doc.text('ARTÍCULO', margin + 2, y + 4.5);
+  doc.text('CATEGORÍA', margin + 92, y + 4.5);
+  doc.text('CANT.', margin + 122, y + 4.5, { align: 'center' });
+  doc.text('PRECIO', pageW - margin - 2, y + 4.5, { align: 'right' });
+  y += 8;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  items.forEach((it, i) => {
+    if (i % 2 === 0) { doc.setFillColor(252, 249, 243); doc.rect(margin, y - 1, pageW - 2 * margin, 7, 'F'); }
+    doc.setTextColor(26, 22, 16);
+    doc.text((it.name || '—').substring(0, 38), margin + 2, y + 4);
+    doc.text((it.category || ''), margin + 92, y + 4);
+    doc.text(String(it.qty || 1), margin + 122, y + 4, { align: 'center' });
+    doc.text('$' + (it.price || '—'), pageW - margin - 2, y + 4, { align: 'right' });
+    y += 7;
+  });
+
+  y += 6;
+
+  // ── TOTALES ──
+  const totX = pageW - margin - 68;
+  doc.setDrawColor(224, 215, 196);
+  doc.setLineWidth(0.3);
+  doc.line(totX, y, pageW - margin, y);
+  y += 5;
+  if (descuento > 0) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(60, 50, 40);
+    doc.text('Subtotal:', totX, y);
+    doc.text('$' + Number(subtotal).toLocaleString('es-CO'), pageW - margin, y, { align: 'right' });
+    y += 5;
+    doc.setTextColor(180, 50, 50);
+    doc.text('Descuento (' + descuento + '%):', totX, y);
+    doc.text('-$' + Number(subtotal - total).toLocaleString('es-CO'), pageW - margin, y, { align: 'right' });
+    y += 5;
+  }
+  doc.setFillColor(26, 22, 16);
+  doc.rect(totX - 2, y - 1, pageW - margin - totX + 4, 10, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(201, 151, 58);
+  doc.text('TOTAL:', totX, y + 6);
+  doc.setFontSize(12);
+  doc.setTextColor(255, 240, 179);
+  doc.text('$' + Number(total).toLocaleString('es-CO'), pageW - margin - 2, y + 6, { align: 'right' });
+
+  y += 20;
+  doc.setFillColor(245, 240, 230);
+  doc.rect(margin, y, pageW - 2 * margin, 10, 'F');
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(7.5);
+  doc.setTextColor(153, 140, 118);
+  doc.text('Gracias por tu compra · Pleaseme Accessories · Cada pieza, una historia', pageW / 2, y + 6, { align: 'center' });
+
+  return doc;
+}
+
+async function compartirWhatsApp() {
+  const nombre = document.getElementById('fct-cli-nombre').value.trim();
+  const dir    = document.getElementById('fct-cli-dir').value.trim();
+
+  if (!nombre) {
+    const inp = document.getElementById('fct-cli-nombre');
+    inp.focus(); inp.style.borderColor = 'crimson';
+    inp.placeholder = '⚠ Nombre requerido';
+    setTimeout(() => { inp.style.borderColor = ''; inp.placeholder = 'Nombre del cliente'; }, 2500);
+    return showToast('⚠ El nombre del cliente es obligatorio');
+  }
+  if (!dir) {
+    const inp = document.getElementById('fct-cli-dir');
+    inp.focus(); inp.style.borderColor = 'crimson';
+    inp.placeholder = '⚠ Dirección requerida';
+    setTimeout(() => { inp.style.borderColor = ''; inp.placeholder = 'Calle / Av. / Número'; }, 2500);
+    return showToast('⚠ La dirección es obligatoria');
+  }
+
+  const docId = _facturaCurrentPedidoId;
+  const p     = _pedidos.find(x => x._docId === docId) || _realizados.find(x => x._docId === docId);
+  const numero  = p ? (p.numero || '—') : '—';
+  const items   = p ? (p.items || []) : [];
+  const total   = p ? Number(p.total_final || p.total || 0) : 0;
+  const fecha   = new Date().toLocaleDateString('es-CO');
+
+  // Construir mensaje de texto para WhatsApp
+  let msg = `*PLEASEME ACCESSORIES*\n_Factura #${numero} · ${fecha}_\n\n`;
+  msg += `👤 *${nombre.toUpperCase()}*\n`;
+  const tel = document.getElementById('fct-cli-tel').value.trim();
+  if (tel) msg += `📞 ${tel}\n`;
+  if (dir) msg += `📍 ${dir}\n`;
+  msg += `\n*Artículos:*\n`;
+  items.forEach(it => { msg += `• ${it.name || '—'} ×${it.qty} — $${it.price || '—'}\n`; });
+  msg += `\n💰 *TOTAL: $${Number(total).toLocaleString('es-CO')}*\n`;
+  msg += `\n_Gracias por tu compra · Pleaseme Accessories_`;
+
+  // Limpiar número de teléfono para WhatsApp
+  const telLimpio = tel.replace(/[\s\-\(\)]/g, '').replace(/^\+/, '');
+
+  let compartido = false;
+
+  // Intentar Web Share API con PDF (funciona en móvil)
+  if (window.jspdf && navigator.share) {
+    try {
+      const pdf = _generarPdfFactura();
+      const blob = pdf.output('blob');
+      const file = new File([blob], `factura-${numero}.pdf`, { type: 'application/pdf' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: `Factura #${numero} - Pleaseme`, text: msg });
+        compartido = true;
+      }
+    } catch(e) {
+      if (e.name !== 'AbortError') console.warn('Web Share falló:', e.message);
+      else return; // Usuario canceló el diálogo
+    }
+  }
+
+  if (!compartido) {
+    // Desktop o sin soporte: descargar PDF + abrir WhatsApp Web con texto
+    if (window.jspdf) {
+      const pdf = _generarPdfFactura();
+      pdf.save(`factura-pleaseme-${numero}.pdf`);
+    }
+    const waUrl = telLimpio
+      ? `https://wa.me/${telLimpio}?text=${encodeURIComponent(msg)}`
+      : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, '_blank');
+    showToast('📎 PDF descargado — adjúntalo desde WhatsApp');
+  }
+
+  // Guardar factura y eliminar pedido de la vista
+  await guardarFacturaProcesada();
+  cerrarFactura();
+}
+
 async function imprimirFactura() {
   const nombre = document.getElementById('fct-cli-nombre').value.trim();
   const dir    = document.getElementById('fct-cli-dir').value.trim();
@@ -5796,6 +6475,7 @@ async function imprimirFactura() {
   _poblarBloquePrint();
   await guardarFacturaProcesada();
   window.print();
+  cerrarFactura();
 }
 
 function _poblarBloquePrint() {
@@ -5964,14 +6644,137 @@ function filtrarFacturas() {
   }));
 }
 
+// ─── HISTORIA FACTURAS MANUALES ──────────────────────────────────────────────
+let _historia = [];
+
+async function loadHistoria() {
+  const lista = document.getElementById('historiaLista');
+  if (!lista) return;
+  lista.innerHTML = '<p class="pedidos-empty">Cargando historial…</p>';
+  try {
+    const snap = await _db.collection('facturas_procesadas')
+      .where('origen', '==', 'manual')
+      .orderBy('fecha', 'desc').limit(300).get();
+    _historia = snap.docs.map(doc => ({ _docId: doc.id, ...doc.data() }));
+    renderHistoria(_historia);
+  } catch(e) {
+    lista.innerHTML = '<p class="pedidos-empty">Error al cargar: ' + e.message + '</p>';
+  }
+}
+
+function renderHistoria(lista) {
+  const el = document.getElementById('historiaLista');
+  if (!el) return;
+  if (!lista.length) {
+    el.innerHTML = '<p class="pedidos-empty">No hay facturas manuales registradas aún.</p>';
+    return;
+  }
+  el.innerHTML = lista.map(f => {
+    const fecha   = f.fecha ? new Date(f.fecha.seconds * 1000).toLocaleString('es-CO', { dateStyle:'medium', timeStyle:'short' }) : '—';
+    const sym     = f.moneda === 'RD$' ? 'RD$' : '$';
+    const total   = sym + Number(f.total || 0).toLocaleString('es-CO', { minimumFractionDigits:2 });
+    const cliente = (f.cliente && f.cliente.nombre) ? f.cliente.nombre : '<em style="color:#888">Sin nombre</em>';
+    const tel     = (f.cliente && f.cliente.tel)     ? f.cliente.tel : '';
+    const pais    = (f.cliente && f.cliente.pais)    ? f.cliente.pais : '';
+    const ciudad  = (f.envio   && f.envio.ciudad)    ? f.envio.ciudad : '';
+    const estado  = (f.envio   && f.envio.estado)    ? f.envio.estado : '';
+    const pago    = f.tipo_pago || '';
+    const items   = f.items || [];
+    const desc    = Number(f.descuento || 0);
+    const envio   = Number(f.envio_costo || 0);
+    const sub     = Number(f.subtotal || 0);
+    return `
+      <div class="pedido-card" id="hcard-${f._docId}" style="border-color:rgba(201,151,58,0.35);">
+        <div class="pedido-card-head" onclick="toggleHistoria('${f._docId}')">
+          <span class="pedido-numero">${f.pedido_numero || f.numero || '—'}</span>
+          <span style="font-size:9px;letter-spacing:1px;color:#C9973A;background:rgba(201,151,58,0.1);border:1px solid rgba(201,151,58,0.3);padding:2px 8px;border-radius:10px;">MANUAL</span>
+          <span class="pedido-fecha">${fecha}</span>
+          <span class="pedido-total-head">${total}</span>
+          <svg class="pedido-arrow" id="harrow-${f._docId}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="pedido-body" id="hbody-${f._docId}">
+          <div></div>
+          <div>
+            <p style="font-size:11px;color:var(--text-muted);margin-bottom:6px;letter-spacing:1px;text-transform:uppercase;">Cliente</p>
+            <p style="font-size:14px;font-weight:700;margin:0 0 3px;color:var(--text);">${cliente}</p>
+            ${tel ? '<p style="font-size:11px;color:var(--text-muted);margin:0 0 2px;">📱 ' + tel + '</p>' : ''}
+            ${ciudad ? '<p style="font-size:11px;color:var(--text-muted);margin:0 0 2px;">📍 ' + [ciudad,estado].filter(Boolean).join(', ') + (pais ? ' · '+pais : '') + '</p>' : ''}
+            ${pago ? '<p style="font-size:11px;color:var(--text-muted);margin:0 0 8px;">💳 ' + pago + '</p>' : ''}
+            <p style="font-size:11px;color:var(--text-muted);margin-bottom:6px;letter-spacing:1px;text-transform:uppercase;">Artículos (${items.length})</p>
+            <table class="pedido-items-table">
+              <thead><tr><th>Artículo</th><th style="text-align:center">Cant.</th><th style="text-align:right">Precio</th><th style="text-align:right">Subtotal</th></tr></thead>
+              <tbody>${items.map(it => {
+                const itSub = sym + Number(it.sub || 0).toLocaleString('es-CO',{minimumFractionDigits:2});
+                const itPrice = sym + Number(it.price || 0).toLocaleString('es-CO',{minimumFractionDigits:2});
+                return '<tr><td>' + (it.name||'—') + '</td><td style="text-align:center">' + (it.qty||1) + '</td><td style="text-align:right">' + itPrice + '</td><td style="text-align:right">' + itSub + '</td></tr>';
+              }).join('')}</tbody>
+            </table>
+            <div style="margin-top:10px;padding:10px 12px;background:var(--bg2);border-radius:4px;font-size:12px;">
+              <div style="display:flex;justify-content:space-between;color:var(--text-muted);padding:2px 0;">${'<span>Subtotal</span><span>' + sym + sub.toLocaleString('es-CO',{minimumFractionDigits:2}) + '</span>'}</div>
+              ${desc > 0 ? '<div style="display:flex;justify-content:space-between;color:#e74c3c;padding:2px 0;"><span>Descuento (' + desc + '%)</span><span>-' + sym + (sub*desc/100).toLocaleString('es-CO',{minimumFractionDigits:2}) + '</span></div>' : ''}
+              ${envio > 0 ? '<div style="display:flex;justify-content:space-between;color:var(--text-muted);padding:2px 0;"><span>Envío</span><span>' + sym + envio.toLocaleString('es-CO',{minimumFractionDigits:2}) + '</span></div>' : ''}
+              <div style="display:flex;justify-content:space-between;font-weight:700;font-size:14px;color:var(--gold);padding-top:6px;margin-top:4px;border-top:1px solid var(--border);">
+                <span>TOTAL</span><span>${total}</span>
+              </div>
+            </div>
+            <div class="pedido-actions" style="margin-top:10px;">
+              <button class="btn" style="font-size:11px;padding:5px 12px;border-color:rgba(192,57,43,0.4);color:#c0392b;" onclick="eliminarHistoria('${f._docId}')">
+                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleHistoria(docId) {
+  const body  = document.getElementById('hbody-'  + docId);
+  const arrow = document.getElementById('harrow-' + docId);
+  if (!body) return;
+  const open = body.classList.toggle('open');
+  arrow.style.transform = open ? 'rotate(180deg)' : '';
+}
+
+function filtrarHistoria() {
+  const q = (document.getElementById('historiaSearch').value || '').toLowerCase().trim();
+  if (!q) { renderHistoria(_historia); return; }
+  renderHistoria(_historia.filter(f => {
+    const num = (f.pedido_numero || f.numero || '').toLowerCase();
+    const nom = (f.cliente && f.cliente.nombre || '').toLowerCase();
+    return num.includes(q) || nom.includes(q);
+  }));
+}
+
+async function eliminarHistoria(docId) {
+  if (!confirm('¿Eliminar esta factura del historial? Esta acción no se puede deshacer.')) return;
+  try {
+    await _db.collection('facturas_procesadas').doc(docId).delete();
+    _historia = _historia.filter(h => h._docId !== docId);
+    renderHistoria(_historia);
+    showToast('✦ Factura eliminada del historial');
+  } catch(e) { showToast('Error al eliminar: ' + e.message); }
+}
+
 // ─── MARCAR PEDIDO COMO FACTURADO ────────────────────────────────────────────
 async function _marcarPedidoFacturado(docId) {
   if (!docId) return;
   try {
     await _db.collection('pedidos').doc(docId).update({ facturado: true });
-  } catch(e) { /* puede ser de _realizados, ignorar */ }
+  } catch(e) { /* ignorar si no existe en pedidos */ }
   _pedidos = _pedidos.filter(p => p._docId !== docId);
   if (typeof renderPedidos === 'function') renderPedidos(_pedidos);
+  // Eliminar también de la vista Pedidos a Crédito si estaba ahí
+  const cardR = document.getElementById('rcard-' + docId);
+  if (cardR) {
+    cardR.remove();
+    _realizados = _realizados.filter(r => r._docId !== docId);
+    const lista = document.getElementById('realizadosLista');
+    if (lista && !lista.querySelector('.pedido-card')) {
+      lista.innerHTML = '<p class="pedidos-empty">No hay facturas pendientes de pago.</p>';
+    }
+  }
 }
 
 // ─── ANULAR FACTURA — MODAL CON NOTA ─────────────────────────────────────────
@@ -5986,7 +6789,31 @@ async function _setEstadoFactura(docId, estado, chk) {
   if (f) f.estado = nuevoEstado;
   try {
     await _db.collection('facturas_procesadas').doc(docId).update({ estado: nuevoEstado });
+    // Actualizar badge visual en la tarjeta de Facturas Procesadas
+    _actualizarBadgeFactura(docId, nuevoEstado);
+    // Sincronizar con Pedidos a Crédito
+    await loadRealizados();
+    if (nuevoEstado === 'pendiente') {
+      showToast('⏳ Factura movida a Pedidos a Crédito');
+    } else if (nuevoEstado === 'pagada') {
+      showToast('✓ Factura marcada como Pagada');
+    }
   } catch(e) { showToast('Error al guardar estado: ' + e.message); }
+}
+
+function _actualizarBadgeFactura(docId, estado) {
+  const card = document.getElementById('fcard-' + docId);
+  if (!card) return;
+  const head = card.querySelector('.pedido-card-head');
+  if (!head) return;
+  // Actualizar borde de la tarjeta
+  if (estado === 'pendiente') {
+    card.style.borderColor = 'rgba(230,126,34,0.5)';
+  } else if (estado === 'pagada') {
+    card.style.borderColor = 'rgba(46,160,67,0.4)';
+  } else {
+    card.style.borderColor = 'rgba(201,151,58,0.3)';
+  }
 }
 
 function anularFactura(docId) {
@@ -6129,9 +6956,7 @@ function reabrirFactura(docId) {
   document.body.style.overflow = 'hidden';
 }
 
-document.getElementById('facturaOverlay').addEventListener('click', function(e) {
-  if (e.target === this) cerrarFactura();
-});
+
 
 // ─── ESTADOS USA ──────────────────────────────────────────────────────────────
 const _US_STATES = [
@@ -6253,6 +7078,86 @@ function _fctLlenarDesdeFactura(f) {
     }
   }
   if (env.referencia) document.getElementById('fct-env-ref').value = env.referencia;
+  if (env.suite) { const s = document.getElementById('fct-env-suite'); if (s) s.value = env.suite; }
+  if (f.tipo_pago) { const tp = document.getElementById('fct-tipo-pago'); if (tp) tp.value = f.tipo_pago; }
+}
+
+// ─── DIRECCIÓN: autocomplete con Nominatim ────────────────────────────────────
+let _fctDirTimer = null;
+
+function _fctDirInput(inp) {
+  clearTimeout(_fctDirTimer);
+  const q = inp.value.trim();
+  if (q.length < 5) { _fctDirOcultar(); return; }
+  _fctDirTimer = setTimeout(() => _fctDirBuscar(q), 450);
+}
+
+function _fctDirBlur() {
+  setTimeout(_fctDirOcultar, 250);
+}
+
+function _fctDirOcultar() {
+  const box = document.getElementById('fct-dir-sugerencias');
+  if (box) box.style.display = 'none';
+}
+
+async function _fctDirBuscar(q) {
+  const pais = document.getElementById('fct-cli-pais').value;
+  const cc   = pais === 'USA' ? 'us' : pais === 'DOM REP' ? 'do' : '';
+  const url  = 'https://nominatim.openstreetmap.org/search?format=json&limit=5&addressdetails=1&q=' +
+    encodeURIComponent(q) + (cc ? '&countrycodes=' + cc : '');
+  try {
+    const res  = await fetch(url, { headers: { 'Accept-Language': 'es' } });
+    const data = await res.json();
+    const box  = document.getElementById('fct-dir-sugerencias');
+    if (!box) return;
+    if (!data.length) { box.style.display = 'none'; return; }
+    box.innerHTML = data.map((r, i) => {
+      const label = r.display_name || '';
+      return `<div class="fct-autocomplete-item" onmousedown="_fctDirSeleccionar(${i})" data-idx="${i}">${label}</div>`;
+    }).join('');
+    box._nominatimData = data;
+    box.style.display = 'block';
+  } catch(e) { _fctDirOcultar(); }
+}
+
+function _fctDirSeleccionar(idx) {
+  const box  = document.getElementById('fct-dir-sugerencias');
+  if (!box || !box._nominatimData) return;
+  const r    = box._nominatimData[idx];
+  if (!r) return;
+  const a    = r.address || {};
+  // Fill address field with road + house number
+  const road = [a.house_number, a.road || a.pedestrian || a.footway].filter(Boolean).join(' ');
+  const dirEl = document.getElementById('fct-cli-dir');
+  if (dirEl) dirEl.value = road || r.display_name.split(',')[0];
+  // Fill city
+  const city = a.city || a.town || a.village || a.county || '';
+  const ciudadEl = document.getElementById('fct-env-ciudad');
+  if (ciudadEl && city) ciudadEl.value = city;
+  // Fill state
+  const state = a.state || '';
+  if (state) {
+    const staSel = document.getElementById('fct-env-estado-sel');
+    const staInp = document.getElementById('fct-env-estado');
+    if (staSel && staSel.style.display !== 'none') {
+      const opt = Array.from(staSel.options).find(o => o.value === state || o.textContent.includes(state));
+      if (opt) staSel.value = opt.value;
+    } else if (staInp) {
+      staInp.value = state;
+    }
+  }
+  // Fill zip
+  const zip = a.postcode || '';
+  const zipEl = document.getElementById('fct-env-zip');
+  if (zipEl && zip) zipEl.value = zip.slice(0, 5);
+  // Hint
+  const hint = document.getElementById('fct-dir-hint');
+  if (hint) {
+    hint.textContent = '📍 ' + [city, state, zip].filter(Boolean).join(', ');
+    hint.style.display = 'block';
+  }
+  _fctDirOcultar();
 }
 
 // ─── TELÉFONO: formato y detección de país ────────────────────────────────────
@@ -6271,13 +7176,14 @@ function _fctTelInput(inp) {
     }
   }
 
-  // Formatear +1 XXXXXXXXXX → +1 XXX XXX XXXX
+  // Formatear +1 XXXXXXXXXX → +1 (XXX) XXX-XXXX
   if (raw.startsWith('+1')) {
     const nums = raw.slice(2).replace(/\D/g,'').slice(0,10);
     let fmt = '+1';
-    if (nums.length > 0) fmt += ' ' + nums.slice(0,3);
+    if (nums.length > 0) fmt += ' (' + nums.slice(0,3);
+    if (nums.length >= 3) fmt += ')';
     if (nums.length > 3) fmt += ' ' + nums.slice(3,6);
-    if (nums.length > 6) fmt += ' ' + nums.slice(6,10);
+    if (nums.length > 6) fmt += '-' + nums.slice(6,10);
     inp.value = fmt;
   }
 }
@@ -6313,6 +7219,64 @@ async function _fctZipInput(inp) {
   } catch(e) { inp.style.borderColor = ''; }
 }
 
+async function _fctmZipInput(inp) {
+  const zip = inp.value;
+  if (zip.length !== 5) return;
+  const pais = document.getElementById('fctm-cli-pais')?.value || '';
+  if (pais !== 'USA') return;
+  inp.style.borderColor = '#C9973A';
+  try {
+    const res  = await fetch('https://api.zippopotam.us/us/' + zip);
+    if (!res.ok) { inp.style.borderColor = 'crimson'; return; }
+    const data = await res.json();
+    const place = data.places && data.places[0];
+    if (!place) { inp.style.borderColor = 'crimson'; return; }
+    const city  = place['place name'] || '';
+    const state = place['state abbreviation'] || place.state || '';
+    const ciudadInp = document.getElementById('fctm-env-ciudad');
+    const estadoInp = document.getElementById('fctm-env-estado');
+    const currentCity = (ciudadInp?.value || '').trim();
+    if (currentCity && currentCity.toLowerCase() !== city.toLowerCase()) {
+      // Mismatch — show correction popup
+      _fctmMostrarCorreccionZip(currentCity, city, state, zip, ciudadInp, estadoInp);
+    } else {
+      if (ciudadInp) ciudadInp.value = city;
+      if (estadoInp && !estadoInp.value.trim()) estadoInp.value = state;
+      const hint = document.getElementById('fctm-dir-hint');
+      if (hint && city) {
+        hint.textContent = '📍 ' + city + (state ? ', ' + state : '') + '  ' + zip + ' — Verifica que la dirección corresponda a esta ubicación';
+        hint.style.display = 'block';
+      }
+    }
+    inp.style.borderColor = 'limegreen';
+    setTimeout(() => { inp.style.borderColor = ''; }, 1500);
+  } catch(e) { inp.style.borderColor = ''; }
+}
+
+function _fctmMostrarCorreccionZip(ciudadActual, ciudadCorrecta, estado, zip, ciudadInp, estadoInp) {
+  const popup = document.getElementById('fctm-zip-popup');
+  if (!popup) return;
+  document.getElementById('fctm-zip-popup-actual').textContent = ciudadActual;
+  document.getElementById('fctm-zip-popup-correcta').textContent = ciudadCorrecta + (estado ? ', ' + estado : '') + '  ZIP ' + zip;
+  popup._ciudadCorrecta = ciudadCorrecta;
+  popup._estado = estado;
+  popup._ciudadInp = ciudadInp;
+  popup._estadoInp = estadoInp;
+  popup.style.display = 'flex';
+}
+
+function _fctmZipPopupAceptar() {
+  const popup = document.getElementById('fctm-zip-popup');
+  if (!popup) return;
+  if (popup._ciudadInp) popup._ciudadInp.value = popup._ciudadCorrecta;
+  if (popup._estadoInp && popup._estado) popup._estadoInp.value = popup._estado;
+  popup.style.display = 'none';
+}
+
+function _fctmZipPopupCancelar() {
+  document.getElementById('fctm-zip-popup').style.display = 'none';
+}
+
 function _buscarYLlenarClientePorTel(tel) {
   if (!tel || !_facturas || !_facturas.length) return;
   const telLimpio = tel.replace(/\D/g,'');
@@ -6321,6 +7285,719 @@ function _buscarYLlenarClientePorTel(tel) {
     return t && t === telLimpio;
   });
   if (match) _fctLlenarDesdeFactura(match);
+}
+
+// ─── FACTURA MANUAL ───────────────────────────────────────────────────────────
+function abrirFacturaManual() {
+  // Número único
+  const num = 'FM-' + Date.now().toString().slice(-6);
+  document.getElementById('fctm-numero').textContent = num;
+  document.getElementById('fctm-fecha').textContent  = new Date().toLocaleDateString('es-CO', {day:'2-digit',month:'short',year:'numeric'});
+  // Info empresa
+  const ei = document.getElementById('fct-empresa-info');
+  const eim = document.getElementById('fctm-empresa-info');
+  if (ei && eim) eim.innerHTML = ei.innerHTML;
+  // Reset form
+  ['fctm-cli-nombre','fctm-cli-tel','fctm-cli-dir','fctm-env-ciudad','fctm-env-zip','fctm-env-estado','fctm-env-suite','fctm-cli-locker','fctm-env-ref'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('fctm-cli-pais').value = '';
+  document.getElementById('fctm-tipo-pago').value = '';
+  document.getElementById('fctm-desc-global').value = '0';
+  const envioEl = document.getElementById('fctm-envio'); if (envioEl) envioEl.value = '';
+  const hintEl = document.getElementById('fctm-dir-hint'); if (hintEl) { hintEl.textContent=''; hintEl.style.display='none'; }
+  const monLbl = document.getElementById('fctm-moneda-label'); if (monLbl) monLbl.textContent='';
+  // Reset product list
+  _fctmItems = [];
+  _fctmItemId = 0;
+  _fctmEditingItemId = null;
+  document.getElementById('fctm-input-nombre').value = '';
+  document.getElementById('fctm-input-qty').value    = '1';
+  document.getElementById('fctm-input-precio').value = '';
+  document.getElementById('fctm-autocomplete-list').style.display = 'none';
+  _fctmRenderLista();
+  _fctmRecalcular();
+  // Restore theme
+  const modal = document.getElementById('facturaManualModal');
+  if (localStorage.getItem('fctm_tema') === 'oscuro') {
+    modal.classList.add('tema-oscuro');
+    document.getElementById('fctm-tema-icon').textContent  = '✦';
+    document.getElementById('fctm-tema-label').textContent = 'Tema oscuro';
+  } else {
+    modal.classList.remove('tema-oscuro');
+    document.getElementById('fctm-tema-icon').textContent  = '☀';
+    document.getElementById('fctm-tema-label').textContent = 'Tema claro';
+  }
+  document.getElementById('facturaManualOverlay').classList.add('open');
+}
+
+function cerrarFacturaManual() {
+  document.getElementById('facturaManualOverlay').classList.remove('open');
+}
+
+function toggleFacturaManualTema() {
+  const modal = document.getElementById('facturaManualModal');
+  const isOscuro = modal.classList.toggle('tema-oscuro');
+  localStorage.setItem('fctm_tema', isOscuro ? 'oscuro' : 'claro');
+  document.getElementById('fctm-tema-icon').textContent  = isOscuro ? '✦' : '☀';
+  document.getElementById('fctm-tema-label').textContent = isOscuro ? 'Tema oscuro' : 'Tema claro';
+}
+
+// ─── Product listbox data ─────────────────────────────────────────────────────
+let _fctmItems = [];
+let _fctmItemId = 0;
+let _fctmEditingItemId = null;
+
+function _fctmAutocompleteFiltrar() {
+  const q = (document.getElementById('fctm-input-nombre').value || '').trim().toLowerCase();
+  const list = document.getElementById('fctm-autocomplete-list');
+  if (!q) { list.style.display = 'none'; return; }
+  const matches = (typeof products !== 'undefined' ? products : [])
+    .filter(p => p.name && p.name.toLowerCase().includes(q)).slice(0, 8);
+  if (!matches.length) { list.style.display = 'none'; return; }
+  list.innerHTML = matches.map(p => {
+    const safe = p.name.replace(/'/g, '\'');
+    return `<div class="fctm-ac-item" onclick="_fctmAutocompleteSeleccionar('${safe}')">${p.name}</div>`;
+  }).join('');
+  list.style.display = 'block';
+}
+
+function _fctmAutocompleteSeleccionar(name) {
+  document.getElementById('fctm-input-nombre').value = name;
+  document.getElementById('fctm-autocomplete-list').style.display = 'none';
+  document.getElementById('fctm-input-qty').focus();
+}
+
+function _fctmEntradaKeydown(e) {
+  if (e.key === 'Enter') { e.preventDefault(); _fctmAddItem(); }
+  if (e.key === 'Escape') { document.getElementById('fctm-autocomplete-list').style.display = 'none'; }
+}
+
+function _fctmAddItem() {
+  const nombre = (document.getElementById('fctm-input-nombre').value || '').trim();
+  const qtyRaw = parseFloat(document.getElementById('fctm-input-qty').value);
+  const precio = parseFloat(document.getElementById('fctm-input-precio').value);
+  // Validate product exists
+  const existe = (typeof products !== 'undefined' ? products : [])
+    .some(p => p.name && p.name.trim().toLowerCase() === nombre.toLowerCase());
+  if (!nombre || !existe) {
+    const inp = document.getElementById('fctm-input-nombre');
+    inp.style.borderColor = '#e74c3c'; inp.focus();
+    setTimeout(() => { inp.style.borderColor = ''; }, 1500);
+    return;
+  }
+  // Validate qty
+  if (!qtyRaw || qtyRaw <= 0) {
+    showToast('⚠ La cantidad debe ser mayor a 0');
+    const inp = document.getElementById('fctm-input-qty');
+    inp.style.borderColor = '#e74c3c'; inp.focus(); inp.select();
+    setTimeout(() => { inp.style.borderColor = ''; }, 1500);
+    return;
+  }
+  // Validate precio
+  if (!precio || precio <= 0) {
+    showToast('⚠ El precio debe ser mayor a 0');
+    const inp = document.getElementById('fctm-input-precio');
+    inp.style.borderColor = '#e74c3c'; inp.focus(); inp.select();
+    setTimeout(() => { inp.style.borderColor = ''; }, 1500);
+    return;
+  }
+  if (_fctmEditingItemId !== null) {
+    const item = _fctmItems.find(i => i.id === _fctmEditingItemId);
+    if (item) { item.nombre = nombre; item.qty = qtyRaw; item.precio = precio; }
+    _fctmEditingItemId = null;
+  } else {
+    _fctmItems.push({ id: ++_fctmItemId, nombre, qty: qtyRaw, precio });
+  }
+  document.getElementById('fctm-input-nombre').value  = '';
+  document.getElementById('fctm-input-qty').value     = '1';
+  document.getElementById('fctm-input-precio').value  = '';
+  document.getElementById('fctm-autocomplete-list').style.display = 'none';
+  _fctmRenderLista();
+  _fctmRecalcular();
+  document.getElementById('fctm-input-nombre').focus();
+}
+
+function _fctmRemoveItem(id) {
+  _fctmItems = _fctmItems.filter(i => i.id !== id);
+  if (_fctmEditingItemId === id) _fctmEditingItemId = null;
+  _fctmRenderLista();
+  _fctmRecalcular();
+}
+
+function _fctmEditItem(id) {
+  const item = _fctmItems.find(i => i.id === id);
+  if (!item) return;
+  document.getElementById('fctm-input-nombre').value  = item.nombre;
+  document.getElementById('fctm-input-qty').value     = item.qty;
+  document.getElementById('fctm-input-precio').value  = item.precio;
+  _fctmEditingItemId = id;
+  _fctmRenderLista();
+  document.getElementById('fctm-input-nombre').focus();
+}
+
+function _fctmRenderLista() {
+  const sym = _fctmGetMoneda();
+  const container = document.getElementById('fctm-items-list');
+  if (!_fctmItems.length) {
+    container.innerHTML = '<div style="padding:18px;text-align:center;color:#bbb;font-size:11px;font-style:italic;">Sin productos</div>';
+    return;
+  }
+  container.innerHTML = _fctmItems.map((item, idx) => {
+    const sub    = item.qty * item.precio;
+    const subFmt = sym + sub.toLocaleString('es-CO', {minimumFractionDigits:2, maximumFractionDigits:2});
+    const pFmt   = sym + item.precio.toLocaleString('es-CO', {minimumFractionDigits:2, maximumFractionDigits:2});
+    const last   = idx === _fctmItems.length - 1 ? 'border-bottom:none;' : '';
+    const edit   = _fctmEditingItemId === item.id ? ' editing' : '';
+    return `<div class="fctm-list-item" style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid #e8dfc8;${last}">
+      <div style="flex:1;font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.nombre}</div>
+      <div style="font-size:11px;color:#888;min-width:36px;text-align:center;white-space:nowrap;">×${item.qty}</div>
+      <div style="font-size:11px;color:#888;min-width:70px;text-align:right;white-space:nowrap;">${pFmt}</div>
+      <div style="font-size:12px;font-weight:600;color:#C9973A;min-width:80px;text-align:right;white-space:nowrap;">${subFmt}</div>
+      <button onclick="_fctmRemoveItem(${item.id})" style="background:none;border:none;color:#e74c3c;cursor:pointer;font-size:14px;padding:2px 5px;flex-shrink:0;" title="Eliminar">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function _fctmRecalcular() {
+  const sym        = _fctmGetMoneda();
+  const fmt        = v => sym + v.toLocaleString('es-CO', {minimumFractionDigits:2, maximumFractionDigits:2});
+  const subtotal   = _fctmItems.reduce((s, i) => s + i.qty * i.precio, 0);
+  const descGlobal = parseFloat(document.getElementById('fctm-desc-global').value || 0) || 0;
+  const descMonto  = subtotal * descGlobal / 100;
+  const envioVal   = parseFloat(document.getElementById('fctm-envio').value || 0) || 0;
+  const total      = subtotal - descMonto + envioVal;
+
+  document.getElementById('fctm-subtotal-val').textContent = fmt(subtotal);
+
+  const descRow = document.getElementById('fctm-desc-row');
+  if (descGlobal > 0) {
+    descRow.style.display = '';
+    document.getElementById('fctm-desc-label').textContent = 'Descuento (' + descGlobal + '%)';
+    document.getElementById('fctm-desc-val').textContent   = '-' + fmt(descMonto);
+  } else {
+    descRow.style.display = 'none';
+  }
+
+  const envioRow = document.getElementById('fctm-envio-row');
+  if (envioVal > 0) {
+    envioRow.style.display = '';
+    document.getElementById('fctm-envio-val').textContent = fmt(envioVal);
+  } else {
+    envioRow.style.display = 'none';
+  }
+
+  document.getElementById('fctm-total-val').textContent = fmt(total);
+}
+
+function _fctmTelInput(inp) {
+  let raw = inp.value.replace(/[^\d+]/g, '');
+  if (raw.startsWith('+1')) {
+    const nums = raw.slice(2).replace(/\D/g,'').slice(0,10);
+    let fmt = '+1';
+    if (nums.length > 0) fmt += ' (' + nums.slice(0,3);
+    if (nums.length >= 3) fmt += ')';
+    if (nums.length > 3) fmt += ' ' + nums.slice(3,6);
+    if (nums.length > 6) fmt += '-' + nums.slice(6,10);
+    inp.value = fmt;
+  }
+}
+
+function _fctmGetMoneda() {
+  const pais = document.getElementById('fctm-cli-pais')?.value || '';
+  return pais === 'DOM REP' ? 'RD$' : '$';
+}
+
+function _fctmPaisChange() {
+  const sym = _fctmGetMoneda();
+  const lbl = document.getElementById('fctm-moneda-label');
+  if (lbl) lbl.textContent = '(' + sym + ')';
+  const envSym = document.getElementById('fctm-envio-sym');
+  if (envSym) envSym.textContent = '(' + sym + ')';
+  _fctmRenderLista();
+  _fctmRecalcular();
+}
+
+// ─── ADDRESS AUTOCOMPLETE (Nominatim) para factura manual ─────────────────────
+let _fctmDirTimer = null;
+
+function _fctmDirInput(inp) {
+  clearTimeout(_fctmDirTimer);
+  const q = inp.value.trim();
+  if (q.length < 5) { _fctmDirOcultar(); return; }
+  _fctmDirTimer = setTimeout(() => _fctmDirBuscar(q), 450);
+}
+
+function _fctmDirBlur() { setTimeout(_fctmDirOcultar, 250); }
+
+function _fctmDirOcultar() {
+  const box = document.getElementById('fctm-dir-sugerencias');
+  if (box) box.style.display = 'none';
+}
+
+async function _fctmDirBuscar(q) {
+  const pais = document.getElementById('fctm-cli-pais')?.value || '';
+  const cc   = pais === 'USA' ? 'us' : pais === 'DOM REP' ? 'do' : '';
+  const url  = 'https://nominatim.openstreetmap.org/search?format=json&limit=5&addressdetails=1&q=' +
+    encodeURIComponent(q) + (cc ? '&countrycodes=' + cc : '');
+  try {
+    const res  = await fetch(url, { headers: { 'Accept-Language': 'es' } });
+    const data = await res.json();
+    const box  = document.getElementById('fctm-dir-sugerencias');
+    if (!box) return;
+    if (!data.length) { box.style.display = 'none'; return; }
+    box.innerHTML = data.map((r, i) =>
+      `<div class="fct-autocomplete-item" onmousedown="_fctmDirSeleccionar(${i})">${r.display_name || ''}</div>`
+    ).join('');
+    box._nominatimData = data;
+    box.style.display = 'block';
+  } catch(e) { _fctmDirOcultar(); }
+}
+
+function _fctmDirSeleccionar(idx) {
+  const box = document.getElementById('fctm-dir-sugerencias');
+  if (!box || !box._nominatimData) return;
+  const r = box._nominatimData[idx];
+  if (!r) return;
+  const a    = r.address || {};
+  const road = [a.house_number, a.road || a.pedestrian || a.footway].filter(Boolean).join(' ');
+  const dirEl = document.getElementById('fctm-cli-dir');
+  if (dirEl) dirEl.value = road || r.display_name.split(',')[0];
+  const city = a.city || a.town || a.village || a.county || '';
+  const ciudadEl = document.getElementById('fctm-env-ciudad');
+  if (ciudadEl && city) ciudadEl.value = city;
+  const state = a.state || '';
+  const staInp = document.getElementById('fctm-env-estado');
+  if (staInp && state) staInp.value = state;
+  const zip = a.postcode || '';
+  const zipEl = document.getElementById('fctm-env-zip');
+  if (zipEl && zip) zipEl.value = zip.slice(0, 5);
+  const hint = document.getElementById('fctm-dir-hint');
+  if (hint) {
+    hint.textContent = '📍 ' + [city, state, zip].filter(Boolean).join(', ');
+    hint.style.display = 'block';
+  }
+  _fctmDirOcultar();
+}
+
+function _fctmGetItems() {
+  return _fctmItems.map(i => ({
+    nombre: i.nombre,
+    qty:    i.qty,
+    precio: i.precio,
+    desc:   0,
+    sub:    i.qty * i.precio
+  }));
+}
+
+async function _fctmCompartirWA() {
+  // Validate
+  const nombre = document.getElementById('fctm-cli-nombre').value.trim();
+  if (!nombre) { showToast('⚠ Ingresa el nombre del cliente'); document.getElementById('fctm-cli-nombre')?.focus(); return; }
+  if (!_fctmItems.length) { showToast('⚠ Agrega al menos un producto'); document.getElementById('fctm-input-nombre')?.focus(); return; }
+
+  _fctmPreparar();
+
+  const tel    = document.getElementById('fctm-cli-tel').value.trim();
+  const numero = document.getElementById('fctm-numero').textContent.trim();
+  const phone  = (typeof getWhatsAppNumber === 'function') ? getWhatsAppNumber().replace(/\D/g,'') : '';
+  const sym    = _fctmGetMoneda();
+  const descG  = parseFloat(document.getElementById('fctm-desc-global').value || 0) || 0;
+  const envioWA = parseFloat(document.getElementById('fctm-envio')?.value || 0) || 0;
+  const subtotalWA = _fctmItems.reduce((s, i) => s + i.qty * i.precio, 0);
+  const totalWA = subtotalWA * (1 - descG / 100) + envioWA;
+
+  // Fallback WhatsApp text message
+  const ciudad = document.getElementById('fctm-env-ciudad').value.trim();
+  const estado = document.getElementById('fctm-env-estado').value.trim();
+  const pago   = document.getElementById('fctm-tipo-pago').value;
+  let msg = `*FACTURA · Pleaseme Accessories*\nFactura: ${numero}\nFecha: ${document.getElementById('fctm-fecha').textContent}\n\n`;
+  msg += `*Cliente:* ${nombre}\n`;
+  if (tel) msg += `*Tel:* ${tel}\n`;
+  if (ciudad || estado) msg += `*Destino:* ${[ciudad,estado].filter(Boolean).join(', ')}\n`;
+  if (pago) msg += `*Pago:* ${pago}\n`;
+  msg += `\n*Artículos:*\n`;
+  _fctmItems.forEach(i => { msg += `  • ${i.nombre} ×${i.qty} @ ${sym}${i.precio.toFixed(2)} = ${sym}${(i.qty*i.precio).toFixed(2)}\n`; });
+  if (descG > 0) msg += `\nDescuento: -${descG}%`;
+  if (envioWA > 0) msg += `\nEnvío: ${sym}${envioWA.toFixed(2)}`;
+  msg += `\n\n*TOTAL: ${sym}${totalWA.toFixed(2)}*`;
+
+  const waUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+
+  let compartido = false;
+
+  // Try PDF via Web Share API (mobile)
+  if (window.jspdf && navigator.share) {
+    try {
+      const pdf  = _generarPdfFacturaManual();
+      const blob = pdf.output('blob');
+      const file = new File([blob], `factura-${numero}.pdf`, { type: 'application/pdf' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: `Factura ${numero} - Pleaseme`, text: msg });
+        compartido = true;
+      }
+    } catch(e) {
+      if (e.name === 'AbortError') return;
+      console.warn('Web Share falló:', e.message);
+    }
+  }
+
+  if (!compartido) {
+    // Desktop fallback: download PDF + open WhatsApp
+    if (window.jspdf) {
+      const pdf = _generarPdfFacturaManual();
+      pdf.save(`factura-pleaseme-${numero}.pdf`);
+      showToast('📎 PDF descargado — adjúntalo en WhatsApp');
+    }
+    window.open(waUrl, '_blank');
+  }
+}
+
+function _generarPdfFacturaManual() {
+  const { jsPDF } = window.jspdf;
+  const doc    = new jsPDF({ unit: 'mm', format: 'a4' });
+  const pageW  = 210, margin = 18;
+  const sym    = _fctmGetMoneda();
+  const g      = id => (document.getElementById(id)?.value || '').trim();
+  const nombre = g('fctm-cli-nombre').toUpperCase();
+  const tel    = g('fctm-cli-tel');
+  const dir    = g('fctm-cli-dir');
+  const suite  = g('fctm-env-suite');
+  const locker = g('fctm-cli-locker');
+  const ciudad = g('fctm-env-ciudad');
+  const zip    = g('fctm-env-zip');
+  const estado = g('fctm-env-estado');
+  const pais   = g('fctm-cli-pais');
+  const ref    = g('fctm-env-ref');
+  const pago   = g('fctm-tipo-pago');
+  const numero = document.getElementById('fctm-numero')?.textContent?.trim() || '—';
+  const fecha  = document.getElementById('fctm-fecha')?.textContent?.trim()  || new Date().toLocaleDateString('es-CO');
+  const descG  = parseFloat(document.getElementById('fctm-desc-global')?.value || 0) || 0;
+  const envio  = parseFloat(document.getElementById('fctm-envio')?.value || 0) || 0;
+  const subtotal = _fctmItems.reduce((s, i) => s + i.qty * i.precio, 0);
+  const descMonto = subtotal * descG / 100;
+  const total  = subtotal - descMonto + envio;
+
+  let y = 18;
+
+  // ── HEADER ──
+  doc.setFillColor(26, 22, 16);
+  doc.rect(0, 0, pageW, 40, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(20);
+  doc.setTextColor(201, 151, 58);
+  doc.text('PLEASEME', margin, y + 7);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(154, 140, 118);
+  doc.text('ACCESSORIES · Oro laminado de alta calidad', margin, y + 13);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(201, 151, 58);
+  doc.text('FACTURA', pageW - margin, y + 7, { align: 'right' });
+  doc.setFontSize(15);
+  doc.setTextColor(255, 240, 179);
+  doc.text(numero, pageW - margin, y + 16, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(154, 140, 118);
+  doc.text(fecha, pageW - margin, y + 23, { align: 'right' });
+  y = 48;
+
+  // ── CLIENTE (izquierda) ──
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7);
+  doc.setTextColor(139, 105, 20);
+  doc.text('FACTURAR A', margin, y);
+  doc.setDrawColor(201, 151, 58);
+  doc.setLineWidth(0.4);
+  doc.line(margin, y + 1.5, margin + 40, y + 1.5);
+  y += 5;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(26, 22, 16);
+  doc.text(nombre || '—', margin, y);
+  y += 5;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(60, 50, 40);
+  if (tel)    { doc.text('Tel: ' + tel, margin, y); y += 5; }
+  if (dir)    { const ln = doc.splitTextToSize('Dir: ' + dir + (suite ? ', ' + suite : ''), 85); doc.text(ln, margin, y); y += ln.length * 5; }
+  if (locker) { doc.text('Lock: ' + locker, margin, y); y += 5; }
+  if (pago)   { doc.text('Pago: ' + pago, margin, y); y += 5; }
+
+  // ── ENVÍO (derecha) ──
+  const rx = pageW / 2 + 5;
+  let ry = 48;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7);
+  doc.setTextColor(139, 105, 20);
+  doc.text('ENVÍO A', rx, ry);
+  doc.line(rx, ry + 1.5, rx + 30, ry + 1.5);
+  ry += 5;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(60, 50, 40);
+  if (ciudad) { doc.text('Ciudad: ' + ciudad + (zip ? '  ZIP: ' + zip : ''), rx, ry); ry += 5; }
+  if (estado) { doc.text('Estado: ' + estado, rx, ry); ry += 5; }
+  if (pais)   { doc.text('País: '   + pais,   rx, ry); ry += 5; }
+  if (ref)    { doc.text('Ref: '    + ref,    rx, ry); ry += 5; }
+
+  y = Math.max(y, ry) + 10;
+
+  // ── TABLA DE ARTÍCULOS ──
+  doc.setFillColor(26, 22, 16);
+  doc.rect(margin, y, pageW - 2 * margin, 7, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.setTextColor(201, 151, 58);
+  const col = { art: margin + 2, cant: margin + 110, precio: margin + 128, sub: pageW - margin - 2 };
+  doc.text('ARTÍCULO', col.art,  y + 4.5);
+  doc.text('CANT.',    col.cant, y + 4.5, { align: 'center' });
+  doc.text('PRECIO',  col.precio + 14, y + 4.5, { align: 'right' });
+  doc.text('SUBTOTAL',col.sub,  y + 4.5, { align: 'right' });
+  y += 8;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  _fctmItems.forEach((item, idx) => {
+    if (idx % 2 === 0) { doc.setFillColor(252, 249, 243); doc.rect(margin, y - 1, pageW - 2 * margin, 7, 'F'); }
+    doc.setTextColor(26, 22, 16);
+    doc.text(String(item.nombre).substring(0, 42), col.art, y + 4);
+    doc.text(String(item.qty), col.cant, y + 4, { align: 'center' });
+    doc.text(sym + item.precio.toFixed(2), col.precio + 14, y + 4, { align: 'right' });
+    doc.text(sym + (item.qty * item.precio).toFixed(2), col.sub, y + 4, { align: 'right' });
+    y += 7;
+  });
+  y += 6;
+
+  // ── TOTALES ──
+  const totX = pageW - margin - 70;
+  doc.setDrawColor(224, 215, 196);
+  doc.setLineWidth(0.3);
+  doc.line(totX, y, pageW - margin, y);
+  y += 5;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(60, 50, 40);
+  if (subtotal !== total) {
+    doc.text('Subtotal:', totX, y);
+    doc.text(sym + subtotal.toFixed(2), pageW - margin, y, { align: 'right' });
+    y += 5;
+  }
+  if (descG > 0) {
+    doc.setTextColor(180, 50, 50);
+    doc.text('Descuento (' + descG + '%):', totX, y);
+    doc.text('-' + sym + descMonto.toFixed(2), pageW - margin, y, { align: 'right' });
+    y += 5;
+    doc.setTextColor(60, 50, 40);
+  }
+  if (envio > 0) {
+    doc.text('Envío:', totX, y);
+    doc.text(sym + envio.toFixed(2), pageW - margin, y, { align: 'right' });
+    y += 5;
+  }
+  doc.setFillColor(26, 22, 16);
+  doc.rect(totX - 2, y - 1, pageW - margin - totX + 4, 10, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(201, 151, 58);
+  doc.text('TOTAL:', totX, y + 6);
+  doc.text(sym + total.toFixed(2), pageW - margin, y + 6, { align: 'right' });
+  y += 16;
+
+  // ── FOOTER ──
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(154, 140, 118);
+  doc.text('Gracias por tu compra · Pleaseme Accessories · Cada pieza, una historia', pageW / 2, y + 6, { align: 'center' });
+
+  return doc;
+}
+
+async function _fctmGuardarPendiente() {
+  const nombre = (document.getElementById('fctm-cli-nombre')?.value || '').trim();
+  if (!nombre) {
+    showToast('⚠ Ingresa el nombre del cliente');
+    document.getElementById('fctm-cli-nombre')?.focus(); return;
+  }
+  if (!_fctmItems.length) {
+    showToast('⚠ Agrega al menos un producto');
+    document.getElementById('fctm-input-nombre')?.focus(); return;
+  }
+  if (!_db) { showToast('⚠ Sin conexión a la base de datos'); return; }
+  try {
+    const numero  = document.getElementById('fctm-numero').textContent.trim();
+    const moneda  = _fctmGetMoneda();
+    const items   = _fctmGetItems().map(i => ({ name: i.nombre, qty: i.qty, price: i.precio.toFixed(2), desc: 0, sub: i.sub.toFixed(2), category: '' }));
+    const descG   = parseFloat(document.getElementById('fctm-desc-global').value || 0) || 0;
+    const envioVal = parseFloat(document.getElementById('fctm-envio')?.value || 0) || 0;
+    const subtotal = items.reduce((s, i) => s + parseFloat(i.sub), 0);
+    const descMonto = subtotal * descG / 100;
+    const total   = subtotal - descMonto + envioVal;
+    const g = id => (document.getElementById(id)?.value || '').trim();
+    const factura = {
+      numero, pedido_numero: numero, origen: 'manual', moneda,
+      fecha:   firebase.firestore.FieldValue.serverTimestamp(),
+      estado:  'pendiente',
+      tipo_pago: g('fctm-tipo-pago'),
+      items, subtotal: parseFloat(subtotal.toFixed(2)),
+      descuento: descG, envio_costo: envioVal, total: parseFloat(total.toFixed(2)),
+      cliente: {
+        nombre: g('fctm-cli-nombre').toUpperCase(),
+        tel:    g('fctm-cli-tel'),
+        pais:   g('fctm-cli-pais'),
+        direccion: g('fctm-cli-dir'),
+        suite:  g('fctm-env-suite'),
+        locker: g('fctm-cli-locker')
+      },
+      envio: {
+        ciudad: g('fctm-env-ciudad'), zip: g('fctm-env-zip'),
+        estado: g('fctm-env-estado'), referencia: g('fctm-env-ref')
+      }
+    };
+    const snap = await _db.collection('facturas_procesadas').where('numero','==',numero).limit(1).get();
+    if (!snap.empty) await _db.collection('facturas_procesadas').doc(snap.docs[0].id).set(factura);
+    else             await _db.collection('facturas_procesadas').add(factura);
+    showToast('⏳ Factura guardada como Pendiente');
+    cerrarFacturaManual();
+  } catch(e) { showToast('Error al guardar: ' + e.message); }
+}
+
+function _fctmPreparar() {
+  const g = id => (document.getElementById(id)?.value || '').trim();
+  const s = id => document.getElementById(id);
+  const nombre = g('fctm-cli-nombre').toUpperCase();
+  const tel    = g('fctm-cli-tel');
+  const dir    = g('fctm-cli-dir');
+  const suite  = g('fctm-env-suite');
+  const pago   = g('fctm-tipo-pago');
+  const ciudad = g('fctm-env-ciudad');
+  const zip    = g('fctm-env-zip');
+  const estado = g('fctm-env-estado');
+  const pais   = g('fctm-cli-pais');
+  const ref    = g('fctm-env-ref');
+  const locker = g('fctm-cli-locker');
+
+  if (s('fctmPrintNombre')) s('fctmPrintNombre').textContent = nombre || '—';
+  if (s('fctmPrintTel'))    s('fctmPrintTel').innerHTML    = tel    ? '<strong>Tel:</strong> ' + tel   : '';
+  if (s('fctmPrintDir'))    s('fctmPrintDir').innerHTML    = dir    ? '<strong>Dir:</strong> ' + dir + (suite ? ', ' + suite : '') : '';
+  if (s('fctmPrintPago'))   s('fctmPrintPago').innerHTML   = pago   ? '<strong>Pago:</strong> ' + pago : '';
+  if (s('fctmPrintCiudad')) s('fctmPrintCiudad').innerHTML = ciudad ? '<strong>Ciudad:</strong> ' + ciudad + (zip ? '&nbsp;&nbsp;<strong>ZIP:</strong> ' + zip : '') : '';
+  if (s('fctmPrintEstado')) s('fctmPrintEstado').innerHTML = estado ? '<strong>Estado:</strong> ' + estado : '';
+  if (s('fctmPrintPais'))   s('fctmPrintPais').innerHTML   = pais   ? '<strong>País:</strong> ' + pais   : '';
+  const refParts = [locker ? 'Lock: ' + locker : '', ref].filter(Boolean).join(' · ');
+  if (s('fctmPrintRef'))    s('fctmPrintRef').innerHTML    = refParts ? '<strong>Ref:</strong> ' + refParts : '';
+
+  // Show print-only divider
+  const d2 = s('fctm-print-divider2');
+  if (d2) d2.style.display = '';
+
+  // Build professional items table
+  const sym  = _fctmGetMoneda();
+  const fmt  = v => sym + v.toLocaleString('es-CO', {minimumFractionDigits:2, maximumFractionDigits:2});
+  const tbody = s('fctm-print-tbody');
+  if (tbody) {
+    tbody.innerHTML = _fctmItems.map(item => {
+      const sub = item.qty * item.precio;
+      return `<tr>
+        <td>${item.nombre}</td>
+        <td style="text-align:center">${item.qty}</td>
+        <td style="text-align:right">${fmt(item.precio)}</td>
+        <td style="text-align:right">${fmt(sub)}</td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+async function _fctmImprimir() {
+  // Validate required fields before printing
+  const nombre   = (document.getElementById('fctm-cli-nombre')?.value || '').trim();
+  const pais     = (document.getElementById('fctm-cli-pais')?.value   || '').trim();
+  const tipoPago = (document.getElementById('fctm-tipo-pago')?.value  || '').trim();
+  if (!nombre) {
+    showToast('⚠ Ingresa el nombre del cliente');
+    document.getElementById('fctm-cli-nombre')?.focus(); return;
+  }
+  if (!pais) {
+    showToast('⚠ Selecciona el país del cliente');
+    document.getElementById('fctm-cli-pais')?.focus(); return;
+  }
+  if (!tipoPago) {
+    showToast('⚠ Selecciona el tipo de pago');
+    document.getElementById('fctm-tipo-pago')?.focus(); return;
+  }
+  if (!_fctmItems.length) {
+    showToast('⚠ Agrega al menos un producto a la factura');
+    document.getElementById('fctm-input-nombre')?.focus(); return;
+  }
+  _fctmPreparar();
+  await _guardarFacturaManual();
+  document.body.classList.add('printing-fctm');
+  window.print();
+  document.body.classList.remove('printing-fctm');
+  // Reset form after printing
+  cerrarFacturaManual();
+}
+
+async function _guardarFacturaManual() {
+  if (!_db) return;
+  try {
+    const numero  = document.getElementById('fctm-numero').textContent.trim();
+    const moneda  = _fctmGetMoneda();
+    const items   = _fctmGetItems().map(i => ({
+      name:  i.nombre,
+      qty:   i.qty,
+      price: i.precio.toFixed(2),
+      desc:  i.desc,
+      sub:   i.sub.toFixed(2),
+      category: ''
+    }));
+    const descG    = parseFloat(document.getElementById('fctm-desc-global').value || 0) || 0;
+    const envioVal = parseFloat(document.getElementById('fctm-envio')?.value || 0) || 0;
+    const subtotal = items.reduce((s,i) => s + parseFloat(i.sub), 0);
+    const descMonto = subtotal * descG / 100;
+    const total    = subtotal - descMonto + envioVal;
+
+    const factura = {
+      numero,
+      pedido_numero: numero,
+      origen: 'manual',
+      moneda,
+      fecha:   firebase.firestore.FieldValue.serverTimestamp(),
+      estado:  '',
+      items,
+      subtotal: parseFloat(subtotal.toFixed(2)),
+      descuento: descG,
+      envio_costo: envioVal,
+      total:   parseFloat(total.toFixed(2)),
+      tipo_pago: document.getElementById('fctm-tipo-pago')?.value || '',
+      cliente: {
+        nombre:    (document.getElementById('fctm-cli-nombre')?.value || '').trim().toUpperCase(),
+        tel:       (document.getElementById('fctm-cli-tel')?.value    || '').trim(),
+        direccion: (document.getElementById('fctm-cli-dir')?.value    || '').trim(),
+        pais:      (document.getElementById('fctm-cli-pais')?.value   || '').trim(),
+        locker:    (document.getElementById('fctm-cli-locker')?.value || '').trim()
+      },
+      envio: {
+        ciudad:    (document.getElementById('fctm-env-ciudad')?.value || '').trim(),
+        zip:       (document.getElementById('fctm-env-zip')?.value    || '').trim(),
+        estado:    (document.getElementById('fctm-env-estado')?.value || '').trim(),
+        suite:     (document.getElementById('fctm-env-suite')?.value  || '').trim(),
+        referencia:(document.getElementById('fctm-env-ref')?.value    || '').trim()
+      }
+    };
+
+    // Evitar duplicado por número
+    const existing = await _db.collection('facturas_procesadas')
+      .where('numero', '==', numero).limit(1).get();
+    if (!existing.empty) {
+      await _db.collection('facturas_procesadas').doc(existing.docs[0].id).set(factura);
+    } else {
+      const ref = await _db.collection('facturas_procesadas').add(factura);
+      _facturas.unshift({ _docId: ref.id, ...factura });
+    }
+    showToast('✦ Factura guardada en Facturas Procesadas');
+  } catch(e) { showToast('Error al guardar: ' + e.message); }
 }
 
 function abrirLightbox(src) {
