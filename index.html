@@ -3375,35 +3375,28 @@
 </head>
 <body>
 
-<!-- BANNER INSTALAR APP (ocultar barra del navegador) -->
-<div id="installBanner" style="display:none;position:fixed;bottom:0;left:0;width:100%;z-index:8000;background:linear-gradient(135deg,#0f0b05 0%,#1c1408 50%,#0f0b05 100%);border-top:2px solid rgba(201,151,58,0.5);padding:16px 16px 20px;box-shadow:0 -6px 32px rgba(0,0,0,0.8);backdrop-filter:blur(16px);">
-  <button onclick="document.getElementById('installBanner').style.display='none';sessionStorage.setItem('pm_install_dismissed','1')" style="position:absolute;top:10px;right:14px;background:none;border:none;color:rgba(201,151,58,0.5);font-size:20px;cursor:pointer;line-height:1;padding:0;">×</button>
-  <div style="display:flex;align-items:center;gap:14px;max-width:420px;margin:0 auto;">
-    <span style="font-size:28px;flex-shrink:0;">📲</span>
-    <div style="flex:1;">
-      <p style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:2.5px;color:#E8C96D;text-transform:uppercase;margin:0 0 6px;font-weight:600;">Instalar como app</p>
-      <p style="font-family:'Montserrat',sans-serif;font-size:11px;font-weight:400;color:rgba(240,230,208,0.9);margin:0 0 4px;line-height:1.5;">
-        Toca <strong style="color:#C9973A;">Compartir</strong> <span style="font-size:13px;">⎙</span> → <strong style="color:#C9973A;">"Agregar a pantalla de inicio"</strong>
-      </p>
-      <p style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:300;color:rgba(201,151,58,0.7);margin:0;">La barra del navegador desaparecerá</p>
+<!-- BANNER INSTALAR APP -->
+<div id="installBanner" style="display:none;position:fixed;bottom:0;left:0;width:100%;z-index:8000;background:linear-gradient(135deg,#0f0b05 0%,#1c1408 50%,#0f0b05 100%);border-top:2px solid rgba(201,151,58,0.4);padding:14px 16px;box-shadow:0 -6px 32px rgba(0,0,0,0.85);backdrop-filter:blur(16px);">
+  <div style="display:flex;align-items:center;gap:14px;max-width:480px;margin:0 auto;">
+    <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#110e08,#1e1608);border:1.5px solid rgba(201,151,58,0.45);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <svg width="30" height="30" viewBox="0 0 60 60" fill="none">
+        <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="Georgia,serif" font-size="40" font-weight="300" fill="url(#pib)">P</text>
+        <defs><linearGradient id="pib" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#8B6914"/><stop offset="100%" stop-color="#E8C96D"/></linearGradient></defs>
+      </svg>
     </div>
+    <div style="flex:1;min-width:0;">
+      <p style="font-family:'Cinzel',serif;font-size:13px;color:#E8C96D;margin:0 0 2px;font-weight:600;letter-spacing:0.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Pleaseme Accessories</p>
+      <p style="font-family:'Montserrat',sans-serif;font-size:11px;color:rgba(240,230,208,0.65);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Instala el catálogo en tu dispositivo</p>
+    </div>
+    <button id="installBannerBtn" onclick="doInstall()" style="flex-shrink:0;background:linear-gradient(135deg,#C9973A,#E8C96D);color:#0f0b05;border:none;border-radius:22px;padding:10px 20px;font-family:'Cinzel',serif;font-size:12px;font-weight:700;letter-spacing:0.5px;cursor:pointer;white-space:nowrap;box-shadow:0 2px 12px rgba(201,151,58,0.35);">Instalar</button>
+    <button onclick="dismissInstall()" style="background:none;border:none;color:rgba(201,151,58,0.45);font-size:22px;cursor:pointer;padding:0 0 0 4px;line-height:1;flex-shrink:0;">×</button>
+  </div>
+  <div id="installBannerIos" style="display:none;max-width:480px;margin:12px auto 0;padding:10px 14px;background:rgba(201,151,58,0.07);border-radius:8px;border:1px solid rgba(201,151,58,0.2);">
+    <p style="font-family:'Montserrat',sans-serif;font-size:11px;color:rgba(240,230,208,0.85);margin:0;line-height:1.65;">
+      Toca <strong style="color:#C9973A;">Compartir</strong> <span style="font-size:13px;">⎙</span> en Safari → selecciona <strong style="color:#C9973A;">"Agregar a pantalla de inicio"</strong> y confirma.
+    </p>
   </div>
 </div>
-
-<script>
-// Mostrar banner de instalación solo en móvil, solo si no es PWA standalone
-(function() {
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-    || window.navigator.standalone === true;
-  const dismissed = sessionStorage.getItem('pm_install_dismissed');
-  const isMobile  = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-  if (!isStandalone && !dismissed && isMobile) {
-    setTimeout(function() {
-      document.getElementById('installBanner').style.display = 'block';
-    }, 1500);
-  }
-})();
-</script>
 
 
 
@@ -3497,6 +3490,28 @@
     <a class="social-link" id="socialTiktok" href="#" target="_blank" title="TikTok">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.28 6.28 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.19 8.19 0 004.79 1.53V6.77a4.85 4.85 0 01-1.02-.08z"/></svg>
     </a>
+  </div>
+
+  <!-- INSTALAR APP -->
+  <div id="footerInstallSection" style="margin-top:24px;display:flex;flex-direction:column;align-items:center;">
+    <div style="display:flex;align-items:center;gap:14px;background:rgba(201,151,58,0.06);border:1px solid rgba(201,151,58,0.25);border-radius:14px;padding:14px 20px;max-width:320px;width:100%;">
+      <div style="width:44px;height:44px;border-radius:11px;background:linear-gradient(135deg,#110e08,#1e1608);border:1.5px solid rgba(201,151,58,0.45);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="28" height="28" viewBox="0 0 60 60" fill="none">
+          <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="Georgia,serif" font-size="40" font-weight="300" fill="url(#pif)">P</text>
+          <defs><linearGradient id="pif" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#8B6914"/><stop offset="100%" stop-color="#E8C96D"/></linearGradient></defs>
+        </svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <p style="font-family:'Cinzel',serif;font-size:12px;color:#E8C96D;margin:0 0 2px;font-weight:600;letter-spacing:0.4px;">Pleaseme Accessories</p>
+        <p style="font-family:'Montserrat',sans-serif;font-size:10px;color:rgba(240,230,208,0.6);margin:0;">Instala el catálogo</p>
+      </div>
+      <button id="footerInstallBtn" onclick="doInstall()" style="flex-shrink:0;background:linear-gradient(135deg,#C9973A,#E8C96D);color:#0f0b05;border:none;border-radius:20px;padding:9px 18px;font-family:'Cinzel',serif;font-size:11px;font-weight:700;letter-spacing:0.5px;cursor:pointer;white-space:nowrap;box-shadow:0 2px 10px rgba(201,151,58,0.3);">Instalar</button>
+    </div>
+    <div id="footerInstallIos" style="display:none;margin-top:10px;max-width:320px;width:100%;padding:10px 14px;background:rgba(201,151,58,0.07);border-radius:8px;border:1px solid rgba(201,151,58,0.2);">
+      <p style="font-family:'Montserrat',sans-serif;font-size:10px;color:rgba(240,230,208,0.85);margin:0;line-height:1.65;text-align:center;">
+        Toca <strong style="color:#C9973A;">Compartir</strong> <span style="font-size:12px;">⎙</span> en Safari → <strong style="color:#C9973A;">"Agregar a pantalla de inicio"</strong>
+      </p>
+    </div>
   </div>
 
     <!-- BRAND IMAGE -->
@@ -6961,70 +6976,46 @@ setLang(_lang);
 </script>
 
 <script>
-// ─── PWA: SERVICE WORKER + INSTALL PROMPT ────────────────────────────
+// ─── PWA: SERVICE WORKER + INSTALL ────────────────────────────────────
 (function(){
-  const PROMPT_KEY = 'pm_pwa_dismissed';
   let deferredPrompt = null;
 
-  // Detectar iOS Safari
   const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
   const isInStandalone = ('standalone' in navigator && navigator.standalone) ||
                           window.matchMedia('(display-mode: standalone)').matches;
 
-  function showPrompt() {
-    if (isInStandalone) return;           // ya está instalada
-    if (localStorage.getItem(PROMPT_KEY)) return; // ya la descartó
-    setTimeout(() => {
-      document.getElementById('pwaPrompt').classList.add('show');
-    }, 3500);
+  function hideFooterInstall() {
+    var el = document.getElementById('footerInstallSection');
+    if (el) el.style.display = 'none';
   }
 
-  function dismiss() {
-    document.getElementById('pwaPrompt').classList.remove('show');
+  // Ocultar si ya está instalada como PWA
+  if (isInStandalone) {
+    document.addEventListener('DOMContentLoaded', hideFooterInstall);
   }
-
-  window.dismissInstall = function() {
-    localStorage.setItem(PROMPT_KEY, '1');
-    dismiss();
-  };
 
   window.doInstall = async function() {
     if (isIos) {
-      // Mostrar instrucciones manuales para iOS
-      document.getElementById('pwaIosSteps').classList.add('show');
-      document.getElementById('pwaActions').style.display = 'none';
-      document.getElementById('pwaSubText').style.display = 'none';
+      var ios = document.getElementById('footerInstallIos');
+      var btn = document.getElementById('footerInstallBtn');
+      if (ios) ios.style.display = 'block';
+      if (btn) btn.style.display = 'none';
       return;
     }
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     deferredPrompt = null;
-    dismiss();
-    if (outcome === 'accepted') {
-      localStorage.setItem(PROMPT_KEY, '1');
-    }
+    if (outcome === 'accepted') hideFooterInstall();
   };
 
-  // Capturar el evento de instalación del navegador
   window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();
     deferredPrompt = e;
-    showPrompt();
   });
 
-  // Si ya fue instalada, no mostrar el prompt
-  window.addEventListener('appinstalled', () => {
-    localStorage.setItem(PROMPT_KEY, '1');
-    dismiss();
-  });
+  window.addEventListener('appinstalled', hideFooterInstall);
 
-  // iOS: mostrar prompt manual si no está instalada
-  if (isIos && !isInStandalone) {
-    showPrompt();
-  }
-
-  // Registrar el Service Worker
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('./sw.js')
