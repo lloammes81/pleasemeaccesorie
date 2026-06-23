@@ -3501,7 +3501,7 @@
           <defs><linearGradient id="pif" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#8B6914"/><stop offset="100%" stop-color="#E8C96D"/></linearGradient></defs>
         </svg>
       </div>
-      <p style="flex:1;min-width:0;font-family:'Cinzel',serif;font-size:9px;color:#E8C96D;margin:0;font-weight:600;letter-spacing:0.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Instala el catálogo</p>
+      <p id="footerInstallLabel" style="flex:1;min-width:0;font-family:'Cinzel',serif;font-size:9px;color:#E8C96D;margin:0;font-weight:600;letter-spacing:0.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Instala el catálogo</p>
       <button id="footerInstallBtn" onclick="doInstall()" style="flex-shrink:0;background:linear-gradient(135deg,#C9973A,#E8C96D);color:#0f0b05;border:none;border-radius:12px;padding:5px 11px;font-family:'Cinzel',serif;font-size:8.5px;font-weight:700;letter-spacing:0.3px;cursor:pointer;white-space:nowrap;box-shadow:0 1px 6px rgba(201,151,58,0.28);">Instalar</button>
     </div>
     <div id="footerInstallIos" style="display:none;margin-top:7px;max-width:215px;width:100%;padding:7px 10px;background:rgba(201,151,58,0.07);border-radius:7px;border:1px solid rgba(201,151,58,0.2);">
@@ -6979,15 +6979,28 @@ setLang(_lang);
 
   const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
   const isInStandalone = ('standalone' in navigator && navigator.standalone) ||
-                          window.matchMedia('(display-mode: standalone)').matches;
+                          window.matchMedia('(display-mode: standalone)').matches ||
+                          window.matchMedia('(display-mode: fullscreen)').matches ||
+                          window.matchMedia('(display-mode: minimal-ui)').matches;
 
-  function hideFooterInstall() {
-    var el = document.getElementById('footerInstallSection');
-    if (el) el.style.display = 'none';
+  function markInstalled() {
+    var btn = document.getElementById('footerInstallBtn');
+    var lbl = document.getElementById('footerInstallLabel');
+    var ios = document.getElementById('footerInstallIos');
+    if (btn) {
+      btn.textContent = 'Instalada ✓';
+      btn.style.pointerEvents = 'none';
+      btn.style.cursor = 'default';
+      btn.style.background = 'rgba(201,151,58,0.18)';
+      btn.style.color = '#E8C96D';
+      btn.style.boxShadow = 'none';
+    }
+    if (lbl) lbl.textContent = 'Catálogo instalado';
+    if (ios) ios.style.display = 'none';
   }
 
-  // Si el catálogo ya está instalado (abierto como app), no ofrecer instalar de nuevo
-  if (isInStandalone) hideFooterInstall();
+  // Si el catálogo ya está instalado: mostrar "Instalada ✓" sin permitir reinstalar (la tarjeta sigue visible)
+  if (isInStandalone) markInstalled();
 
   window.doInstall = async function() {
     if (isIos) {
@@ -7001,7 +7014,7 @@ setLang(_lang);
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     deferredPrompt = null;
-    if (outcome === 'accepted') hideFooterInstall();
+    if (outcome === 'accepted') markInstalled();
   };
 
   window.addEventListener('beforeinstallprompt', e => {
@@ -7009,7 +7022,7 @@ setLang(_lang);
     deferredPrompt = e;
   });
 
-  window.addEventListener('appinstalled', hideFooterInstall);
+  window.addEventListener('appinstalled', markInstalled);
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
