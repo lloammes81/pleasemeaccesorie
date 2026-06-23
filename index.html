@@ -3494,14 +3494,13 @@
 
   <!-- INSTALAR APP -->
   <div id="footerInstallSection" style="margin-top:16px;display:flex;flex-direction:column;align-items:center;">
-    <div style="display:flex;align-items:center;gap:8px;background:rgba(201,151,58,0.06);border:1px solid rgba(201,151,58,0.22);border-radius:9px;padding:6px 9px;max-width:215px;width:100%;">
+    <div style="display:inline-flex;align-items:center;gap:9px;background:rgba(201,151,58,0.06);border:1px solid rgba(201,151,58,0.22);border-radius:9px;padding:6px 10px;">
       <div style="width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,#110e08,#1e1608);border:1px solid rgba(201,151,58,0.4);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
         <svg width="16" height="16" viewBox="0 0 60 60" fill="none">
           <text x="50%" y="56%" dominant-baseline="middle" text-anchor="middle" font-family="Georgia,serif" font-size="40" font-weight="300" fill="url(#pif)">P</text>
           <defs><linearGradient id="pif" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#8B6914"/><stop offset="100%" stop-color="#E8C96D"/></linearGradient></defs>
         </svg>
       </div>
-      <p id="footerInstallLabel" style="flex:1;min-width:0;font-family:'Cinzel',serif;font-size:9px;color:#E8C96D;margin:0;font-weight:600;letter-spacing:0.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Instala el catálogo</p>
       <button id="footerInstallBtn" onclick="doInstall()" style="flex-shrink:0;background:linear-gradient(135deg,#C9973A,#E8C96D);color:#0f0b05;border:none;border-radius:12px;padding:5px 11px;font-family:'Cinzel',serif;font-size:8.5px;font-weight:700;letter-spacing:0.3px;cursor:pointer;white-space:nowrap;box-shadow:0 1px 6px rgba(201,151,58,0.28);">Instalar</button>
     </div>
     <div id="footerInstallIos" style="display:none;margin-top:7px;max-width:215px;width:100%;padding:7px 10px;background:rgba(201,151,58,0.07);border-radius:7px;border:1px solid rgba(201,151,58,0.2);">
@@ -6985,17 +6984,15 @@ setLang(_lang);
 
   function markInstalled() {
     var btn = document.getElementById('footerInstallBtn');
-    var lbl = document.getElementById('footerInstallLabel');
     var ios = document.getElementById('footerInstallIos');
     if (btn) {
-      btn.textContent = 'Instalada ✓';
+      btn.textContent = 'Instalado';
       btn.style.pointerEvents = 'none';
       btn.style.cursor = 'default';
       btn.style.background = 'rgba(201,151,58,0.18)';
       btn.style.color = '#E8C96D';
       btn.style.boxShadow = 'none';
     }
-    if (lbl) lbl.textContent = 'Catálogo instalado';
     if (ios) ios.style.display = 'none';
   }
 
