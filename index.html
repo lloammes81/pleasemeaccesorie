@@ -6981,17 +6981,10 @@ setLang(_lang);
   let deferredPrompt = null;
 
   const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  const isInStandalone = ('standalone' in navigator && navigator.standalone) ||
-                          window.matchMedia('(display-mode: standalone)').matches;
 
   function hideFooterInstall() {
     var el = document.getElementById('footerInstallSection');
     if (el) el.style.display = 'none';
-  }
-
-  // Ocultar si ya está instalada como PWA
-  if (isInStandalone) {
-    document.addEventListener('DOMContentLoaded', hideFooterInstall);
   }
 
   window.doInstall = async function() {
