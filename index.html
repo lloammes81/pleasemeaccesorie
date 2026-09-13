@@ -2,7 +2,26 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20260913-2';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20260913-3';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){
+/* Autocomprobación de versión. El rompe-caché de arriba compara el parámetro ?v=
+   contra la V del HTML que ya se está ejecutando: si el navegador sirvió una copia
+   vieja de caché, esa copia trae la V vieja, coincide con su propio parámetro y
+   nunca se actualiza sola. Aquí se lee el principio del archivo tal como está en el
+   servidor, saltando la caché, y si la versión difiere se recarga una única vez. */
+if(!window.fetch||!window.sessionStorage)return;var FLAG='pm_vreload';
+window.addEventListener('load',function(){setTimeout(function(){
+fetch(location.pathname,{cache:'reload',headers:{Range:'bytes=0-600'}})
+.then(function(r){if(!r.ok&&r.status!==206)return'';
+var rd=r.body&&r.body.getReader?r.body.getReader():null;if(!rd)return r.text();
+return rd.read().then(function(c){try{rd.cancel();}catch(e){}
+return new TextDecoder().decode(c.value||new Uint8Array());});})
+.then(function(txt){var m=String(txt||'').match(/var V='([^']+)'/);if(!m)return;
+if(m[1]===window.APP_VERSION){try{sessionStorage.removeItem(FLAG);}catch(e){}return;}
+if(sessionStorage.getItem(FLAG))return;sessionStorage.setItem(FLAG,'1');
+location.replace(location.pathname+'?v='+m[1]);})
+.catch(function(){});},1200);});
+})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
