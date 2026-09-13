@@ -3261,6 +3261,71 @@ textarea { resize: vertical; min-height: 80px; }
   </div>
 </div>
 
+<!-- MODAL: EDITAR PRODUCTO ANTES DE ENVIAR A OFERTA -->
+<div class="temporada-modal-overlay" id="ofertaEditOverlay" onclick="if(event.target===this) closeOfertaEditModal()">
+  <div class="temporada-modal-box" style="max-width:520px;">
+    <div class="temporada-modal-head">
+      <div class="temporada-modal-title">✦ Agregar a oferta de temporada</div>
+      <button class="temporada-modal-close" onclick="closeOfertaEditModal()" title="Cerrar">✕</button>
+    </div>
+    <div class="temporada-modal-body">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
+        <div class="oferta-product-thumb" id="oeThumb" style="width:52px;height:52px;"></div>
+        <div style="min-width:0;">
+          <div id="oeCatLabel" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase;margin-bottom:2px;"></div>
+          <div style="font-size:11px;color:var(--text-muted);font-weight:300;">Ajusta el precio o cualquier dato del artículo antes de mostrarlo en la oferta.</div>
+        </div>
+      </div>
+
+      <div class="contact-form">
+        <div class="field-row">
+          <div class="field">
+            <label>Nombre *</label>
+            <input type="text" id="oe_name">
+          </div>
+          <div class="field">
+            <label>Precio (COP) *</label>
+            <input type="text" id="oe_price" inputmode="numeric">
+          </div>
+        </div>
+        <div class="field">
+          <label>Subtítulo</label>
+          <input type="text" id="oe_subtitle">
+        </div>
+        <div class="field">
+          <label>Descripción</label>
+          <textarea id="oe_desc" rows="2" style="resize:vertical;"></textarea>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Material</label>
+            <input type="text" id="oe_material">
+          </div>
+          <div class="field">
+            <label>Medida / Talla</label>
+            <input type="text" id="oe_medida">
+          </div>
+        </div>
+        <div class="field">
+          <label>Peso</label>
+          <input type="text" id="oe_peso">
+        </div>
+      </div>
+
+      <button type="button" class="btn btn-outline" style="font-size:9px;padding:8px 14px;width:100%;margin-top:4px;" onclick="ofertaOpenFullEditor()">
+        Editar producto completo (foto, categoría…)
+      </button>
+    </div>
+    <div style="display:flex;gap:10px;padding:16px 24px;border-top:1px solid var(--border);flex-shrink:0;">
+      <button class="btn btn-outline" onclick="closeOfertaEditModal()">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1" onclick="confirmOfertaEdit()">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        Agregar a la oferta
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -5283,8 +5348,8 @@ function renderOfertaProductList() {
     const thumb    = p.photo
       ? `<img src="${p.photo}" alt="${p.name}">`
       : `<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
-    return `<label class="oferta-product-item${checked ? ' selected' : ''}" onclick="ofertaToggleItem('${p.id}', this)">
-      <input type="checkbox" ${checked ? 'checked' : ''} onchange="ofertaToggleItem('${p.id}', this.closest('.oferta-product-item'))" onclick="event.stopPropagation()">
+    return `<label class="oferta-product-item${checked ? ' selected' : ''}">
+      <input type="checkbox" ${checked ? 'checked' : ''} onchange="ofertaToggleItem('${p.id}', this.closest('.oferta-product-item'))">
       <div class="oferta-product-thumb">${thumb}</div>
       <div style="flex:1;min-width:0;">
         <div style="font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</div>
@@ -5297,22 +5362,110 @@ function renderOfertaProductList() {
 }
 
 function ofertaToggleItem(id, el) {
+  const chk = el ? el.querySelector('input[type="checkbox"]') : null;
+
   if (_ofertaSelectedIds.has(id)) {
+    // Quitar de la oferta no requiere confirmación
     _ofertaSelectedIds.delete(id);
     if (el) el.classList.remove('selected');
+    if (chk) chk.checked = false;
+    const counter = document.getElementById('ofertaSelCount');
+    if (counter) counter.textContent = `${_ofertaSelectedIds.size} seleccionados`;
   } else {
-    _ofertaSelectedIds.add(id);
-    if (el) el.classList.add('selected');
+    // Antes de enviarlo a la oferta, dejar el checkbox sin marcar hasta confirmar
+    if (chk) chk.checked = false;
+    openOfertaEditModal(id);
   }
-  const chk = el ? el.querySelector('input[type="checkbox"]') : null;
-  if (chk) chk.checked = _ofertaSelectedIds.has(id);
-  const counter = document.getElementById('ofertaSelCount');
-  if (counter) counter.textContent = `${_ofertaSelectedIds.size} seleccionados`;
 }
 
 function ofertaSelectAll(select) {
   _ofertaSelectedIds = select ? new Set(products.map(p => p.id)) : new Set();
   renderOfertaProductList();
+}
+
+// ─── VENTANA FLOTANTE: EDITAR PRODUCTO ANTES DE ENVIARLO A LA OFERTA ──
+let _ofertaEditProductId = null;
+
+function openOfertaEditModal(id) {
+  const p = products.find(pr => pr.id === id);
+  if (!p) return;
+  _ofertaEditProductId = id;
+
+  const thumb = document.getElementById('oeThumb');
+  thumb.innerHTML = p.photo
+    ? `<img src="${p.photo}" alt="${p.name}">`
+    : `<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
+  document.getElementById('oeCatLabel').textContent = CAT_LABELS[p.category] || p.category || '';
+
+  document.getElementById('oe_name').value     = p.name     || '';
+  document.getElementById('oe_subtitle').value = p.subtitle || '';
+  document.getElementById('oe_price').value    = p.price    || '';
+  document.getElementById('oe_desc').value     = p.desc     || '';
+  document.getElementById('oe_material').value = p.material || '';
+  document.getElementById('oe_medida').value   = p.medida   || '';
+  document.getElementById('oe_peso').value     = p.peso     || '';
+
+  document.getElementById('ofertaEditOverlay').classList.add('open');
+}
+
+function closeOfertaEditModal() {
+  document.getElementById('ofertaEditOverlay').classList.remove('open');
+  _ofertaEditProductId = null;
+  // Redibujar por si el checkbox quedó en un estado intermedio
+  renderOfertaProductList();
+}
+
+function ofertaOpenFullEditor() {
+  const id = _ofertaEditProductId;
+  document.getElementById('ofertaEditOverlay').classList.remove('open');
+  _ofertaEditProductId = null;
+  if (id) openDrawer(id);
+}
+
+async function confirmOfertaEdit() {
+  const id = _ofertaEditProductId;
+  const p  = products.find(pr => pr.id === id);
+  if (!id || !p) return closeOfertaEditModal();
+
+  const name  = document.getElementById('oe_name').value.trim();
+  const price = parseFloat(document.getElementById('oe_price').value);
+
+  if (!name)                return showToast('El nombre es requerido');
+  if (!price || price <= 0) return showToast('Ingresa un precio válido');
+
+  const data = {
+    name,
+    subtitle:    document.getElementById('oe_subtitle').value.trim(),
+    price,
+    description: document.getElementById('oe_desc').value.trim(),
+    material:    document.getElementById('oe_material').value.trim() || 'Oro laminado 14k',
+    medida:      document.getElementById('oe_medida').value.trim(),
+    peso:        document.getElementById('oe_peso').value.trim(),
+  };
+
+  try {
+    await _db.collection('catalogo_productos').doc(String(id)).update(data);
+  } catch(e) {
+    return showToast('Error al guardar: ' + e.message);
+  }
+
+  // Reflejar los cambios en memoria sin recargar todo el catálogo
+  Object.assign(p, {
+    name:     data.name,
+    subtitle: data.subtitle,
+    price:    data.price,
+    desc:     data.description,
+    material: data.material,
+    medida:   data.medida,
+    peso:     data.peso,
+  });
+
+  _ofertaSelectedIds.add(id);
+  document.getElementById('ofertaEditOverlay').classList.remove('open');
+  _ofertaEditProductId = null;
+  renderOfertaProductList();
+  renderTable();
+  showToast('✦ Producto actualizado y agregado a la oferta');
 }
 
 async function loadOfertas() {
