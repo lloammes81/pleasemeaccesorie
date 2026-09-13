@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20260913-1';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20260913-2';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -1503,7 +1503,14 @@ textarea { resize: vertical; min-height: 80px; }
   from { transform: translateY(100%); opacity: 0; }
   to   { transform: translateY(0);    opacity: 1; }
 }
-#drawerActionSheet.open { display: flex; }
+/* Solo en móvil. En escritorio el drawer es una ventana flotante centrada con
+   su propio pie de botones, y esta barra fija (z-index 500, por encima del
+   drawer que está en 201) le quedaría encima tapando "Actualizar": los clics
+   se los comía la barra y el guardado no ocurría. En móvil sí debe verse,
+   porque ahí el pie del drawer está oculto y estos son los únicos botones. */
+@media (max-width: 768px) {
+  #drawerActionSheet.open { display: flex; }
+}
 .das-btn {
   flex: 1;
   min-width: 0;
