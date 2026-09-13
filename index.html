@@ -3167,11 +3167,39 @@
     background: #0f0e0b;
     border: 1px solid rgba(201,151,58,0.2);
     overflow: hidden;
+    position: relative;
     transition: border-color 0.25s, transform 0.25s;
     min-height: 200px;
     max-height: 240px;
   }
   .cat-product:hover { border-color: rgba(201,151,58,0.5); transform: translateY(-2px); }
+
+  /* ─── PIEZA RECIÉN AGREGADA A LA OFERTA DE TEMPORADA ─── */
+  .cat-product-nuevo {
+    border-color: rgba(232,201,109,0.55);
+    animation: nuevoBrillo 2.8s ease-in-out infinite;
+  }
+  @keyframes nuevoBrillo {
+    0%, 100% { box-shadow: 0 0 0 rgba(201,151,58,0); }
+    50%      { box-shadow: 0 0 14px rgba(201,151,58,0.35), inset 0 0 12px rgba(201,151,58,0.08); }
+  }
+  .cat-nuevo-tag {
+    position: absolute;
+    top: 8px; right: 8px;
+    z-index: 2;
+    font-family: 'Cinzel', serif;
+    font-size: 7.5px; letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #14100A;
+    background: linear-gradient(135deg, #E8C96D, #C9973A);
+    padding: 3px 8px;
+    border-radius: 2px;
+    box-shadow: 0 1px 6px rgba(201,151,58,0.4);
+    pointer-events: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cat-product-nuevo { animation: none; box-shadow: 0 0 12px rgba(201,151,58,0.3); }
+  }
 
   .cat-product-img {
     width: 45%; flex-shrink: 0;
@@ -3801,6 +3829,44 @@ function setLang(lang) {
 let _seasonalOffer = null;
 let _welcomeTimer  = null;
 let _welcomeClosed = false;
+
+// Hidratar la oferta desde localStorage ANTES del primer render. syncRemoteSettings()
+// la guarda ahí en cada visita, pero tarda una ida y vuelta de red: sin esto, el
+// primer pintado (y toda la sesión si la red falla o el cliente está offline) corre
+// con _seasonalOffer = null y los productos de la oferta se ven en su categoría.
+try {
+  const _ofertaCache = JSON.parse(localStorage.getItem('pm_seasonal_offers') || 'null');
+  if (_ofertaCache && typeof _ofertaCache === 'object') _seasonalOffer = _ofertaCache;
+} catch(e) {}
+
+// ─── PERTENENCIA A LA OFERTA DE TEMPORADA ─────────────────────────────
+// Un solo lugar decide qué productos son "de la oferta", para que la esfera de
+// ofertas y la exclusión de las demás ventanas nunca se contradigan.
+let _ofertaIdsCache = { src: undefined, set: new Set() };
+function _ofertaIdsSet() {
+  const src = (_seasonalOffer && _seasonalOffer.active) ? _seasonalOffer : null;
+  // Se consulta una vez por producto al filtrar cada categoría: memoizar contra
+  // el objeto de oferta evita reconstruir el Set cientos de veces por render.
+  // _seasonalOffer siempre se reemplaza entero (nunca se muta), así que comparar
+  // por identidad es suficiente para invalidar.
+  if (_ofertaIdsCache.src !== src) {
+    _ofertaIdsCache = { src, set: new Set(((src && src.productIds) || []).map(String)) };
+  }
+  return _ofertaIdsCache.set;
+}
+
+function _esProductoDeOferta(p) {
+  return _ofertaIdsSet().has(String(p && p.id));
+}
+
+// Ids que se agregaron a la oferta desde la última visita de esta clienta. Se
+// declara aquí arriba (y no junto a su lógica, más abajo) porque catProductHTML
+// lo consulta y un `let` posterior lo dejaría en zona muerta temporal.
+let _ofertaNuevosIds = new Set();
+
+function _esProductoNuevoEnOferta(p) {
+  return _ofertaNuevosIds.has(String(p && p.id));
+}
 
 // ─── SVG JEWELRY ICONS ───────────────────────────────────────────────
 const svgs = {
@@ -4507,8 +4573,10 @@ function catProductHTML(p) {
     : `<div class="cat-variant-wrap" onclick="event.stopPropagation()" style="display:flex;margin-top:8px;">
          <button class="cat-cart-btn" onclick="event.stopPropagation();addToCatCartWithQty('${p.id}')" title="Agregar al carrito">${cartIcon}</button>
        </div>`;
+  const esNuevoEnOferta = _esProductoNuevoEnOferta(p);
   return `
-    <div class="cat-product" data-pid="${p.id}">
+    <div class="cat-product${esNuevoEnOferta ? ' cat-product-nuevo' : ''}" data-pid="${p.id}">
+      ${esNuevoEnOferta ? '<span class="cat-nuevo-tag">Nuevo</span>' : ''}
       <div class="cat-product-img" data-id="${p.id}" onclick="_catImgClick(this)">
         ${imgContent}
         ${p.sold_out ? '<div class="sold-out-overlay"><span class="sold-out-label">Sold Out</span></div>' : ''}
@@ -4596,14 +4664,12 @@ async function openCategoryPanel(category) {
   // Si la categoría es "temporada", combinar productos de la oferta de temporada
   // con los que tienen category === 'temporada', sin duplicados
   let catProducts;
-  if (category === 'temporada' && _seasonalOffer && _seasonalOffer.active) {
-    const ofertaIds = new Set(_seasonalOffer.productIds || []);
+  if (category === 'temporada') {
     const porCategoria = products.filter(p => p.category === 'temporada');
-    const porOferta    = products.filter(p => ofertaIds.has(p.id) && p.category !== 'temporada');
+    const porOferta    = products.filter(p => _esProductoDeOferta(p) && p.category !== 'temporada');
     catProducts = [...porOferta, ...porCategoria];
   } else {
-    const ofertaExcluir = (_seasonalOffer && _seasonalOffer.active) ? new Set(_seasonalOffer.productIds || []) : new Set();
-    catProducts = products.filter(p => p.category === category && !ofertaExcluir.has(p.id));
+    catProducts = products.filter(p => p.category === category && !_esProductoDeOferta(p));
   }
 
   catProducts.sort((a, b) => (parseFloat(String(a.price)) || 0) - (parseFloat(String(b.price)) || 0));
@@ -4681,10 +4747,9 @@ function closeCategoryPanel() {
 // ─── PANEL DE OFERTAS ────────────────────────────────────────────────
 async function openOffersPanel() {
   if (document.getElementById('catPanel').classList.contains('open')) return;
-  if (!_seasonalOffer) return;
-  const ofertaProductIds = _seasonalOffer.productIds || [];
-  const ofertaProducts   = products.filter(p => ofertaProductIds.includes(p.id));
-  const titulo           = _seasonalOffer.titulo || 'Ofertas de temporada';
+  if (!_seasonalOffer || !_seasonalOffer.active) return;
+  const ofertaProducts = products.filter(p => _esProductoDeOferta(p));
+  const titulo         = _seasonalOffer.titulo || 'Ofertas de temporada';
 
   // Ordenar por precio de menor a mayor al abrir el panel de ofertas
   _currentSort = 'asc';
@@ -5534,14 +5599,12 @@ function getCategoryIllustration(key) {
 // ─── CATEGORY CARD HTML ───────────────────────────────────────────────
 function categoryCardHTML(cat, i) {
   let catProducts;
-  if (cat.key === 'temporada' && _seasonalOffer && _seasonalOffer.active) {
-    const ofertaIds = new Set(_seasonalOffer.productIds || []);
+  if (cat.key === 'temporada') {
     const porCategoria = products.filter(p => p.category === 'temporada');
-    const porOferta    = products.filter(p => ofertaIds.has(p.id) && p.category !== 'temporada');
+    const porOferta    = products.filter(p => _esProductoDeOferta(p) && p.category !== 'temporada');
     catProducts = [...porOferta, ...porCategoria];
   } else {
-    const ofertaExcluir = (_seasonalOffer && _seasonalOffer.active) ? new Set(_seasonalOffer.productIds || []) : new Set();
-    catProducts = products.filter(p => p.category === cat.key && !ofertaExcluir.has(p.id));
+    catProducts = products.filter(p => p.category === cat.key && !_esProductoDeOferta(p));
   }
   const count = catProducts.length;
   const illustration = getCategoryIllustration(cat.key);
@@ -5968,14 +6031,13 @@ function cerrarPopup() {
 }
 
 function cartSplit() {
-  const ofertaIds = (_seasonalOffer && _seasonalOffer.active && _seasonalOffer.productIds)
-    ? new Set(_seasonalOffer.productIds) : new Set();
+  const ofertaIds = _ofertaIdsSet();
   let regular = 0, fixed = 0;
   cart.forEach(item => {
     const p = products.find(x => String(x.id) === String(item.id));
     if (!p) return;
     const monto = (Math.round(parseFloat(String(p.price))) || 0) * item.qty;
-    if (p.category === 'temporada' || ofertaIds.has(item.id)) fixed += monto;
+    if (p.category === 'temporada' || ofertaIds.has(String(item.id))) fixed += monto;
     else regular += monto;
   });
   return { regular, fixed };
@@ -6452,9 +6514,11 @@ loadContactInfo();
     const ofertaData = rows.find(r => r.key === 'pm_seasonal_offers');
     if (ofertaData) {
       const o = typeof ofertaData.value === 'string' ? JSON.parse(ofertaData.value) : ofertaData.value;
+      // Asignar siempre (aunque venga inactiva): así, si el admin desactiva la
+      // oferta, el cliente que la había hidratado desde localStorage se entera.
+      _seasonalOffer = o || null;
+      renderGrid(); // actualizar grilla con esfera de oferta y exclusiones
       if (o && o.active) {
-        _seasonalOffer = o;
-        renderGrid(); // actualizar grilla con esfera de oferta
         // Solo mostrar el modal si el welcome ya se cerró;
         // si no, cerrarWelcome() lo disparará automáticamente
         if (_welcomeClosed) {
@@ -6591,8 +6655,13 @@ function cerrarOfertaModal(abrirPanel) {
 const OFERTA_SEEN_KEY = 'pm_oferta_seen_ids';
 let _ofertaNuevoToastTimer = null;
 
+// Nota: _ofertaNuevosIds y _esProductoNuevoEnOferta() se declaran en el bloque de
+// variables globales, arriba. Guardan los ids nuevos de ESTA sesión aparte de
+// localStorage, porque los ids se marcan como "vistos" apenas se detectan (para no
+// repetir el aviso) pero el brillo debe seguir visible cuando se abra la esfera.
+
 function _getOfertaSeenIds() {
-  try { return new Set(JSON.parse(localStorage.getItem(OFERTA_SEEN_KEY) || '[]')); }
+  try { return new Set((JSON.parse(localStorage.getItem(OFERTA_SEEN_KEY) || '[]')).map(String)); }
   catch(e) { return new Set(); }
 }
 
@@ -6601,7 +6670,7 @@ function _setOfertaSeenIds(idsSet) {
 }
 
 function checkNuevosProductosOferta(oferta) {
-  const ids = (oferta && oferta.productIds) || [];
+  const ids = ((oferta && oferta.productIds) || []).map(String);
   if (!ids.length) return;
 
   const seen   = _getOfertaSeenIds();
@@ -6615,7 +6684,12 @@ function checkNuevosProductosOferta(oferta) {
   // primera vez que ve el catálogo.
   if (esPrimeraVisita || !nuevos.length) return;
 
-  mostrarToastOfertaNuevo(nuevos.length);
+  // Acumular (no reemplazar): esta función puede correr dos veces en una carga
+  // —con la oferta hidratada del caché y luego con la de la red— y la segunda
+  // pasada no debe borrar los ids que detectó la primera.
+  nuevos.forEach(id => _ofertaNuevosIds.add(id));
+
+  mostrarToastOfertaNuevo(_ofertaNuevosIds.size);
 }
 
 function mostrarToastOfertaNuevo(cantidad) {
