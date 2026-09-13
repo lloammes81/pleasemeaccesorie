@@ -3119,7 +3119,7 @@
     white-space: nowrap;
   }
   #sortSelect {
-    width: 160px; flex-shrink: 0;
+    width: 190px; flex-shrink: 0;
     background: rgba(15,11,6,0.85);
     border: 1px solid rgba(201,151,58,0.35);
     color: var(--gold-light);
@@ -3623,11 +3623,13 @@
     <button class="cat-panel-close" onclick="closeCategoryPanel()">×</button>
   </div>
   <div class="cat-sort-bar">
-    <span class="cat-sort-label">Precio:</span>
+    <span class="cat-sort-label">Ordenar:</span>
     <select id="sortSelect" onchange="setSortOrder(this.value)">
       <option value="">Sin ordenar</option>
-      <option value="asc">↑ Menor a mayor</option>
-      <option value="desc">↓ Mayor a menor</option>
+      <option value="asc">Precio: menor a mayor</option>
+      <option value="desc">Precio: mayor a menor</option>
+      <option value="name_asc">Nombre: A → Z</option>
+      <option value="name_desc">Nombre: Z → A</option>
     </select>
   </div>
   <div class="cat-panel-body" id="catPanelBody"></div>
@@ -3686,6 +3688,9 @@
 
 <!-- DISCOUNT NOTIFICATION TOAST -->
 <div class="toast-discount" id="toastDiscount">✦ ¡Tienes 4 artículos! Pregunta por el 15% de descuento</div>
+
+<!-- NEW SEASONAL OFFER PRODUCTS TOAST -->
+<div class="toast-discount" id="toastOfertaNuevo"></div>
 
 <!-- MODAL -->
 <div class="modal-overlay" id="modalOverlay">
@@ -4566,6 +4571,10 @@ function setSortOrder(order) {
     sorted.sort((a, b) => (parseFloat(String(a.price)) || 0) - (parseFloat(String(b.price)) || 0));
   } else if (_currentSort === 'desc') {
     sorted.sort((a, b) => (parseFloat(String(b.price)) || 0) - (parseFloat(String(a.price)) || 0));
+  } else if (_currentSort === 'name_asc') {
+    sorted.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'es', { sensitivity: 'base' }));
+  } else if (_currentSort === 'name_desc') {
+    sorted.sort((a, b) => String(b.name || '').localeCompare(String(a.name || ''), 'es', { sensitivity: 'base' }));
   }
   const body = document.getElementById('catPanelBody');
   if (body) {
@@ -6448,7 +6457,10 @@ loadContactInfo();
         renderGrid(); // actualizar grilla con esfera de oferta
         // Solo mostrar el modal si el welcome ya se cerró;
         // si no, cerrarWelcome() lo disparará automáticamente
-        if (_welcomeClosed) mostrarOfertaModal();
+        if (_welcomeClosed) {
+          mostrarOfertaModal();
+          checkNuevosProductosOferta(o);
+        }
       }
     }
     // Refrescar info de catálogo (título, subtítulo, footer)
@@ -6502,7 +6514,10 @@ function cerrarWelcome() {
     _welcomeClosed = true;
     const logoRing = document.getElementById('logoRing');
     if (logoRing) logoRing.style.animation = 'logoSubmerge 2.2s ease-out forwards, logoHeartbeat 7s ease-in-out 2.2s infinite';
-    if (_seasonalOffer && _seasonalOffer.active) mostrarOfertaModal();
+    if (_seasonalOffer && _seasonalOffer.active) {
+      mostrarOfertaModal();
+      checkNuevosProductosOferta(_seasonalOffer);
+    }
   }, 370);
 }
 
@@ -6568,6 +6583,54 @@ function cerrarOfertaModal(abrirPanel) {
   if (!modal) return;
   modal.style.display = 'none';
   if (abrirPanel) openOffersPanel();
+}
+
+// ─── NOTIFICACIÓN DE NUEVOS PRODUCTOS EN LA OFERTA DE TEMPORADA ───────
+// Recuerda (en este dispositivo) qué productos de la oferta ya vio la
+// clienta, para avisarle cuando el admin agregue piezas nuevas.
+const OFERTA_SEEN_KEY = 'pm_oferta_seen_ids';
+let _ofertaNuevoToastTimer = null;
+
+function _getOfertaSeenIds() {
+  try { return new Set(JSON.parse(localStorage.getItem(OFERTA_SEEN_KEY) || '[]')); }
+  catch(e) { return new Set(); }
+}
+
+function _setOfertaSeenIds(idsSet) {
+  try { localStorage.setItem(OFERTA_SEEN_KEY, JSON.stringify([...idsSet])); } catch(e) {}
+}
+
+function checkNuevosProductosOferta(oferta) {
+  const ids = (oferta && oferta.productIds) || [];
+  if (!ids.length) return;
+
+  const seen   = _getOfertaSeenIds();
+  const esPrimeraVisita = seen.size === 0;
+  const nuevos = ids.filter(id => !seen.has(id));
+
+  // Guardar todos los ids actuales como "vistos" para no repetir el aviso
+  _setOfertaSeenIds(new Set(ids));
+
+  // En la primera visita no hay nada con qué comparar: no es "nuevo", es la
+  // primera vez que ve el catálogo.
+  if (esPrimeraVisita || !nuevos.length) return;
+
+  mostrarToastOfertaNuevo(nuevos.length);
+}
+
+function mostrarToastOfertaNuevo(cantidad) {
+  const t = document.getElementById('toastOfertaNuevo');
+  if (!t) return;
+  t.textContent = cantidad === 1
+    ? '✨ ¡Se agregó 1 producto nuevo a la oferta de temporada!'
+    : `✨ ¡Se agregaron ${cantidad} productos nuevos a la oferta de temporada!`;
+
+  // Pequeño retraso para no competir con la entrada del modal de oferta
+  clearTimeout(_ofertaNuevoToastTimer);
+  _ofertaNuevoToastTimer = setTimeout(() => {
+    t.classList.add('show');
+    _ofertaNuevoToastTimer = setTimeout(() => t.classList.remove('show'), 6000);
+  }, 800);
 }
 
 // ─── CATALOG INFO (title, subtitle, tagline) ──────────────────────────
