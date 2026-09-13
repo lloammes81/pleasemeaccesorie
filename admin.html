@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20260913-3';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20260913-4';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <script>(function(){
 /* Autocomprobación de versión. El rompe-caché de arriba compara el parámetro ?v=
    contra la V del HTML que ya se está ejecutando: si el navegador sirvió una copia
@@ -2494,6 +2494,18 @@ textarea { resize: vertical; min-height: 80px; }
           <svg width="7" height="7" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="currentColor"/></svg>
           Inactiva
         </span>
+      </div>
+
+      <!-- Aviso: sin esto, agregar productos a la oferta no produce ningún
+           efecto visible en el catálogo y no hay forma de saber por qué. -->
+      <div id="ofertaInactivaAviso" style="display:none;max-width:620px;margin-bottom:22px;padding:14px 16px;background:rgba(201,151,58,0.08);border:1px solid rgba(201,151,58,0.45);border-radius:4px;">
+        <div style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:6px;">⚠ La oferta está inactiva</div>
+        <p style="font-size:11.5px;color:var(--text-mid);font-weight:300;line-height:1.6;margin:0 0 12px;">
+          Los productos que agregues aquí <strong>no se verán en el catálogo</strong> y las clientas no recibirán el aviso de novedades. Mientras esté inactiva, cada artículo se sigue mostrando en su categoría normal.
+        </p>
+        <button class="btn btn-primary" style="font-size:9px;padding:8px 16px;" onclick="activarOfertaDesdeOfertas()">
+          Activar la oferta ahora
+        </button>
       </div>
 
       <div style="max-width:620px;display:flex;flex-direction:column;gap:20px;">
@@ -5256,6 +5268,7 @@ async function _setProductOfertaMembership(id, wantsOferta) {
 
   // Si la página de Ofertas está renderizada, refrescarla también
   if (document.getElementById('ofertaProductList')) renderOfertaProductList();
+  _refrescarAvisoOfertaInactiva();
   return null;
 }
 
@@ -5604,7 +5617,44 @@ async function loadOfertas() {
     badge.innerHTML = `<svg width="7" height="7" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="currentColor"/></svg>${active ? 'Activa' : 'Inactiva'}`;
   }
 
+  _refrescarAvisoOfertaInactiva();
   renderOfertaProductList();
+}
+
+// El interruptor maestro vive en el menú Anuncio, así que desde aquí no se ve
+// por qué "no pasa nada" al agregar productos. Este aviso lo dice y permite
+// activarla sin salir de la página.
+function _refrescarAvisoOfertaInactiva() {
+  const aviso = document.getElementById('ofertaInactivaAviso');
+  if (!aviso) return;
+  const cfg = _cfgCache['pm_seasonal_offers'] || {};
+  aviso.style.display = cfg.active ? 'none' : '';
+}
+
+async function activarOfertaDesdeOfertas() {
+  const existing = _cfgCache['pm_seasonal_offers'] || {};
+  if (!existing.productIds || existing.productIds.length === 0) {
+    return showToast('Primero agrega al menos un producto a la oferta');
+  }
+  const error = await _saveConfig('pm_seasonal_offers', { ...existing, active: true });
+  if (error) return showToast('Error al activar: ' + error.message);
+
+  // Mantener sincronizados el badge, el aviso y el interruptor del menú Anuncio
+  const badge = document.getElementById('ofertaStatusBadge');
+  if (badge) {
+    badge.className = 'oferta-status-badge activa';
+    badge.innerHTML = '<svg width="7" height="7" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="currentColor"/></svg>Activa';
+  }
+  const chk = document.getElementById('ofertaTemporadaToggle');
+  if (chk) {
+    chk.checked = true;
+    const track = document.getElementById('ofertaTemporadaTrack');
+    const thumb = document.getElementById('ofertaTemporadaThumb');
+    if (track) track.style.background = 'var(--gold-deep)';
+    if (thumb) thumb.style.transform  = 'translateX(20px)';
+  }
+  _refrescarAvisoOfertaInactiva();
+  showToast('✦ Oferta activa: ya se ve en el catálogo');
 }
 
 async function saveOfertas() {
