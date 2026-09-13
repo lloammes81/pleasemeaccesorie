@@ -3689,6 +3689,9 @@
 <!-- DISCOUNT NOTIFICATION TOAST -->
 <div class="toast-discount" id="toastDiscount">✦ ¡Tienes 4 artículos! Pregunta por el 15% de descuento</div>
 
+<!-- NEW SEASONAL OFFER PRODUCTS TOAST -->
+<div class="toast-discount" id="toastOfertaNuevo"></div>
+
 <!-- MODAL -->
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal" id="modal">
@@ -6454,7 +6457,10 @@ loadContactInfo();
         renderGrid(); // actualizar grilla con esfera de oferta
         // Solo mostrar el modal si el welcome ya se cerró;
         // si no, cerrarWelcome() lo disparará automáticamente
-        if (_welcomeClosed) mostrarOfertaModal();
+        if (_welcomeClosed) {
+          mostrarOfertaModal();
+          checkNuevosProductosOferta(o);
+        }
       }
     }
     // Refrescar info de catálogo (título, subtítulo, footer)
@@ -6508,7 +6514,10 @@ function cerrarWelcome() {
     _welcomeClosed = true;
     const logoRing = document.getElementById('logoRing');
     if (logoRing) logoRing.style.animation = 'logoSubmerge 2.2s ease-out forwards, logoHeartbeat 7s ease-in-out 2.2s infinite';
-    if (_seasonalOffer && _seasonalOffer.active) mostrarOfertaModal();
+    if (_seasonalOffer && _seasonalOffer.active) {
+      mostrarOfertaModal();
+      checkNuevosProductosOferta(_seasonalOffer);
+    }
   }, 370);
 }
 
@@ -6574,6 +6583,54 @@ function cerrarOfertaModal(abrirPanel) {
   if (!modal) return;
   modal.style.display = 'none';
   if (abrirPanel) openOffersPanel();
+}
+
+// ─── NOTIFICACIÓN DE NUEVOS PRODUCTOS EN LA OFERTA DE TEMPORADA ───────
+// Recuerda (en este dispositivo) qué productos de la oferta ya vio la
+// clienta, para avisarle cuando el admin agregue piezas nuevas.
+const OFERTA_SEEN_KEY = 'pm_oferta_seen_ids';
+let _ofertaNuevoToastTimer = null;
+
+function _getOfertaSeenIds() {
+  try { return new Set(JSON.parse(localStorage.getItem(OFERTA_SEEN_KEY) || '[]')); }
+  catch(e) { return new Set(); }
+}
+
+function _setOfertaSeenIds(idsSet) {
+  try { localStorage.setItem(OFERTA_SEEN_KEY, JSON.stringify([...idsSet])); } catch(e) {}
+}
+
+function checkNuevosProductosOferta(oferta) {
+  const ids = (oferta && oferta.productIds) || [];
+  if (!ids.length) return;
+
+  const seen   = _getOfertaSeenIds();
+  const esPrimeraVisita = seen.size === 0;
+  const nuevos = ids.filter(id => !seen.has(id));
+
+  // Guardar todos los ids actuales como "vistos" para no repetir el aviso
+  _setOfertaSeenIds(new Set(ids));
+
+  // En la primera visita no hay nada con qué comparar: no es "nuevo", es la
+  // primera vez que ve el catálogo.
+  if (esPrimeraVisita || !nuevos.length) return;
+
+  mostrarToastOfertaNuevo(nuevos.length);
+}
+
+function mostrarToastOfertaNuevo(cantidad) {
+  const t = document.getElementById('toastOfertaNuevo');
+  if (!t) return;
+  t.textContent = cantidad === 1
+    ? '✨ ¡Se agregó 1 producto nuevo a la oferta de temporada!'
+    : `✨ ¡Se agregaron ${cantidad} productos nuevos a la oferta de temporada!`;
+
+  // Pequeño retraso para no competir con la entrada del modal de oferta
+  clearTimeout(_ofertaNuevoToastTimer);
+  _ofertaNuevoToastTimer = setTimeout(() => {
+    t.classList.add('show');
+    _ofertaNuevoToastTimer = setTimeout(() => t.classList.remove('show'), 6000);
+  }, 800);
 }
 
 // ─── CATALOG INFO (title, subtitle, tagline) ──────────────────────────
