@@ -831,7 +831,7 @@ tr:last-child td { border-bottom: none; }
 tr:hover td { background: rgba(201,151,58,0.03); }
 
 .td-photo {
-  width: 52px; height: 52px;
+  width: 76px; height: 76px;
   object-fit: cover;
   border: 1px solid var(--border);
   background: var(--bg2);
@@ -1290,8 +1290,8 @@ textarea { resize: vertical; min-height: 80px; }
 }
 
 .oferta-product-thumb {
-  width: 36px;
-  height: 36px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   object-fit: cover;
   background: var(--bg3);
@@ -1427,7 +1427,7 @@ textarea { resize: vertical; min-height: 80px; }
 }
 
 .mob-product-item img {
-  width: 52px; height: 52px;
+  width: 84px; height: 84px;
   object-fit: cover;
   border-radius: 8px;
   background: var(--dark3);
@@ -4153,7 +4153,7 @@ function renderTable() {
         <div class="td-photo">
           ${p.photo
             ? `<img src="${p.photo}" alt="${p.name}">`
-            : `<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`}
+            : `<svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`}
         </div>
       </td>
       <td>
@@ -4218,8 +4218,8 @@ function renderMobileQuickView() {
     <div class="mob-product-item" data-id="${p.id}" style="flex-wrap:wrap;gap:10px;padding:12px 0;">
       <div style="display:flex;align-items:center;gap:12px;width:100%;">
         ${p.photo
-          ? `<img src="${p.photo}" alt="${p.name}" style="width:64px;height:64px;object-fit:cover;border-radius:8px;flex-shrink:0;border:1px solid var(--border);">`
-          : `<div style="width:64px;height:64px;border-radius:8px;background:var(--bg2);flex-shrink:0;display:flex;align-items:center;justify-content:center;"><svg width='22' height='22' fill='none' stroke='var(--text-muted)' stroke-width='1.5' viewBox='0 0 24 24'><rect x='3' y='3' width='18' height='18' rx='2'/><circle cx='8.5' cy='8.5' r='1.5'/><polyline points='21 15 16 10 5 21'/></svg></div>`}
+          ? `<img src="${p.photo}" alt="${p.name}" style="width:84px;height:84px;object-fit:cover;border-radius:8px;flex-shrink:0;border:1px solid var(--border);">`
+          : `<div style="width:84px;height:84px;border-radius:8px;background:var(--bg2);flex-shrink:0;display:flex;align-items:center;justify-content:center;"><svg width='28' height='28' fill='none' stroke='var(--text-muted)' stroke-width='1.5' viewBox='0 0 24 24'><rect x='3' y='3' width='18' height='18' rx='2'/><circle cx='8.5' cy='8.5' r='1.5'/><polyline points='21 15 16 10 5 21'/></svg></div>`}
         <div class="mob-product-info" style="flex:1;min-width:0;">
           <div class="mob-product-name">${p.name}</div>
           <div style="font-size:10px;color:var(--gold);font-family:'Cinzel',serif;letter-spacing:1px;margin-top:2px;">${CAT_LABELS[p.category]||p.category}</div>
@@ -5347,7 +5347,7 @@ function renderOfertaProductList() {
     const checked  = _ofertaSelectedIds.has(p.id);
     const thumb    = p.photo
       ? `<img src="${p.photo}" alt="${p.name}">`
-      : `<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
+      : `<svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
     return `<label class="oferta-product-item${checked ? ' selected' : ''}">
       <input type="checkbox" ${checked ? 'checked' : ''} onchange="ofertaToggleItem('${p.id}', this.closest('.oferta-product-item'))">
       <div class="oferta-product-thumb">${thumb}</div>
@@ -5361,16 +5361,18 @@ function renderOfertaProductList() {
   if (counter) counter.textContent = `${_ofertaSelectedIds.size} seleccionados`;
 }
 
-function ofertaToggleItem(id, el) {
+async function ofertaToggleItem(id, el) {
   const chk = el ? el.querySelector('input[type="checkbox"]') : null;
 
   if (_ofertaSelectedIds.has(id)) {
-    // Quitar de la oferta no requiere confirmación
+    // Quitar de la oferta no requiere confirmación, pero sí se guarda de inmediato
+    // para que el producto deje de excluirse de su categoría en el catálogo público.
     _ofertaSelectedIds.delete(id);
     if (el) el.classList.remove('selected');
     if (chk) chk.checked = false;
     const counter = document.getElementById('ofertaSelCount');
     if (counter) counter.textContent = `${_ofertaSelectedIds.size} seleccionados`;
+    await _persistOfertaSelection();
   } else {
     // Antes de enviarlo a la oferta, dejar el checkbox sin marcar hasta confirmar
     if (chk) chk.checked = false;
@@ -5378,9 +5380,26 @@ function ofertaToggleItem(id, el) {
   }
 }
 
-function ofertaSelectAll(select) {
+async function ofertaSelectAll(select) {
   _ofertaSelectedIds = select ? new Set(products.map(p => p.id)) : new Set();
   renderOfertaProductList();
+  await _persistOfertaSelection();
+}
+
+// Guarda solo la lista de productos de la oferta (sin tocar título/mensaje/estado
+// activo), para que agregar o quitar un artículo tenga efecto inmediato en el
+// catálogo público sin depender del botón "Guardar configuración".
+async function _persistOfertaSelection() {
+  const existing = _cfgCache['pm_seasonal_offers'] || {};
+  const data = {
+    active:     !!existing.active,
+    titulo:     existing.titulo  || 'Ofertas de temporada',
+    mensaje:    existing.mensaje || '',
+    productIds: [..._ofertaSelectedIds],
+  };
+  const error = await _saveConfig('pm_seasonal_offers', data);
+  if (error) showToast('Error al guardar la oferta: ' + error.message);
+  return error;
 }
 
 // ─── VENTANA FLOTANTE: EDITAR PRODUCTO ANTES DE ENVIARLO A LA OFERTA ──
@@ -5461,11 +5480,12 @@ async function confirmOfertaEdit() {
   });
 
   _ofertaSelectedIds.add(id);
+  const persistError = await _persistOfertaSelection();
   document.getElementById('ofertaEditOverlay').classList.remove('open');
   _ofertaEditProductId = null;
   renderOfertaProductList();
   renderTable();
-  showToast('✦ Producto actualizado y agregado a la oferta');
+  if (!persistError) showToast('✦ Producto actualizado y agregado a la oferta');
 }
 
 async function loadOfertas() {
