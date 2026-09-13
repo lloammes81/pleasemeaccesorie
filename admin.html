@@ -900,20 +900,23 @@ tr:hover td { background: rgba(201,151,58,0.03); }
 
 .drawer {
   position: fixed;
-  top: 0; right: 0;
-  height: 100vh;
-  width: 480px;
-  max-width: 100vw;
+  top: 50%; left: 50%;
+  height: auto;
+  max-height: 88vh;
+  width: 520px;
+  max-width: calc(100vw - 32px);
   background: var(--surface);
-  border-left: 1px solid var(--border);
+  border: 1px solid rgba(201,151,58,0.3);
   z-index: 201;
   display: flex; flex-direction: column;
-  transform: translateX(100%);
-  transition: transform 0.35s cubic-bezier(0.77,0,0.18,1);
-  box-shadow: var(--shadow-lg);
+  transform: translate(-50%, -50%) scale(0.94);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.25s;
+  box-shadow: var(--shadow-lg), 0 0 40px rgba(201,151,58,0.12);
 }
 
-.drawer.open { transform: translateX(0); }
+.drawer.open { transform: translate(-50%, -50%) scale(1); opacity: 1; pointer-events: all; }
 
 .drawer-head {
   padding: 24px 28px 20px;
@@ -3227,6 +3230,20 @@ textarea { resize: vertical; min-height: 80px; }
       <p style="font-size:10px;color:var(--text-muted);margin-top:6px;">Al activarlo aparece el letrero <strong>SOLD OUT</strong> sobre la imagen del artículo en el catálogo.</p>
     </div>
 
+    <div class="field" style="margin-top:4px;">
+      <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="document.getElementById('f_oferta').click()">
+        <span>⭐ Oferta de temporada</span>
+        <div style="display:flex;align-items:center;gap:10px;" onclick="event.stopPropagation()">
+          <input type="checkbox" id="f_oferta" style="opacity:0;width:0;height:0;border:none;padding:0;" onchange="_updateOfertaToggleUI(this.checked)">
+          <div id="ofTrack" onclick="var c=document.getElementById('f_oferta');c.checked=!c.checked;_updateOfertaToggleUI(c.checked)" style="position:relative;width:44px;height:24px;border-radius:12px;background:var(--bg3);cursor:pointer;transition:background 0.3s;flex-shrink:0;">
+            <span id="ofThumb" style="position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform 0.3s;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></span>
+          </div>
+          <span id="ofLabel" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:1.5px;color:var(--text-muted);min-width:60px;">Fuera de oferta</span>
+        </div>
+      </label>
+      <p style="font-size:10px;color:var(--text-muted);margin-top:6px;">Al activarlo, este artículo se mueve a <strong>Ofertas de temporada</strong> y deja de mostrarse en su categoría mientras la oferta esté activa.</p>
+    </div>
+
   </div>
   <div class="drawer-footer">
     <button class="btn btn-outline" onclick="closeDrawer()">Cancelar</button>
@@ -4320,6 +4337,8 @@ function openDrawer(id) {
     document.getElementById('f_badge').value    = p.badge    || '';
     const _soEl = document.getElementById('f_soldout');
     if (_soEl) { _soEl.checked = !!p.sold_out; _updateSoldOutUI(!!p.sold_out); }
+    const _ofEl = document.getElementById('f_oferta');
+    if (_ofEl) { const enOferta = _isProductInOferta(id); _ofEl.checked = enOferta; _updateOfertaToggleUI(enOferta); }
     if (p.photo) {
       photoData    = p.photo;
       rawPhotoData = p.photo; // permitir reprocesar imagen existente
@@ -4335,6 +4354,8 @@ function openDrawer(id) {
     document.getElementById('f_badge').value = '';
     const _soElN = document.getElementById('f_soldout');
     if (_soElN) { _soElN.checked = false; _updateSoldOutUI(false); }
+    const _ofElN = document.getElementById('f_oferta');
+    if (_ofElN) { _ofElN.checked = false; _updateOfertaToggleUI(false); }
     document.getElementById('f_material').value = 'Oro laminado 14k';
   }
 
@@ -4723,16 +4744,22 @@ async function saveProduct() {
 
   // ── Guardar en Firebase ────────────────────────────────────────────
   setBtnState(true, 'Guardando...');
+  let savedId = editingId;
   try {
     if (editingId) {
       await _db.collection('catalogo_productos').doc(String(editingId)).update(data);
     } else {
-      await _db.collection('catalogo_productos').add(data);
+      const docRef = await _db.collection('catalogo_productos').add(data);
+      savedId = docRef.id;
     }
   } catch(e) {
     setBtnState(false, label);
     return showToast('Error al guardar: ' + e.message);
   }
+
+  // ── Sincronizar con Ofertas de temporada según el interruptor ──────
+  const wantsOferta = !!document.getElementById('f_oferta')?.checked;
+  await _setProductOfertaMembership(savedId, wantsOferta);
 
   // ── Éxito: limpiar formulario y cerrar ────────────────────────────
   await loadProducts();
@@ -5160,6 +5187,50 @@ function _updateSoldOutUI(checked) {
   track.style.background = checked ? 'linear-gradient(135deg,#a32020,#dc322f)' : 'var(--bg3)';
   if (thumb) thumb.style.transform = checked ? 'translateX(20px)' : 'translateX(0)';
   if (label) { label.textContent = checked ? 'Agotado' : 'Disponible'; label.style.color = checked ? '#dc322f' : 'var(--text-muted)'; }
+}
+
+function _updateOfertaToggleUI(checked) {
+  const track = document.getElementById('ofTrack');
+  const thumb = document.getElementById('ofThumb');
+  const label = document.getElementById('ofLabel');
+  if (!track) return;
+  track.style.background = checked ? 'linear-gradient(135deg,#8B6914,#C9973A)' : 'var(--bg3)';
+  if (thumb) thumb.style.transform = checked ? 'translateX(20px)' : 'translateX(0)';
+  if (label) { label.textContent = checked ? 'En oferta' : 'Fuera de oferta'; label.style.color = checked ? 'var(--gold)' : 'var(--text-muted)'; }
+}
+
+// Verdad de a quién pertenece la oferta: la config en Firestore (_cfgCache),
+// no el Set en memoria de la página "Ofertas" (que puede no haberse cargado
+// aún si el admin no ha visitado esa página en esta sesión).
+function _isProductInOferta(id) {
+  const ids = (_cfgCache['pm_seasonal_offers'] || {}).productIds || [];
+  return ids.includes(id);
+}
+
+async function _setProductOfertaMembership(id, wantsOferta) {
+  const existing    = _cfgCache['pm_seasonal_offers'] || {};
+  const currentIds  = new Set(existing.productIds || []);
+  const yaIncluido  = currentIds.has(id);
+  if (wantsOferta === yaIncluido) return null; // sin cambios, no hace falta escribir
+
+  if (wantsOferta) currentIds.add(id); else currentIds.delete(id);
+
+  // Mantener sincronizado el Set en memoria de la página de Ofertas, por si
+  // el admin la tiene abierta o la abre después en esta misma sesión.
+  _ofertaSelectedIds = currentIds;
+
+  const data = {
+    active:     !!existing.active,
+    titulo:     existing.titulo  || 'Ofertas de temporada',
+    mensaje:    existing.mensaje || '',
+    productIds: [...currentIds],
+  };
+  const error = await _saveConfig('pm_seasonal_offers', data);
+  if (error) { showToast('Error al guardar la oferta: ' + error.message); return error; }
+
+  // Si la página de Ofertas está renderizada, refrescarla también
+  if (document.getElementById('ofertaProductList')) renderOfertaProductList();
+  return null;
 }
 
 async function quickToggleSoldOut(id) {
