@@ -5361,16 +5361,18 @@ function renderOfertaProductList() {
   if (counter) counter.textContent = `${_ofertaSelectedIds.size} seleccionados`;
 }
 
-function ofertaToggleItem(id, el) {
+async function ofertaToggleItem(id, el) {
   const chk = el ? el.querySelector('input[type="checkbox"]') : null;
 
   if (_ofertaSelectedIds.has(id)) {
-    // Quitar de la oferta no requiere confirmación
+    // Quitar de la oferta no requiere confirmación, pero sí se guarda de inmediato
+    // para que el producto deje de excluirse de su categoría en el catálogo público.
     _ofertaSelectedIds.delete(id);
     if (el) el.classList.remove('selected');
     if (chk) chk.checked = false;
     const counter = document.getElementById('ofertaSelCount');
     if (counter) counter.textContent = `${_ofertaSelectedIds.size} seleccionados`;
+    await _persistOfertaSelection();
   } else {
     // Antes de enviarlo a la oferta, dejar el checkbox sin marcar hasta confirmar
     if (chk) chk.checked = false;
@@ -5378,9 +5380,26 @@ function ofertaToggleItem(id, el) {
   }
 }
 
-function ofertaSelectAll(select) {
+async function ofertaSelectAll(select) {
   _ofertaSelectedIds = select ? new Set(products.map(p => p.id)) : new Set();
   renderOfertaProductList();
+  await _persistOfertaSelection();
+}
+
+// Guarda solo la lista de productos de la oferta (sin tocar título/mensaje/estado
+// activo), para que agregar o quitar un artículo tenga efecto inmediato en el
+// catálogo público sin depender del botón "Guardar configuración".
+async function _persistOfertaSelection() {
+  const existing = _cfgCache['pm_seasonal_offers'] || {};
+  const data = {
+    active:     !!existing.active,
+    titulo:     existing.titulo  || 'Ofertas de temporada',
+    mensaje:    existing.mensaje || '',
+    productIds: [..._ofertaSelectedIds],
+  };
+  const error = await _saveConfig('pm_seasonal_offers', data);
+  if (error) showToast('Error al guardar la oferta: ' + error.message);
+  return error;
 }
 
 // ─── VENTANA FLOTANTE: EDITAR PRODUCTO ANTES DE ENVIARLO A LA OFERTA ──
@@ -5461,11 +5480,12 @@ async function confirmOfertaEdit() {
   });
 
   _ofertaSelectedIds.add(id);
+  const persistError = await _persistOfertaSelection();
   document.getElementById('ofertaEditOverlay').classList.remove('open');
   _ofertaEditProductId = null;
   renderOfertaProductList();
   renderTable();
-  showToast('✦ Producto actualizado y agregado a la oferta');
+  if (!persistError) showToast('✦ Producto actualizado y agregado a la oferta');
 }
 
 async function loadOfertas() {
