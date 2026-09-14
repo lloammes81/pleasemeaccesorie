@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20260914-1';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20260914-3';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <script>(function(){
 /* Autocomprobación de versión. El rompe-caché de arriba compara el parámetro ?v=
    contra la V del HTML que ya se está ejecutando: si el navegador sirvió una copia
@@ -3295,12 +3295,12 @@ textarea { resize: vertical; min-height: 80px; }
 <!-- CONFIRM DIALOG -->
 <div class="confirm-overlay" id="confirmOverlay">
   <div class="confirm-box">
-    <div class="confirm-icon">🗑️</div>
-    <div class="confirm-title">Eliminar prenda</div>
+    <div class="confirm-icon" id="confirmIcon">🗑️</div>
+    <div class="confirm-title" id="confirmTitle">Eliminar prenda</div>
     <div class="confirm-msg" id="confirmMsg">¿Estás segura de que quieres eliminar esta prenda? Esta acción no se puede deshacer.</div>
     <div class="confirm-btns">
-      <button class="btn btn-outline" onclick="closeConfirm()">Cancelar</button>
-      <button class="btn btn-danger" onclick="confirmDelete()">Eliminar</button>
+      <button class="btn btn-outline" onclick="cancelConfirm()">Cancelar</button>
+      <button class="btn btn-danger" id="confirmOkBtn" onclick="aceptarConfirm()">Eliminar</button>
     </div>
   </div>
 </div>
@@ -3623,6 +3623,7 @@ async function loadProducts() {
         subtitle:      p.subtitle      || '',
         category:      p.category      || '',
         category_prev: p.category_prev || '',
+        temporada_desde: Number(p.temporada_desde) || 0,
         categoryLabel: p.category_label || CAT_LABELS[p.category] || p.category,
         price:         Number(p.price) || 0,
         desc:          p.description   || '',
@@ -4787,8 +4788,16 @@ async function saveProduct() {
   // Recordar de qué categoría viene, para poder devolverlo al apagar el interruptor
   if (category === 'temporada') {
     if (_categoriaAntesDeTemporada) data.category_prev = _categoriaAntesDeTemporada;
+    // Sellar cuándo entró a temporada: el catálogo lo usa para anunciarlo como
+    // novedad durante una semana. Si ya estaba dentro, se conserva el sello
+    // original para que editarlo no reinicie la semana.
+    const _yaEstaba = products.find(p => p.id === editingId);
+    data.temporada_desde = (_yaEstaba && _yaEstaba.category === 'temporada' && _yaEstaba.temporada_desde)
+      ? _yaEstaba.temporada_desde
+      : Date.now();
   } else {
     data.category_prev = '';
+    data.temporada_desde = 0;
   }
   if (finalPhotoUrl) data.photo_data = finalPhotoUrl;
   if (!editingId) data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
@@ -4805,6 +4814,7 @@ async function saveProduct() {
     }
   } catch(e) {
     setBtnState(false, label);
+    _avisoTemporadaPendiente = null;
     return showToast('Error al guardar: ' + e.message);
   }
 
@@ -4819,7 +4829,13 @@ async function saveProduct() {
   const esActualizar = !!editingId;
   limpiarFormulario();
   closeDrawer();
-  showToast(esActualizar ? '✦ Artículo actualizado correctamente' : '✦ Artículo guardado correctamente');
+  if (_avisoTemporadaPendiente) {
+    const agregado = _avisoTemporadaPendiente === 'agregado';
+    _avisoTemporadaPendiente = null;
+    showToast(agregado ? '⭐ Agregado a Ofertas de temporada' : '✦ Quitado de Ofertas de temporada');
+  } else {
+    showToast(esActualizar ? '✦ Artículo actualizado correctamente' : '✦ Artículo guardado correctamente');
+  }
 }
 
 function limpiarFormulario() {
@@ -5051,17 +5067,56 @@ dropArea.addEventListener('drop', ev => {
 });
 
 // ─── DELETE ──────────────────────────────────────────────────────────
+// Diálogo de confirmación reutilizable: lo usan tanto eliminar como enviar a
+// Ofertas de temporada, para no tener dos ventanas distintas haciendo lo mismo.
+let _confirmOnOk = null, _confirmOnCancel = null;
+
+function askConfirm({ icon, title, msg, okText, okClass, onOk, onCancel }) {
+  const set = (id, txt) => { const e = document.getElementById(id); if (e) e.textContent = txt; };
+  set('confirmIcon', icon || '⚠');
+  set('confirmTitle', title || 'Confirmar');
+  set('confirmMsg', msg || '');
+  const ok = document.getElementById('confirmOkBtn');
+  if (ok) { ok.textContent = okText || 'Aceptar'; ok.className = 'btn ' + (okClass || 'btn-primary'); }
+  _confirmOnOk = onOk || null;
+  _confirmOnCancel = onCancel || null;
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+
+async function aceptarConfirm() {
+  const cb = _confirmOnOk;
+  _confirmOnOk = null; _confirmOnCancel = null;
+  try {
+    if (cb) await cb(); else await confirmDelete();
+  } catch(e) {
+    showToast('Error: ' + (e && e.message ? e.message : e));
+  }
+}
+
+function cancelConfirm() {
+  const cb = _confirmOnCancel;
+  closeConfirm();
+  if (cb) cb();
+}
+
 function askDelete(id) {
   deleteId = id;
   const p = products.find(x => x.id === id);
-  document.getElementById('confirmMsg').textContent =
-    `¿Estás segura de que quieres eliminar "${p.name}"? Esta acción no se puede deshacer.`;
-  document.getElementById('confirmOverlay').classList.add('open');
+  askConfirm({
+    icon: '🗑️',
+    title: 'Eliminar prenda',
+    msg: `¿Estás segura de que quieres eliminar "${p.name}"? Esta acción no se puede deshacer.`,
+    okText: 'Eliminar',
+    okClass: 'btn-danger',
+    onOk: confirmDelete,
+  });
 }
 
 function closeConfirm() {
   document.getElementById('confirmOverlay').classList.remove('open');
+  document.getElementById('confirmOkBtn')?.classList.remove('btn-primary');
   deleteId = null;
+  _confirmOnOk = null; _confirmOnCancel = null;
 }
 
 async function confirmDelete() {
@@ -5255,7 +5310,7 @@ function _updateOfertaToggleUI(checked) {
 // categoría que el artículo tenía antes de pasar a temporada.
 let _categoriaAntesDeTemporada = '';
 
-function onToggleTemporada(checked) {
+function _aplicarCategoriaTemporada(checked) {
   _updateOfertaToggleUI(checked);
   const cat = document.getElementById('f_category');
   if (!cat) return;
@@ -5266,6 +5321,39 @@ function onToggleTemporada(checked) {
     cat.value = _categoriaAntesDeTemporada || '';
     if (!cat.value) showToast('Elige a qué categoría vuelve el artículo');
   }
+}
+
+// Aviso que mostrará saveProduct al terminar, en vez del genérico
+let _avisoTemporadaPendiente = null;
+
+function onToggleTemporada(checked) {
+  // Producto nuevo: todavía no existe nada que enviar, solo se prepara la categoría
+  if (!editingId) return _aplicarCategoriaTemporada(checked);
+
+  const p       = products.find(x => x.id === editingId);
+  const nombre  = (p && p.name) || 'este artículo';
+  const volverA = _categoriaAntesDeTemporada || (p && p.category_prev) || '';
+  const dondeVuelve = CAT_LABELS[volverA] || volverA;
+
+  askConfirm({
+    icon:  '⭐',
+    title: checked ? 'Enviar a Ofertas de temporada' : 'Quitar de Ofertas de temporada',
+    msg:   checked
+      ? `¿Enviar "${nombre}" a la esfera de Ofertas de temporada? Dejará de mostrarse en su categoría actual.`
+      : `¿Quitar "${nombre}" de Ofertas de temporada?` + (dondeVuelve ? ` Volverá a ${dondeVuelve}.` : ''),
+    okText: checked ? 'Enviar' : 'Quitar',
+    onOk: async () => {
+      _aplicarCategoriaTemporada(checked);
+      closeConfirm();
+      _avisoTemporadaPendiente = checked ? 'agregado' : 'quitado';
+      await saveProduct();   // guarda, avisa y refresca la tabla y las listas
+    },
+    onCancel: () => {        // devolver el interruptor a como estaba
+      const chk = document.getElementById('f_oferta');
+      if (chk) chk.checked = !checked;
+      _updateOfertaToggleUI(!checked);
+    },
+  });
 }
 
 // Verdad de a quién pertenece la oferta: la config en Firestore (_cfgCache),
