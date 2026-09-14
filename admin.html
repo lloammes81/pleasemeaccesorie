@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20260914-5';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20260914-6';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <script>(function(){
 /* Autocomprobación de versión. El rompe-caché de arriba compara el parámetro ?v=
    contra la V del HTML que ya se está ejecutando: si el navegador sirvió una copia
@@ -3257,9 +3257,9 @@ textarea { resize: vertical; min-height: 80px; }
     <div class="field" style="margin-top:4px;">
       <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
         <span>Sold Out</span>
-        <div style="display:flex;align-items:center;gap:10px;" onclick="event.stopPropagation()">
+        <div style="display:flex;align-items:center;gap:10px;">
           <input type="checkbox" id="f_soldout" style="opacity:0;width:0;height:0;border:none;padding:0;" onchange="_updateSoldOutUI(this.checked)">
-          <div id="soTrack" onclick="var c=document.getElementById('f_soldout');c.checked=!c.checked;_updateSoldOutUI(c.checked)" style="position:relative;width:44px;height:24px;border-radius:12px;background:var(--bg3);cursor:pointer;transition:background 0.3s;flex-shrink:0;">
+          <div id="soTrack" style="position:relative;width:44px;height:24px;border-radius:12px;background:var(--bg3);cursor:pointer;transition:background 0.3s;flex-shrink:0;">
             <span id="soThumb" style="position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform 0.3s;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></span>
           </div>
           <span id="soLabel" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:1.5px;color:var(--text-muted);min-width:60px;">Disponible</span>
@@ -3271,9 +3271,9 @@ textarea { resize: vertical; min-height: 80px; }
     <div class="field" style="margin-top:4px;">
       <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
         <span>⭐ Oferta de temporada</span>
-        <div style="display:flex;align-items:center;gap:10px;" onclick="event.stopPropagation()">
+        <div style="display:flex;align-items:center;gap:10px;">
           <input type="checkbox" id="f_oferta" style="opacity:0;width:0;height:0;border:none;padding:0;" onchange="onToggleTemporada(this.checked)">
-          <div id="ofTrack" onclick="var c=document.getElementById('f_oferta');c.checked=!c.checked;onToggleTemporada(c.checked)" style="position:relative;width:44px;height:24px;border-radius:12px;background:var(--bg3);cursor:pointer;transition:background 0.3s;flex-shrink:0;">
+          <div id="ofTrack" style="position:relative;width:44px;height:24px;border-radius:12px;background:var(--bg3);cursor:pointer;transition:background 0.3s;flex-shrink:0;">
             <span id="ofThumb" style="position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform 0.3s;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></span>
           </div>
           <span id="ofLabel" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:1.5px;color:var(--text-muted);min-width:60px;">Fuera de temporada</span>
