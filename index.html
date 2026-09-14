@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20260914-2';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20260914-3';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <script>(function(){
 /* Autocomprobación de versión. El rompe-caché de arriba compara el parámetro ?v=
    contra la V del HTML que ya se está ejecutando: si el navegador sirvió una copia
@@ -3878,13 +3878,17 @@ function _esProductoDeOferta(p) {
   return _ofertaIdsSet().has(String(p && p.id));
 }
 
-// Ids que se agregaron a la oferta desde la última visita de esta clienta. Se
-// declara aquí arriba (y no junto a su lógica, más abajo) porque catProductHTML
-// lo consulta y un `let` posterior lo dejaría en zona muerta temporal.
-let _ofertaNuevosIds = new Set();
+// Una pieza se anuncia como novedad durante una semana desde que entró a
+// Temporada. El sello lo pone el panel admin al moverla; editarla después no
+// reinicia la cuenta.
+const TEMPORADA_NUEVO_MS = 7 * 24 * 60 * 60 * 1000;
 
 function _esProductoNuevoEnOferta(p) {
-  return _ofertaNuevosIds.has(String(p && p.id));
+  if (!p || p.category !== 'temporada') return false;
+  const desde = Number(p.temporadaDesde) || 0;
+  if (!desde) return false;
+  const edad = Date.now() - desde;
+  return edad >= 0 && edad < TEMPORADA_NUEVO_MS;
 }
 
 // ─── SVG JEWELRY ICONS ───────────────────────────────────────────────
@@ -4224,6 +4228,7 @@ async function fetchProductsFromFirebase() {
       badge:         p.badge          || null,
       photo:         p.photo_data     || null,
       sold_out:      p.sold_out === true,
+      temporadaDesde: Number(p.temporada_desde) || 0,
       active:        p.active !== false,
     };
   });
@@ -4285,6 +4290,7 @@ fetchProductsFromFirebase()
     renderFilters();
     renderGrid();
     loadPhotosLazy();
+    if (_welcomeClosed) checkNuevosEnTemporada();
   })
   .catch(err => {
     console.error('Error cargando productos:', err);
@@ -6540,10 +6546,7 @@ loadContactInfo();
       if (o && o.active) {
         // Solo mostrar el modal si el welcome ya se cerró;
         // si no, cerrarWelcome() lo disparará automáticamente
-        if (_welcomeClosed) {
-          mostrarOfertaModal();
-          checkNuevosProductosOferta(o);
-        }
+        if (_welcomeClosed) mostrarOfertaModal();
       }
     }
     // Refrescar info de catálogo (título, subtítulo, footer)
@@ -6597,10 +6600,8 @@ function cerrarWelcome() {
     _welcomeClosed = true;
     const logoRing = document.getElementById('logoRing');
     if (logoRing) logoRing.style.animation = 'logoSubmerge 2.2s ease-out forwards, logoHeartbeat 7s ease-in-out 2.2s infinite';
-    if (_seasonalOffer && _seasonalOffer.active) {
-      mostrarOfertaModal();
-      checkNuevosProductosOferta(_seasonalOffer);
-    }
+    if (_seasonalOffer && _seasonalOffer.active) mostrarOfertaModal();
+    checkNuevosEnTemporada();
   }, 370);
 }
 
@@ -6674,10 +6675,10 @@ function cerrarOfertaModal(abrirPanel) {
 const OFERTA_SEEN_KEY = 'pm_oferta_seen_ids';
 let _ofertaNuevoToastTimer = null;
 
-// Nota: _ofertaNuevosIds y _esProductoNuevoEnOferta() se declaran en el bloque de
-// variables globales, arriba. Guardan los ids nuevos de ESTA sesión aparte de
-// localStorage, porque los ids se marcan como "vistos" apenas se detectan (para no
-// repetir el aviso) pero el brillo debe seguir visible cuando se abra la esfera.
+// Nota: _esProductoNuevoEnOferta() se declara en el bloque de variables globales,
+// arriba, porque catProductHTML lo consulta. El brillo depende del sello de entrada
+// a Temporada (una semana), no de este registro; lo de aquí abajo solo sirve para
+// no repetirle el aviso de inicio a quien ya lo vio.
 
 function _getOfertaSeenIds() {
   try { return new Set((JSON.parse(localStorage.getItem(OFERTA_SEEN_KEY) || '[]')).map(String)); }
@@ -6688,35 +6689,32 @@ function _setOfertaSeenIds(idsSet) {
   try { localStorage.setItem(OFERTA_SEEN_KEY, JSON.stringify([...idsSet])); } catch(e) {}
 }
 
-function checkNuevosProductosOferta(oferta) {
-  const ids = ((oferta && oferta.productIds) || []).map(String);
-  if (!ids.length) return;
+// Avisa una sola vez por dispositivo de cada pieza que entró a Temporada en la
+// última semana. Pasada esa semana deja de anunciarse aunque nadie la haya visto.
+let _yaAvisadoEstaCarga = false;
 
-  const seen   = _getOfertaSeenIds();
-  const esPrimeraVisita = seen.size === 0;
-  const nuevos = ids.filter(id => !seen.has(id));
+function checkNuevosEnTemporada() {
+  if (_yaAvisadoEstaCarga) return;
+  const nuevos = products.filter(_esProductoNuevoEnOferta);
+  if (!nuevos.length) return;
 
-  // Guardar todos los ids actuales como "vistos" para no repetir el aviso
-  _setOfertaSeenIds(new Set(ids));
+  const seen      = _getOfertaSeenIds();
+  const porAvisar = nuevos.filter(p => !seen.has(String(p.id)));
 
-  // En la primera visita no hay nada con qué comparar: no es "nuevo", es la
-  // primera vez que ve el catálogo.
-  if (esPrimeraVisita || !nuevos.length) return;
+  // Marcar todas las novedades actuales como avisadas en este dispositivo
+  _setOfertaSeenIds(new Set([...seen, ...nuevos.map(p => String(p.id))]));
 
-  // Acumular (no reemplazar): esta función puede correr dos veces en una carga
-  // —con la oferta hidratada del caché y luego con la de la red— y la segunda
-  // pasada no debe borrar los ids que detectó la primera.
-  nuevos.forEach(id => _ofertaNuevosIds.add(id));
-
-  mostrarToastOfertaNuevo(_ofertaNuevosIds.size);
+  if (!porAvisar.length) return;
+  _yaAvisadoEstaCarga = true;
+  mostrarToastOfertaNuevo(porAvisar.length);
 }
 
 function mostrarToastOfertaNuevo(cantidad) {
   const t = document.getElementById('toastOfertaNuevo');
   if (!t) return;
   t.textContent = cantidad === 1
-    ? '✨ ¡Se agregó 1 producto nuevo a la oferta de temporada!'
-    : `✨ ¡Se agregaron ${cantidad} productos nuevos a la oferta de temporada!`;
+    ? '✨ ¡1 pieza nueva esta semana en Ofertas de temporada!'
+    : `✨ ¡${cantidad} piezas nuevas esta semana en Ofertas de temporada!`;
 
   // Pequeño retraso para no competir con la entrada del modal de oferta
   clearTimeout(_ofertaNuevoToastTimer);

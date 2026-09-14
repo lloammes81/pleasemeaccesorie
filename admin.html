@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20260914-2';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20260914-3';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <script>(function(){
 /* Autocomprobación de versión. El rompe-caché de arriba compara el parámetro ?v=
    contra la V del HTML que ya se está ejecutando: si el navegador sirvió una copia
@@ -3623,6 +3623,7 @@ async function loadProducts() {
         subtitle:      p.subtitle      || '',
         category:      p.category      || '',
         category_prev: p.category_prev || '',
+        temporada_desde: Number(p.temporada_desde) || 0,
         categoryLabel: p.category_label || CAT_LABELS[p.category] || p.category,
         price:         Number(p.price) || 0,
         desc:          p.description   || '',
@@ -4787,8 +4788,16 @@ async function saveProduct() {
   // Recordar de qué categoría viene, para poder devolverlo al apagar el interruptor
   if (category === 'temporada') {
     if (_categoriaAntesDeTemporada) data.category_prev = _categoriaAntesDeTemporada;
+    // Sellar cuándo entró a temporada: el catálogo lo usa para anunciarlo como
+    // novedad durante una semana. Si ya estaba dentro, se conserva el sello
+    // original para que editarlo no reinicie la semana.
+    const _yaEstaba = products.find(p => p.id === editingId);
+    data.temporada_desde = (_yaEstaba && _yaEstaba.category === 'temporada' && _yaEstaba.temporada_desde)
+      ? _yaEstaba.temporada_desde
+      : Date.now();
   } else {
     data.category_prev = '';
+    data.temporada_desde = 0;
   }
   if (finalPhotoUrl) data.photo_data = finalPhotoUrl;
   if (!editingId) data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
