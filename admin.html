@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20260913-4';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20260914-1';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <script>(function(){
 /* Autocomprobación de versión. El rompe-caché de arriba compara el parámetro ?v=
    contra la V del HTML que ya se está ejecutando: si el navegador sirvió una copia
@@ -3272,14 +3272,14 @@ textarea { resize: vertical; min-height: 80px; }
       <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="document.getElementById('f_oferta').click()">
         <span>⭐ Oferta de temporada</span>
         <div style="display:flex;align-items:center;gap:10px;" onclick="event.stopPropagation()">
-          <input type="checkbox" id="f_oferta" style="opacity:0;width:0;height:0;border:none;padding:0;" onchange="_updateOfertaToggleUI(this.checked)">
-          <div id="ofTrack" onclick="var c=document.getElementById('f_oferta');c.checked=!c.checked;_updateOfertaToggleUI(c.checked)" style="position:relative;width:44px;height:24px;border-radius:12px;background:var(--bg3);cursor:pointer;transition:background 0.3s;flex-shrink:0;">
+          <input type="checkbox" id="f_oferta" style="opacity:0;width:0;height:0;border:none;padding:0;" onchange="onToggleTemporada(this.checked)">
+          <div id="ofTrack" onclick="var c=document.getElementById('f_oferta');c.checked=!c.checked;onToggleTemporada(c.checked)" style="position:relative;width:44px;height:24px;border-radius:12px;background:var(--bg3);cursor:pointer;transition:background 0.3s;flex-shrink:0;">
             <span id="ofThumb" style="position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform 0.3s;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></span>
           </div>
-          <span id="ofLabel" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:1.5px;color:var(--text-muted);min-width:60px;">Fuera de oferta</span>
+          <span id="ofLabel" style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:1.5px;color:var(--text-muted);min-width:60px;">Fuera de temporada</span>
         </div>
       </label>
-      <p style="font-size:10px;color:var(--text-muted);margin-top:6px;">Al activarlo, este artículo se mueve a <strong>Ofertas de temporada</strong> y deja de mostrarse en su categoría mientras la oferta esté activa.</p>
+      <p style="font-size:10px;color:var(--text-muted);margin-top:6px;">Cambia la <strong>categoría</strong> del artículo a Temporada, así que pasa a la esfera de <strong>Ofertas de temporada</strong> y sale de la suya. Al apagarlo vuelve a su categoría anterior.</p>
     </div>
 
   </div>
@@ -3622,6 +3622,7 @@ async function loadProducts() {
         name:          p.name,
         subtitle:      p.subtitle      || '',
         category:      p.category      || '',
+        category_prev: p.category_prev || '',
         categoryLabel: p.category_label || CAT_LABELS[p.category] || p.category,
         price:         Number(p.price) || 0,
         desc:          p.description   || '',
@@ -4376,7 +4377,12 @@ function openDrawer(id) {
     const _soEl = document.getElementById('f_soldout');
     if (_soEl) { _soEl.checked = !!p.sold_out; _updateSoldOutUI(!!p.sold_out); }
     const _ofEl = document.getElementById('f_oferta');
-    if (_ofEl) { const enOferta = _isProductInOferta(id); _ofEl.checked = enOferta; _updateOfertaToggleUI(enOferta); }
+    if (_ofEl) {
+      const enTemporada = p.category === 'temporada';
+      _categoriaAntesDeTemporada = p.category_prev || '';
+      _ofEl.checked = enTemporada;
+      _updateOfertaToggleUI(enTemporada);
+    }
     if (p.photo) {
       photoData    = p.photo;
       rawPhotoData = p.photo; // permitir reprocesar imagen existente
@@ -4393,6 +4399,7 @@ function openDrawer(id) {
     const _soElN = document.getElementById('f_soldout');
     if (_soElN) { _soElN.checked = false; _updateSoldOutUI(false); }
     const _ofElN = document.getElementById('f_oferta');
+    _categoriaAntesDeTemporada = '';
     if (_ofElN) { _ofElN.checked = false; _updateOfertaToggleUI(false); }
     document.getElementById('f_material').value = 'Oro laminado 14k';
   }
@@ -4777,6 +4784,12 @@ async function saveProduct() {
     sold_out:       !!(document.getElementById('f_soldout')?.checked),
     active:         true,
   };
+  // Recordar de qué categoría viene, para poder devolverlo al apagar el interruptor
+  if (category === 'temporada') {
+    if (_categoriaAntesDeTemporada) data.category_prev = _categoriaAntesDeTemporada;
+  } else {
+    data.category_prev = '';
+  }
   if (finalPhotoUrl) data.photo_data = finalPhotoUrl;
   if (!editingId) data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
 
@@ -4796,7 +4809,7 @@ async function saveProduct() {
   }
 
   // ── Sincronizar con Ofertas de temporada según el interruptor ──────
-  const wantsOferta = !!document.getElementById('f_oferta')?.checked;
+  const wantsOferta = (category === 'temporada');
   await _setProductOfertaMembership(savedId, wantsOferta);
 
   // ── Éxito: limpiar formulario y cerrar ────────────────────────────
@@ -5234,7 +5247,25 @@ function _updateOfertaToggleUI(checked) {
   if (!track) return;
   track.style.background = checked ? 'linear-gradient(135deg,#8B6914,#C9973A)' : 'var(--bg3)';
   if (thumb) thumb.style.transform = checked ? 'translateX(20px)' : 'translateX(0)';
-  if (label) { label.textContent = checked ? 'En oferta' : 'Fuera de oferta'; label.style.color = checked ? 'var(--gold)' : 'var(--text-muted)'; }
+  if (label) { label.textContent = checked ? 'En temporada' : 'Fuera de temporada'; label.style.color = checked ? 'var(--gold)' : 'var(--text-muted)'; }
+}
+
+// El interruptor manda sobre la categoría, y el desplegable se actualiza en el
+// acto para que se vea el cambio antes de guardar. Al apagarlo se devuelve la
+// categoría que el artículo tenía antes de pasar a temporada.
+let _categoriaAntesDeTemporada = '';
+
+function onToggleTemporada(checked) {
+  _updateOfertaToggleUI(checked);
+  const cat = document.getElementById('f_category');
+  if (!cat) return;
+  if (checked) {
+    if (cat.value && cat.value !== 'temporada') _categoriaAntesDeTemporada = cat.value;
+    cat.value = 'temporada';
+  } else if (cat.value === 'temporada') {
+    cat.value = _categoriaAntesDeTemporada || '';
+    if (!cat.value) showToast('Elige a qué categoría vuelve el artículo');
+  }
 }
 
 // Verdad de a quién pertenece la oferta: la config en Firestore (_cfgCache),
