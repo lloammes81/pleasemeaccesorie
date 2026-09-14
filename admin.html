@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20260914-3';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20260914-4';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <script>(function(){
 /* Autocomprobación de versión. El rompe-caché de arriba compara el parámetro ?v=
    contra la V del HTML que ya se está ejecutando: si el navegador sirvió una copia
@@ -3552,9 +3552,26 @@ document.addEventListener('keydown', e => {
   observer.observe(document.getElementById('loginScreen'), { attributes: true, attributeFilter: ['class'] });
 })();
 
+// Cachés de DATOS que el catálogo guarda en el navegador. Se limpian al volver
+// para que lo recién editado en el panel se vea de inmediato y no salga la copia
+// anterior. No se tocan el carrito, el idioma, la posición del sello ni el
+// registro de novedades ya avisadas: eso es de la clienta, no del panel.
+const _CACHES_CATALOGO = ['pm_products_cache', 'pm_seasonal_offers', 'pm_banner',
+                          'pm_contact', 'pm_catalog_info', 'pm_discount'];
+
+function _limpiarCacheCatalogo() {
+  try { _CACHES_CATALOGO.forEach(k => localStorage.removeItem(k)); } catch(e) {}
+}
+
+// URL nueva cada vez, para que el navegador no sirva el HTML que ya tenía guardado
+function _urlCatalogoFresca() {
+  return 'index.html?v=' + (window.APP_VERSION || '') + '&r=' + Date.now();
+}
+
 function doLogout() {
   sessionStorage.removeItem('pm_auth');
-  location.reload();
+  _limpiarCacheCatalogo();
+  location.replace(_urlCatalogoFresca());   // salir del panel = volver al catálogo
 }
 
 async function changePassword() {
@@ -4102,16 +4119,22 @@ async function eliminarPedido(docId) {
 
 let _catalogoWin = null;
 function volverAlCatalogo() {
-  if (_catalogoWin && !_catalogoWin.closed) {
-    _catalogoWin.focus();
+  _limpiarCacheCatalogo();
+  const url = _urlCatalogoFresca();
+
+  // Si el catálogo ya está abierto en otra pestaña, hay que RECARGARLO: esa
+  // pestaña se cargó antes de los cambios, así que enfocarla a secas mostraría
+  // el catálogo viejo.
+  const abierta = (_catalogoWin && !_catalogoWin.closed) ? _catalogoWin
+                : (window.opener && !window.opener.closed) ? window.opener
+                : null;
+  if (abierta) {
+    _catalogoWin = abierta;
+    try { abierta.location.replace(url); } catch(e) {}
+    abierta.focus();
     return;
   }
-  if (window.opener && !window.opener.closed) {
-    window.opener.focus();
-    _catalogoWin = window.opener;
-    return;
-  }
-  _catalogoWin = window.open('index.html', 'pleaseme_catalogo');
+  _catalogoWin = window.open(url, 'pleaseme_catalogo');
 }
 
 // ─── RENDER TABLE ─────────────────────────────────────────────────────
