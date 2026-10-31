@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261030-9';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261030-11';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <script>(function(){
 /* Autocomprobación de versión. El rompe-caché de arriba compara el parámetro ?v=
    contra la V del HTML que ya se está ejecutando: si el navegador sirvió una copia
@@ -1490,12 +1490,9 @@ location.replace(location.pathname+'?v='+m[1]);})
   .hist-item-price{ font-family:'Cormorant Garamond',serif; font-size:13px; color:var(--gold-mid); white-space:nowrap; }
   .hist-quien { font-size: 11px; opacity: .75; margin: 0 0 12px; }
   .hist-quien b { color: #e8c56e; font-weight: 600; }
-  .hist-consulta { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; margin-bottom: 14px; padding: 10px; border: 1px solid rgba(201,151,58,0.25); background: rgba(201,151,58,0.04); }
-  .hist-consulta p { grid-column: 1 / -1; margin: 0 0 2px; font-size: 10.5px; letter-spacing: .6px; text-transform: uppercase; color: #e8c56e; }
-  .hist-consulta input { min-width: 0; background: rgba(255,255,255,0.04); border: 1px solid rgba(201,151,58,0.3); color: var(--text-cream); padding: 7px 8px; font: inherit; font-size: 12px; outline: none; }
-  .hist-consulta button { background: linear-gradient(135deg, #b48226, #e3c063); border: none; color: #171106; font-weight: 600; font-size: 11px; padding: 0 12px; cursor: pointer; }
-  .hist-consulta .hist-consulta-aviso { text-transform: none; letter-spacing: 0; color: #ff9a9a; margin-top: 4px; }
-  @media (max-width: 420px) { .hist-consulta { grid-template-columns: 1fr; } .hist-consulta button { padding: 8px; } }
+  .hist-consulta { display: flex; flex-direction: column; align-items: center; gap: 12px; margin: 18px 0; padding: 18px 14px; text-align: center; border: 1px solid rgba(201,151,58,0.25); background: rgba(201,151,58,0.04); }
+  .hist-consulta p { margin: 0; font-size: 12px; line-height: 1.5; color: #e8c56e; }
+  .hist-consulta button { background: linear-gradient(135deg, #b48226, #e3c063); border: none; color: #171106; font-weight: 600; font-size: 12px; padding: 9px 22px; cursor: pointer; }
   .hist-estado { margin: 8px 0 10px; padding: 9px 10px; border: 1px solid rgba(201,151,58,0.2); background: rgba(201,151,58,0.05); }
   .hist-estado-cargando { font-size: 10.5px; opacity: .55; }
   .hist-estado-txt { font-size: 12px; font-weight: 600; color: #e8c56e; margin-bottom: 7px; }
@@ -3773,7 +3770,7 @@ location.replace(location.pathname+'?v='+m[1]);})
     <p class="reg-sub" id="regSub" data-i18n="regSub">Regístrate una sola vez y tus pedidos llegarán con tus datos de envío.</p>
     <div class="reg-grid">
       <label class="reg-full"><span><span data-i18n="envNombre">Nombre completo</span> *</span><input id="envNombre" autocomplete="name"></label>
-      <label><span><span data-i18n="envTel">Teléfono / WhatsApp</span> *</span><input id="envTel" type="tel" autocomplete="tel" placeholder="+1 (809) 000-0000"></label>
+      <label><span><span data-i18n="envTel">Teléfono / WhatsApp</span> *</span><input id="envTel" type="tel" inputmode="tel" autocomplete="tel" placeholder="809 555 1234" oninput="this.value = formatoTel(this.value)"></label>
       <label><span data-i18n="envEmail">Correo electrónico</span><input id="envEmail" type="email" autocomplete="email"></label>
       <label class="reg-full"><span data-i18n="envPais">País</span><select id="envPais" onchange="envAplicarPais()"><option value="USA">USA</option><option value="RD">República Dominicana</option></select></label>
       <label class="reg-full"><span data-i18n="envDir">Dirección (calle y número)</span><input id="envDir" autocomplete="street-address"></label>
@@ -5162,6 +5159,13 @@ const ENVIO_CAMPOS = { nombre:'envNombre', telefono:'envTel', email:'envEmail', 
 let _regDespues = null;          // acción pendiente (enviar el pedido) tras registrarse
 let _regOmitido = false;         // eligió "continuar sin registrarme" en esta visita
 
+// 8095551234 → "809 555 1234" · 18095551234 → "+1 809 555 1234"
+// (ningún código de área empieza por 1, así que un 1 al inicio es el código del país)
+function formatoTel(v) {
+  let d = String(v || '').replace(/\D/g, '').slice(0, 13), pre = '';
+  if (d[0] === '1') { pre = '+1 '; d = d.slice(1); }
+  return pre + [d.slice(0, 3), d.slice(3, 6), d.slice(6, 10), d.slice(10)].filter(Boolean).join(' ');
+}
 function clienteRegistrado() {
   try { const c = JSON.parse(localStorage.getItem('pm_cliente') || 'null'); return c && c.nombre && c.telefono ? c : null; }
   catch(e) { return null; }
@@ -5252,11 +5256,10 @@ function personalizarWelcome() {
   if (!box) return;
   if (t && !t.dataset.orig) t.dataset.orig = t.innerHTML;
   if (!c) { box.hidden = true; if (t) t.innerHTML = t.dataset.orig; return; }
-  const es = _lang !== 'en', primer = c.nombre.trim().split(/\s+/)[0];
-  const esc = t => String(t || '').replace(/[&<>"]/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[ch]));
+  const es = _lang !== 'en';
   const est = estrellasHtml(c);
   box.innerHTML = `<div class="cli-avatar">${avatarHtml(c)}</div>
-    <div class="wp-hola">${es ? '¡Hola' : 'Hello'}, <em>${esc(primer)}</em>!</div>
+    <div class="wp-hola">${es ? '¡Hola de <em>nuevo</em>!' : 'Welcome <em>back</em>!'}</div>
     ${est ? `<div class="wp-estrellas">${est}</div>` : ''}`;
   box.hidden = false;
   if (t) t.innerHTML = es ? 'Qué alegría verte de nuevo en tu<br><em>catálogo exclusivo</em>' : 'So happy to see you again at your<br><em>exclusive catalog</em>';
@@ -5324,6 +5327,7 @@ function abrirRegistro(despues) {
     const el = document.getElementById(id);
     el.value = c[k] || (k === 'pais' ? 'USA' : '');
   });
+  document.getElementById('envTel').value = formatoTel(c.telefono);
   envAplicarPais();
   _regFotoCanvas = null;
   document.getElementById('regFotoVista').innerHTML = avatarHtml(c);
@@ -5334,7 +5338,8 @@ function abrirRegistro(despues) {
   document.getElementById('regGuardar').textContent = reg ? (es ? 'Guardar cambios' : 'Save changes') : _t[_lang].regGuardar;
   document.getElementById('regSinCuenta').style.display = _regDespues && !reg ? '' : 'none';
   document.getElementById('regSalir').style.display = reg ? '' : 'none';
-  document.getElementById('regPedidos').style.display = _regDespues ? 'none' : '';
+  document.getElementById('regPedidos').style.display = reg && !_regDespues ? '' : 'none';
+  document.getElementById('regSub').style.display = reg ? 'none' : '';
   const msg = document.getElementById('regMsg');
   msg.className = 'reg-msg';
   msg.textContent = _regDespues && !reg ? (es ? 'Para enviar tu pedido, regístrate con tus datos de envío.' : 'To send your order, sign up with your shipping details.') : '';
@@ -5412,8 +5417,8 @@ function pintarRegistro() {
       icono.style.display = c && c.foto ? 'none' : '';
       if (c && c.foto) foto.src = c.foto;
     }
-    btn.title = c ? `${c.nombre}${estrellasDe(c.total_comprado) ? ' · ' + '★'.repeat(estrellasDe(c.total_comprado)) : ''}` : 'Mi cuenta';
-    if (c) { txt.removeAttribute('data-i18n'); txt.textContent = c.nombre.split(' ')[0]; }
+    btn.title = es ? 'Mi cuenta' : 'My account';
+    if (c) { txt.removeAttribute('data-i18n'); txt.textContent = es ? 'Mi cuenta' : 'My account'; }   // el nombre solo se muestra en el carrito
     else { txt.setAttribute('data-i18n', 'regBoton'); txt.textContent = _t[_lang].regBoton; }
   }
   const box = document.getElementById('cartEnvio');
@@ -5431,7 +5436,7 @@ function pintarRegistro() {
         <span class="env-datos">
           <b>📦 ${es ? 'Enviar a' : 'Ship to'}</b>
           <span class="env-nombre">${esc(c.nombre)}${est ? ` <span class="env-estrellas">${'★'.repeat(est)}</span>` : ''}</span>
-          <span class="env-linea">${esc(c.telefono)}</span>
+          <span class="env-linea">${esc(formatoTel(c.telefono))}</span>
           <span class="env-linea">${esc([c.direccion, lugar].filter(Boolean).join(', ') || (c.pais === 'RD' ? 'República Dominicana' : 'USA'))}</span>
         </span>
         <span class="env-flecha" aria-hidden="true">▾</span>
@@ -6799,15 +6804,23 @@ function showCartView(view) {
 async function _renderHistorialEnCarrito() {
   const body = document.getElementById('cartHistoryBody');
   if (!body) return;
+  const quien = consultaHistorial();
+  if (!quien) {
+    const en = _lang === 'en';
+    body.innerHTML = `<div class="hist-consulta">
+      <p>${en ? 'Sign up to see your purchase history and the status of your orders.' : 'Regístrate para ver tu historial de compras y el estado de tus pedidos.'}</p>
+      <button onclick="abrirRegistro()">👤 ${en ? 'Sign up' : 'Regístrate'}</button>
+    </div>`;
+    return;
+  }
   body.innerHTML = `<p class="hist-empty">${_t[_lang].historyLoading || 'Cargando...'}</p>`;
   try {
     // Pedidos de este dispositivo + los que están en Firebase a su nombre y teléfono
-    const quien = consultaHistorial();
     const [locales, remotos] = await Promise.all([_histDB.obtenerTodos(), pedidosPorNombreTelefono(quien)]);
     const porNumero = new Map(locales.map(p => [p.numero, p]));
     (remotos || []).forEach(r => porNumero.set(r.numero, { ...(porNumero.get(r.numero) || {}), ...r }));
     const pedidos = [...porNumero.values()].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-    const cabecera = consultaHistorialHtml(quien, remotos);
+    const cabecera = consultaHistorialHtml(quien);
     if (!pedidos.length) {
       body.innerHTML = cabecera + `<p class="hist-empty">${_t[_lang].historyEmpty}<br><br>${_t[_lang].historyEmptySub}</p>`;
       return;
@@ -6843,13 +6856,12 @@ async function _renderHistorialEnCarrito() {
 }
 
 // ─── HISTORIAL POR NOMBRE Y TELÉFONO ───
-// Registrada: se usan sus datos. Si no, puede consultar escribiendo nombre y teléfono.
+// Solo para clientes registrados: se usan su nombre y teléfono.
 // Se buscan los pedidos de ese teléfono y solo se muestran si el nombre coincide.
 const _normNombre = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim().replace(/\s+/g, ' ');
 function consultaHistorial() {
   const c = clienteRegistrado();
-  if (c) return { nombre: c.nombre, telefono: c.telefono, registrada: true };
-  try { return JSON.parse(sessionStorage.getItem('pm_consulta') || 'null'); } catch(e) { return null; }
+  return c ? { nombre: c.nombre, telefono: c.telefono, registrada: true } : null;
 }
 async function pedidosPorNombreTelefono(q) {
   if (!q || !_db) return null;
@@ -6873,31 +6885,9 @@ async function pedidosPorNombreTelefono(q) {
     return null;
   }
 }
-function consultaHistorialHtml(q, remotos) {
-  const en = _lang === 'en';
+function consultaHistorialHtml(q) {
   const esc = t => String(t || '').replace(/[&<>"]/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[ch]));
-  if (q && q.registrada) {
-    return `<p class="hist-quien">${en ? 'Orders for' : 'Pedidos de'} <b>${esc(q.nombre)}</b> · ${esc(q.telefono)}</p>`;
-  }
-  const aviso = q && remotos && !remotos.length
-    ? `<p class="hist-consulta-aviso">${en ? 'No orders found with that name and phone.' : 'No encontramos pedidos con ese nombre y teléfono.'}</p>` : '';
-  return `<div class="hist-consulta">
-    <p>${en ? 'Look up your orders with your name and phone' : 'Consulta tus pedidos con tu nombre y teléfono'}</p>
-    <input id="histNombre" placeholder="${en ? 'Name' : 'Nombre'}" value="${esc(q && q.nombre)}" autocomplete="name">
-    <input id="histTel" type="tel" placeholder="${en ? 'Phone' : 'Teléfono'}" value="${esc(q && q.telefono)}" autocomplete="tel">
-    <button onclick="buscarHistorial()">${en ? 'Search' : 'Buscar'}</button>
-    ${aviso}
-  </div>`;
-}
-function buscarHistorial() {
-  const nombre = document.getElementById('histNombre').value.trim();
-  const telefono = document.getElementById('histTel').value.trim();
-  if (!nombre || telefono.replace(/\D/g, '').length < 10) {
-    alert(_lang === 'en' ? 'Enter your name and phone number (with area code).' : 'Escribe tu nombre y tu teléfono (con código de área).');
-    return;
-  }
-  try { sessionStorage.setItem('pm_consulta', JSON.stringify({ nombre, telefono })); } catch(e) {}
-  _renderHistorialEnCarrito();
+  return `<p class="hist-quien">${_lang === 'en' ? 'Orders for' : 'Pedidos de'} <b>${esc(q.nombre)}</b> · ${esc(formatoTel(q.telefono))}</p>`;
 }
 
 // ─── ESTADO DEL PEDIDO ───
@@ -6931,7 +6921,10 @@ async function pintarEstadosHistorial(body) {
   }));
 }
 
-function abrirHistorial() { openCart(); showCartView('history'); }
+function abrirHistorial() {
+  if (!clienteRegistrado()) return abrirRegistro();
+  openCart(); showCartView('history');
+}
 
 // ─── CART REMINDER ───────────────────────────────────────────────────────────
 let _cartReminderTimer = null;
