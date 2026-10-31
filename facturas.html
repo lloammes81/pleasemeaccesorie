@@ -2254,6 +2254,8 @@ function aplicarDireccionPais(){
   const l = g('lblDireccion'); if(l) l.textContent = rd ? 'Dirección (una sola línea)' : 'Dirección (calle y número)';
   g('f_address').placeholder = rd ? 'Calle, número, sector y ciudad' : 'Escribe para buscar dirección...';
 }
+// Al cambiar el país en el formulario: moneda, símbolos y dirección de ese país
+function cambiarPais(){ aplicarMonedaForm(); }
 function elegirCiudadForm(){
   abrirCiudades({ pais:'USA', alElegir:(n,e)=>{ g('f_city').value = n; if(e) g('f_state').value = e; } });
 }
