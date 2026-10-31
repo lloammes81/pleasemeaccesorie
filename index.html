@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261031-1';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261031-2';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <script>(function(){
 /* Autocomprobación de versión. El rompe-caché de arriba compara el parámetro ?v=
    contra la V del HTML que ya se está ejecutando: si el navegador sirvió una copia
@@ -2015,13 +2015,6 @@ location.replace(location.pathname+'?v='+m[1]);})
   .cart-envio .env-menu button { text-align: left; background: rgba(201,151,58,0.08); border: 1px solid rgba(201,151,58,0.35); color: #e8c56e; cursor: pointer;
     font-family: 'Montserrat', sans-serif; font-size: 11px; letter-spacing: .8px; text-transform: uppercase; padding: 9px 10px; transition: background .2s; }
   .cart-envio .env-menu button:hover { background: rgba(201,151,58,0.18); }
-  #regBtn { position: absolute; top: 50%; left: 14px; transform: translateY(-50%); z-index: 5; display: flex; align-items: center; gap: 6px;
-    background: rgba(10,8,4,0.32); border: 1px solid rgba(201,151,58,0.35); color: var(--text-cream, #f3e7c9); cursor: pointer;
-    font-family: 'Montserrat', sans-serif; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; padding: 5px 10px; border-radius: 99px;
-    max-width: 38vw; overflow: hidden; white-space: nowrap; transition: background .2s, border-color .2s; }
-  #regBtn span { overflow: hidden; text-overflow: ellipsis; }
-  #regBtn:hover { background: rgba(201,151,58,0.18); border-color: rgba(201,151,58,0.7); }
-  #regBtn.registrado { color: #e8c56e; border-color: rgba(232,197,110,0.6); }
   #regModal { display: none; position: fixed; inset: 0; z-index: 10050; background: rgba(5,4,2,0.78); backdrop-filter: blur(4px);
     align-items: center; justify-content: center; padding: 16px; }
   #regModal.abierto { display: flex; }
@@ -2057,7 +2050,6 @@ location.replace(location.pathname+'?v='+m[1]);})
   .reg-estrellas, .wp-estrellas { color: #e8c56e; font-size: 15px; letter-spacing: 3px; margin: -2px 0 8px; text-shadow: 0 0 10px rgba(232,197,110,.4); }
   .reg-estrellas small, .wp-estrellas small { display: block; letter-spacing: 1.5px; font-size: 9.5px; text-transform: uppercase; opacity: .75; margin-top: 2px; font-family: 'Montserrat', sans-serif; }
   .estrella-off { opacity: .22; }
-  #regBtnFoto { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; margin: -3px 0 -3px -5px; border: 1px solid rgba(232,197,110,.7); }
   #wpSaludo { display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 2px 0 8px; }
   #wpSaludo[hidden] { display: none; }
   #wpSaludo .cli-avatar { width: 64px; height: 64px; font-size: 26px; }
@@ -3585,11 +3577,6 @@ location.replace(location.pathname+'?v='+m[1]);})
 <header>
   <div class="header-eyebrow-row">
     <p class="header-eyebrow" id="headerEyebrow" data-i18n="catalog">Catálogo</p>
-    <button id="regBtn" onclick="abrirRegistro()" title="Mi cuenta">
-      <img id="regBtnFoto" alt="" hidden>
-      <svg id="regBtnIcono" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
-      <span id="regBtnTxt" data-i18n="regBoton">Registrarse</span>
-    </button>
     <div id="langToggle">
       <button class="lang-btn active" id="btnES" onclick="setLang('es')">ES</button>
       <button class="lang-btn" id="btnEN" onclick="setLang('en')">ING</button>
@@ -5406,23 +5393,9 @@ async function guardarRegistro() {
   setTimeout(() => { cerrarRegistro(); if (fn) fn(); }, fn ? 400 : 900);
 }
 
-// Botón del encabezado y resumen de envío en el carrito
+// Registro: solo en el carrito (abajo, junto al total); el catálogo no tiene botón de cuenta
 function pintarRegistro() {
   const c = clienteRegistrado(), es = _lang !== 'en';
-  const btn = document.getElementById('regBtn'), txt = document.getElementById('regBtnTxt');
-  if (btn && txt) {
-    btn.classList.toggle('registrado', !!c);
-    btn.style.display = c ? 'none' : '';   // ya registrada: sin botón «Mi cuenta» en el catálogo (sus datos se editan desde el carrito)
-    const foto = document.getElementById('regBtnFoto'), icono = document.getElementById('regBtnIcono');
-    if (foto && icono) {
-      foto.hidden = !(c && c.foto);
-      icono.style.display = c && c.foto ? 'none' : '';
-      if (c && c.foto) foto.src = c.foto;
-    }
-    btn.title = es ? 'Mi cuenta' : 'My account';
-    if (c) { txt.removeAttribute('data-i18n'); txt.textContent = es ? 'Mi cuenta' : 'My account'; }   // el nombre solo se muestra en el carrito
-    else { txt.setAttribute('data-i18n', 'regBoton'); txt.textContent = _t[_lang].regBoton; }
-  }
   const box = document.getElementById('cartEnvio');
   if (!box) return;
   const esc = t => String(t || '').replace(/[&<>"]/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[ch]));
