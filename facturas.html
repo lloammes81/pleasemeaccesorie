@@ -1,7 +1,6 @@
 <!doctype html>
 <html lang="es">
 <head>
-<script src="bd-local.js?v=2026-10-30b"></script>
 <script>
 // Dentro del Admin el menú lo pone el Admin (ventana Facturas): se oculta el propio.
 if(window.self !== window.top) document.documentElement.classList.add('pm-embebido');
@@ -912,7 +911,7 @@ document.addEventListener('keydown', e => { if(e.key === 'Escape' && document.bo
 <!-- ── ESTADO DE LA BASE DE DATOS LOCAL ── -->
 <div id="sbStatusBar" style="display:none;background:rgba(255,200,0,.1);border-bottom:1px solid rgba(255,200,0,.3);padding:8px 24px;font-size:12px;color:#ffc800;display:flex;align-items:center;gap:10px">
   <span>⚠</span>
-  <span>Verificando la base de datos local…</span>
+  <span>Verificando la conexión con Supabase…</span>
 </div>
 
 <!-- ── KPI BAR ── -->
@@ -1310,9 +1309,9 @@ document.addEventListener('keydown', e => { if(e.key === 'Escape' && document.bo
 //  SUPABASE CONFIG — reemplaza con tus credenciales
 // ══════════════════════════════════════════════════════
 // ── REST API directa (igual que admin.html) ──
-// Base de datos LOCAL dentro del navegador (bd-local.js) — reemplaza a Supabase
-const SB_URL = window.PM_DB_URL;
-const SB_KEY = 'local';
+// Conexión directa a Supabase (Project Settings → API: Project URL y anon public key)
+const SB_URL = 'https://sqcggascnbcnfkymqcql.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxY2dnYXNjbmJjbmZreW1xY3FsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2ODQ2NzIsImV4cCI6MjA4NzI2MDY3Mn0.q0C_q3gOZZzcr6dWPrIhWS63gst5OBYIg9FDxThaKt4';
 const SB_H   = {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
 const SB = true; // Siempre disponible via REST
 
@@ -1378,13 +1377,13 @@ async function sbTest(){
     const r = await fetch(SB_URL+'/rest/v1/facturas?select=id&limit=1', {headers:SB_H});
     if(r.status === 401){
       sb.style.cssText='display:flex;background:rgba(255,85,85,.15);border-bottom:1px solid rgba(255,85,85,.4);padding:10px 24px;font-size:12px;color:#ff5555;align-items:center;gap:10px';
-      sb.innerHTML='<span>🔑</span><span>Error 401 — acceso denegado por la base de datos local</span>';
+      sb.innerHTML='<span>🔑</span><span>Error 401 — Supabase rechazó la clave (revisa SB_KEY y las políticas RLS)</span>';
       console.error('[SB] 401 Unauthorized — verifica SB_KEY y RLS policies en Supabase');
       return;
     }
     if(r.status === 404){
       sb.style.cssText='display:flex;background:rgba(255,85,85,.15);border-bottom:1px solid rgba(255,85,85,.4);padding:10px 24px;font-size:12px;color:#ff5555;align-items:center;gap:10px';
-      sb.innerHTML='<span>🗄️</span><span>Error 404 — base de datos local no disponible</span>';
+      sb.innerHTML='<span>🗄️</span><span>Error 404 — no existe la tabla «facturas» en Supabase (o SB_URL no es correcta)</span>';
       return;
     }
     if(!r.ok){
@@ -1394,15 +1393,12 @@ async function sbTest(){
       return;
     }
     sb.style.cssText='display:flex;background:rgba(47,227,181,.08);border-bottom:1px solid rgba(47,227,181,.2);padding:8px 24px;font-size:12px;color:#2fe3b5;align-items:center;gap:10px';
-    const nube = window.pmEstadoNube ? pmEstadoNube() : null;
-    sb.innerHTML = nube && nube.estado === 'conectada' ? '<span>☁</span><span>Conectado a Supabase</span>'
-      : '<span>⚠</span><span>Sin conexión a Supabase — se guarda en este equipo y se sube solo cuando vuelva internet</span>';
-    if(nube && nube.estado !== 'conectada') sb.style.color = '#e8c56e';
+    sb.innerHTML = '<span>☁</span><span>Conectado a Supabase</span>';
     setTimeout(()=>{ sb.style.display='none'; }, 3000);
     console.log('[SB] Conexión OK');
   }catch(e){
     sb.style.cssText='display:flex;background:rgba(255,85,85,.15);border-bottom:1px solid rgba(255,85,85,.4);padding:10px 24px;font-size:12px;color:#ff5555;align-items:center;gap:10px';
-    sb.innerHTML='<span>⚠</span><span>No se pudo abrir la base de datos local de este navegador — '+e.message+'</span>';
+    sb.innerHTML='<span>⚠</span><span>Sin conexión a Supabase — '+e.message+'</span>';
     console.error('[SB] Test falló:', e.message);
   }
 }
@@ -1826,7 +1822,7 @@ async function saveCompany(){
       if(ins && ins.length) co.id = ins[0].id;
     }
     localStorage.setItem(LS_COMPANY, JSON.stringify(co));
-    toast('✅ Configuración guardada en la base de datos local','ok');
+    toast('✅ Configuración guardada en Supabase','ok');
   }catch(e){
     console.error('[SB] saveCompany:', e.message);
     toast('⚠ Guardado solo localmente: '+e.message,'warn');
@@ -3821,11 +3817,25 @@ async function quickPDF(id){
 //  EXPORT CSV
 // ══════════════════════════════════════════════════════
 async function exportCSV(){
-  // Registro COMPLETO (todas las columnas y los artículos) — ver pmExportarFacturas en bd-local.js
+  // Registro COMPLETO (todas las columnas y los artículos)
   try{
     const r = await pmExportarFacturas();
     toast(r.total+' facturas exportadas a '+(r.archivo==='xlsx'?'Excel':'CSV'),'ok');
   }catch(e){ toast(e.message,'warn'); }
+}
+
+// Todas las facturas de Supabase a un CSV (los artículos van como JSON en su columna)
+async function pmExportarFacturas(){
+  const filas = await sbGET('facturas?select=*&order=created_at.desc');
+  if(!filas) throw new Error('No se pudieron leer las facturas de Supabase');
+  const cols = [...new Set(filas.flatMap(f => Object.keys(f)))];
+  const celda = v => { const t = v == null ? '' : (typeof v === 'object' ? JSON.stringify(v) : String(v)); return /[",\n;]/.test(t) ? '"'+t.replace(/"/g,'""')+'"' : t; };
+  const csv = '\ufeff' + [cols.join(','), ...filas.map(f => cols.map(c => celda(f[c])).join(','))].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+  a.download = 'facturas-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
+  return { total: filas.length, archivo: 'csv' };
 }
 
 // ══════════════════════════════════════════════════════
