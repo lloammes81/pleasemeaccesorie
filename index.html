@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261030-12';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261031-1';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <script>(function(){
 /* Autocomprobación de versión. El rompe-caché de arriba compara el parámetro ?v=
    contra la V del HTML que ya se está ejecutando: si el navegador sirvió una copia
@@ -2933,7 +2933,8 @@ location.replace(location.pathname+'?v='+m[1]);})
     gap: 0;
     margin-bottom: 0;
     transition: transform 0.32s cubic-bezier(.2,.8,.4,1);
-    animation: ofertaGlow 2.5s ease-in-out infinite;
+    /* fadeUp también: si solo tuviera ofertaGlow, pisaría la entrada de .card-enter y se quedaría invisible */
+    animation: fadeUp 0.5s ease forwards, ofertaGlow 2.5s ease-in-out 0.5s infinite;
   }
 
   @keyframes ofertaGlow {
