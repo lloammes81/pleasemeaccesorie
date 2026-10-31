@@ -911,7 +911,7 @@ document.addEventListener('keydown', e => { if(e.key === 'Escape' && document.bo
 <!-- ── ESTADO DE LA BASE DE DATOS LOCAL ── -->
 <div id="sbStatusBar" style="display:none;background:rgba(255,200,0,.1);border-bottom:1px solid rgba(255,200,0,.3);padding:8px 24px;font-size:12px;color:#ffc800;display:flex;align-items:center;gap:10px">
   <span>⚠</span>
-  <span>Verificando la base de datos local…</span>
+  <span>Verificando la conexión con Supabase…</span>
 </div>
 
 <!-- ── KPI BAR ── -->
@@ -1310,8 +1310,8 @@ document.addEventListener('keydown', e => { if(e.key === 'Escape' && document.bo
 // ══════════════════════════════════════════════════════
 // ── REST API directa (igual que admin.html) ──
 // Conexión directa a Supabase (Project Settings → API: Project URL y anon public key)
-const SB_URL = '__SB_URL__';
-const SB_KEY = '__SB_KEY__';
+const SB_URL = 'https://sqcggascnbcnfkymqcql.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxY2dnYXNjbmJjbmZreW1xY3FsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2ODQ2NzIsImV4cCI6MjA4NzI2MDY3Mn0.q0C_q3gOZZzcr6dWPrIhWS63gst5OBYIg9FDxThaKt4';
 const SB_H   = {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
 const SB = true; // Siempre disponible via REST
 
@@ -1822,7 +1822,7 @@ async function saveCompany(){
       if(ins && ins.length) co.id = ins[0].id;
     }
     localStorage.setItem(LS_COMPANY, JSON.stringify(co));
-    toast('✅ Configuración guardada en la base de datos local','ok');
+    toast('✅ Configuración guardada en Supabase','ok');
   }catch(e){
     console.error('[SB] saveCompany:', e.message);
     toast('⚠ Guardado solo localmente: '+e.message,'warn');
