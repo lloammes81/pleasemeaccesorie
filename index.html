@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261102-5';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261102-6';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <script>(function(){
 /* Autocomprobación de versión. El rompe-caché de arriba compara el parámetro ?v=
    contra la V del HTML que ya se está ejecutando: si el navegador sirvió una copia
@@ -4615,7 +4615,7 @@ function updateCartUI() {
   } else {
     badge.classList.add('hidden');
   }
-  // Temporada y ofertas especiales: precio fijo, sin descuento mayorista
+  // Temporada, ofertas especiales y Lentes: precio fijo, sin descuento mayorista
   const { regular: regularTotal, fixed: ofertaTotal } = cartSplit();
   const rawTotal = regularTotal + ofertaTotal;
 
@@ -6666,7 +6666,8 @@ function cartSplit() {
     const p = products.find(x => String(x.id) === String(item.id));
     if (!p) return;
     const monto = (Math.round(parseFloat(String(p.price))) || 0) * item.qty;
-    if (p.category === 'temporada' || ofertaIds.has(String(item.id))) fixed += monto;
+    // Precio fijo, sin descuento mayorista: Temporada, ofertas especiales y Lentes
+    if (p.category === 'temporada' || p.category === 'lentes' || ofertaIds.has(String(item.id))) fixed += monto;
     else regular += monto;
   });
   return { regular, fixed };
