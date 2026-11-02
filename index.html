@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261102-4';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261102-5';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <script>(function(){
 /* Autocomprobación de versión. El rompe-caché de arriba compara el parámetro ?v=
    contra la V del HTML que ya se está ejecutando: si el navegador sirvió una copia
@@ -2857,7 +2857,7 @@ location.replace(location.pathname+'?v='+m[1]);})
     pointer-events: none;
   }
 
-  /* Ofertas de temporada con piezas nuevas (últimas 24 h): la esfera brilla más */
+  /* Esfera con piezas nuevas que esta clienta aún no ha visto: brilla más */
   .cat-card--novedad .cat-card-bubble {
     border-color: rgba(240,216,128,0.9);
     animation: esferaNovedad 2.4s ease-in-out infinite;
@@ -4101,8 +4101,8 @@ function _esProductoNuevoEnOferta(p) {
   return edad >= 0 && edad < TEMPORADA_NUEVO_MS;
 }
 
-// Piezas que entraron a Temporada en las últimas 24 h: hacen brillar más la esfera
-// y se anuncian con una notificación del teléfono que caduca a las 24 h.
+// Piezas que entraron a Temporada en las últimas 24 h: se anuncian
+// con una notificación del teléfono que caduca a las 24 h.
 const TEMPORADA_NOVEDAD_MS = 24 * 60 * 60 * 1000;
 function _novedadesTemporada24h() {
   const ahora = Date.now();
@@ -4906,6 +4906,7 @@ function setSortOrder(order) {
 async function openCategoryPanel(category) {
   if (document.getElementById('catPanel').classList.contains('open')) return;
   currentCategory = category;
+  marcarEsferaVista(category);
 
   // Ordenar por precio de menor a mayor al abrir un nuevo panel
   _currentSort = 'asc';
@@ -6180,24 +6181,63 @@ function getCategoryIllustration(key) {
   return svgs[key] || fallback;
 }
 
-// ─── CATEGORY CARD HTML ───────────────────────────────────────────────
-function categoryCardHTML(cat, i) {
-  let catProducts;
-  if (cat.key === 'temporada') {
+// ─── NOVEDADES EN LAS ESFERAS ─────────────────────────────────────────
+// Cada dispositivo recuerda qué piezas ya vio en cada esfera. Las que el admin
+// agregue después se anuncian en su esfera («N nuevas» y brillo) hasta que la
+// clienta abre esa categoría; entonces se marcan como vistas y no vuelve a salir.
+// La primera visita solo toma nota de lo que hay, sin anunciar nada.
+const ESFERAS_VISTAS_KEY = 'pm_esferas_vistas';
+function _productosDeCategoria(key) {
+  if (key === 'temporada') {
     const porCategoria = products.filter(p => p.category === 'temporada');
     const porOferta    = products.filter(p => _esProductoDeOferta(p) && p.category !== 'temporada');
-    catProducts = [...porOferta, ...porCategoria];
-  } else {
-    catProducts = products.filter(p => p.category === cat.key && !_esProductoDeOferta(p));
+    return [...porOferta, ...porCategoria];
   }
+  return products.filter(p => p.category === key && !_esProductoDeOferta(p));
+}
+function _vistasEsferas() {
+  try { const v = JSON.parse(localStorage.getItem(ESFERAS_VISTAS_KEY) || 'null'); return v && Array.isArray(v.ids) ? new Set(v.ids) : null; }
+  catch(e) { return null; }
+}
+function _guardarVistasEsferas(set) {
+  try { localStorage.setItem(ESFERAS_VISTAS_KEY, JSON.stringify({ ids: [...set] })); } catch(e) {}
+}
+function _inicializarVistasEsferas() {
+  if (!products.length || _vistasEsferas()) return;
+  const v = new Set();
+  categories.forEach(c => _productosDeCategoria(c.key).forEach(p => v.add(c.key + '|' + p.id)));
+  _guardarVistasEsferas(v);
+}
+function _nuevosEnEsfera(key) {
+  const v = _vistasEsferas();
+  if (!v) return [];
+  return _productosDeCategoria(key).filter(p => !v.has(key + '|' + p.id));
+}
+function marcarEsferaVista(key) {
+  const v = _vistasEsferas();
+  const nuevos = _nuevosEnEsfera(key);
+  if (!v || !nuevos.length) return;
+  nuevos.forEach(p => v.add(key + '|' + p.id));
+  _guardarVistasEsferas(v);
+  const card = document.querySelector(`.cat-card[data-cat="${key}"]`);
+  if (card) {
+    card.classList.remove('cat-card--novedad');
+    const sello = card.querySelector('.cat-card-nuevo');
+    if (sello) sello.remove();
+  }
+}
+
+// ─── CATEGORY CARD HTML ───────────────────────────────────────────────
+function categoryCardHTML(cat, i) {
+  const catProducts = _productosDeCategoria(cat.key);
   const count = catProducts.length;
   const illustration = getCategoryIllustration(cat.key);
-  const novedades = cat.key === 'temporada' ? _novedadesTemporada24h().length : 0;
+  const novedades = _nuevosEnEsfera(cat.key).length;
   const es = _lang !== 'en';
   const sello = novedades
     ? `<span class="cat-card-nuevo">${novedades} ${es ? (novedades === 1 ? 'nueva' : 'nuevas') : 'new'}</span>` : '';
   return `
-    <div class="cat-card card-enter${novedades ? ' cat-card--novedad' : ''}" style="animation-delay:${i * 0.07}s" onclick="openCategoryPanel('${cat.key}')">
+    <div class="cat-card card-enter${novedades ? ' cat-card--novedad' : ''}" data-cat="${cat.key}" style="animation-delay:${i * 0.07}s" onclick="openCategoryPanel('${cat.key}')">
       <div class="cat-card-bubble">${sello}
         <div class="cat-card-illustration">${illustration}</div>
       </div>
@@ -6237,6 +6277,7 @@ function ofertaCardHTML(oferta) {
 
 // ─── RENDER GRID ─────────────────────────────────────────────────────
 function renderGrid() {
+  _inicializarVistasEsferas();
   const grid = document.getElementById('catalogGrid');
   const empty = document.getElementById('emptyState');
 
