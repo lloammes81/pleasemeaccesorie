@@ -4703,6 +4703,12 @@ function pmAsegurarModalClientes(){
   // Tonos de los mejores clientes
   const st = document.createElement('style');
   st.textContent = `
+    .cli-av{width:40px;height:40px;border-radius:50%;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;
+      background:radial-gradient(circle at 30% 25%,#4a3b1f,#1a140a);border:1.5px solid rgba(201,151,58,.55);color:#e8c56e;font-family:'Cormorant Garamond',Georgia,serif;font-size:18px}
+    .cli-av img{width:100%;height:100%;object-fit:cover}
+    /* Registrada en el catálogo: círculo dorado brillante con aro (igual que en Admin → Clientes) */
+    .cli-av.cat{background:linear-gradient(135deg,#b48226,#f0d880);color:#1a1206;border:2px solid #fff3c4;font-weight:700;
+      box-shadow:0 0 0 3px rgba(201,151,58,.45),0 0 14px rgba(232,197,110,.55)}
     .cli-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;letter-spacing:.4px;padding:2px 8px;border-radius:99px;white-space:nowrap}
     .cli-badge.vip{background:linear-gradient(135deg,#b48226,#f0d880);color:#1a1205;box-shadow:0 0 12px rgba(240,216,128,.35)}
     .cli-badge.top{background:rgba(196,206,222,.16);color:#dfe6f2;border:1px solid rgba(196,206,222,.45)}
@@ -4721,6 +4727,37 @@ function pmAsegurarModalClientes(){
 }
 
 // opts: {q, filtro, ficha} — ficha abre directamente la ficha del cliente buscado
+// Registradas en el catálogo (Firebase clientes_catalogo, id "tel-<número>"): su círculo va dorado.
+// Se leen una vez por sesión con la API REST de Firestore; si falla, todos los círculos quedan oscuros.
+let _pmRegCatalogo = null;   // Map últimos-10-dígitos → { foto }
+async function pmCargarRegistradasCatalogo(){
+  if(_pmRegCatalogo) return _pmRegCatalogo;
+  const m = new Map();
+  try{
+    let token = '';
+    do{
+      const url = 'https://firestore.googleapis.com/v1/projects/pleasemecatalogo/databases/(default)/documents/clientes_catalogo'
+        + '?pageSize=300&mask.fieldPaths=telefono&mask.fieldPaths=foto&key=AIzaSyCqer7Y1lA9ciISWJ7FogszjGgZ8CCpTDg' + (token ? '&pageToken='+encodeURIComponent(token) : '');
+      const r = await fetch(url);
+      if(!r.ok) throw new Error('Firestore '+r.status);
+      const d = await r.json();
+      (d.documents||[]).forEach(doc=>{
+        const f = doc.fields || {};
+        const tel = pmTel10((f.telefono && f.telefono.stringValue) || doc.name.split('/').pop());
+        if(tel.length===10) m.set(tel, { foto: (f.foto && f.foto.stringValue) || '' });
+      });
+      token = d.nextPageToken || '';
+    } while(token);
+    _pmRegCatalogo = m;
+  }catch(e){ console.warn('[Clientes] No se pudieron leer las registradas del catálogo:', e.message); }
+  return m;
+}
+function pmAvatarCliente(c){
+  const reg = _pmRegCatalogo && _pmRegCatalogo.get(pmTel10(c.phone));
+  const foto = reg && /^https?:/.test(reg.foto||'') ? `<img src="${esc(reg.foto)}" alt="">` : esc((c.nombre||'?').trim().charAt(0).toUpperCase());
+  return `<span class="cli-av${reg?' cat':''}" title="${reg?'Registrada en el catálogo':'Cliente de Facturas'}">${foto}</span>`;
+}
+
 function abrirClientes(opts){
   opts = opts && typeof opts === 'object' && !(opts instanceof Event) ? opts : {};
   pmAsegurarModalClientes();
@@ -4735,6 +4772,7 @@ function abrirClientes(opts){
     if(c) _pmFichaAbierta = c.clave;
   }
   renderClientes();
+  if(!_pmRegCatalogo) pmCargarRegistradasCatalogo().then(()=>{ if(g('clientesModal').style.display==='flex') renderClientes(); });
   if(!opts.q) setTimeout(()=>g('clientesQ').focus(), 50);
 }
 function cerrarClientes(){ const m = g('clientesModal'); if(m) m.style.display = 'none'; }
@@ -4761,6 +4799,7 @@ function renderClientes(){
     return `
     <div class="invoice-card${abierta?' active':''}${c.nivel?' cli-'+c.nivel:''}" style="cursor:pointer" onclick="toggleFichaCliente(${i})">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+        ${pmAvatarCliente(c)}
         <div style="flex:1;min-width:0">
           <div style="display:flex;align-items:center;gap:8px;margin:0 0 3px;flex-wrap:wrap">
             <div class="inv-client" style="margin:0">${esc(c.nombre)}</div>
