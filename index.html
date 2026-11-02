@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261102-2';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261102-3';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <script>(function(){
 /* Autocomprobación de versión. El rompe-caché de arriba compara el parámetro ?v=
    contra la V del HTML que ya se está ejecutando: si el navegador sirvió una copia
@@ -2134,7 +2134,11 @@ location.replace(location.pathname+'?v='+m[1]);})
   /* ─── PIE DEL CARRITO (rediseño) ─── */
   .cart-footer { background: linear-gradient(180deg, rgba(201,151,58,0.035), transparent 140px); display: flex; flex-direction: column; }
   /* Registrada: su tarjeta va al final, debajo del total y del botón de WhatsApp */
-  .cart-envio.registrada { order: 10; margin: 18px 0 0; }
+  .cart-envio.registrada { order: 10; margin: 14px 0 0; padding: 8px 10px; font-size: 10.5px; }
+  .cart-envio.registrada .env-cab { gap: 9px; }
+  .cart-envio.registrada .env-avatar { width: 30px; height: 30px; font-size: 14px; }
+  .cart-envio.registrada b { font-size: 9px; margin-bottom: 1px; }
+  .cart-envio.registrada .env-linea { font-size: 10px; }
   .cart-note-label { display: flex; align-items: center; gap: 7px; font-size: 9px; letter-spacing: 2.5px; color: var(--gold-mid); margin-bottom: 10px; }
   .cart-note-label svg { opacity: .85; }
   .cart-note { border-radius: 8px; background: rgba(0,0,0,0.28); border-color: rgba(201,151,58,0.2);
@@ -2145,7 +2149,7 @@ location.replace(location.pathname+'?v='+m[1]);})
 
   .cart-envio { border-radius: 10px; margin-bottom: 18px; }
   /* Tarjeta «Regístrate» (sin registro) */
-  .cart-envio.env-cta { display: flex; align-items: center; gap: 13px; padding: 14px 14px 14px 12px; position: relative; overflow: hidden;
+  .cart-envio.env-cta { display: flex; align-items: center; gap: 10px; padding: 9px 12px 9px 10px; margin-bottom: 14px; position: relative; overflow: hidden;
     border-color: rgba(201,151,58,0.45); background: linear-gradient(120deg, rgba(201,151,58,0.13), rgba(201,151,58,0.03) 60%); }
   .cart-envio.env-cta::after { content: ''; position: absolute; top: 0; bottom: 0; left: -60%; width: 45%; pointer-events: none;
     background: linear-gradient(100deg, transparent, rgba(255,240,179,0.13), transparent); animation: envBrillo 3.2s ease-in-out infinite; }
@@ -2155,11 +2159,11 @@ location.replace(location.pathname+'?v='+m[1]);})
     0%, 100% { box-shadow: 0 0 0 0 rgba(232,197,110,0); border-color: rgba(201,151,58,0.45); }
     50% { box-shadow: 0 0 18px 0 rgba(232,197,110,0.22); border-color: rgba(240,216,128,0.85); }
   }
-  .env-cta-ico { width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  .env-cta-ico { width: 30px; height: 30px; flex-shrink: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center;
     color: #1a1206; background: linear-gradient(135deg, #b48226, #f0d880); box-shadow: 0 0 0 3px rgba(201,151,58,0.15), 0 4px 12px rgba(0,0,0,0.4); }
-  .env-cta-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; font-size: 11.5px; color: rgba(240,230,208,0.82); }
-  .cart-envio.env-cta .env-cta-txt b { margin: 0; font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 2.5px; color: var(--gold-light); }
-  .env-cta-flecha { color: var(--gold-mid); font-size: 24px; line-height: 1; transition: transform .2s; }
+  .env-cta-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-size: 10.5px; line-height: 1.4; color: rgba(240,230,208,0.82); }
+  .cart-envio.env-cta .env-cta-txt b { margin: 0; font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 2.5px; color: var(--gold-light); }
+  .env-cta-flecha { color: var(--gold-mid); font-size: 20px; line-height: 1; transition: transform .2s; }
   .cart-envio.env-cta:hover .env-cta-flecha { transform: translateX(3px); color: var(--gold-light); }
   @media (prefers-reduced-motion: reduce) { .cart-envio.env-cta::after, .cart-envio.parpadeo { animation: none; } }
 
@@ -5468,7 +5472,7 @@ function pintarRegistro() {
       </div></div>`;
   } else {
     box.innerHTML = `
-      <span class="env-cta-ico" aria-hidden="true"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg></span>
+      <span class="env-cta-ico" aria-hidden="true"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg></span>
       <span class="env-cta-txt"><b>${es ? 'Regístrate' : 'Sign up'}</b><span>${es ? 'Guarda tus datos de envío una sola vez y pide más rápido.' : 'Save your shipping details once and order faster.'}</span></span>
       <span class="env-cta-flecha" aria-hidden="true">›</span>`;
   }
