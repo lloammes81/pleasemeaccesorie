@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261102-7';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261102-8';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <script>(function(){
 /* Autocomprobación de versión. El rompe-caché de arriba compara el parámetro ?v=
    contra la V del HTML que ya se está ejecutando: si el navegador sirvió una copia
@@ -1513,6 +1513,15 @@ location.replace(location.pathname+'?v='+m[1]);})
   .hist-total-lbl { font-family:'Cinzel',serif; font-size:8px; letter-spacing:2px; color:var(--text-muted); text-transform:uppercase; }
   .hist-total-val { font-family:'Cormorant Garamond',serif; font-size:17px; font-weight:600; color:var(--gold-light); }
   .hist-badge { font-family:'Cinzel',serif; font-size:7.5px; letter-spacing:1px; background:var(--gold-mid); color:var(--bg-dark); padding:2px 6px; border-radius:2px; margin-left:6px; }
+  .hist-fac-datos, .hist-fac-totales { display:flex; flex-direction:column; gap:3px; margin:6px 0 8px; }
+  .hist-fac-fila { display:flex; justify-content:space-between; gap:12px; font-size:11px; color:var(--text-muted); }
+  .hist-fac-fila span:first-child { white-space:nowrap; }
+  .hist-fac-fila span:last-child { color:var(--text-cream); text-align:right; }
+  .hist-fac-totales { margin:10px 0 0; padding-top:8px; border-top:1px solid rgba(201,151,58,0.12); }
+  .hist-fac-item .hist-item-name small { display:block; font-family:'Montserrat',sans-serif; font-size:10px; color:var(--text-muted); }
+  .hist-fac-item .hist-item-qty { white-space:nowrap; }
+  .hist-fac-nota { font-size:11px; color:var(--text-muted); margin:8px 0 0; line-height:1.5; }
+  .hist-factura.anulada { opacity:.6; }
   .hist-empty { text-align:center; padding:50px 0 30px; font-family:'Cormorant Garamond',serif; font-size:18px; color:var(--text-muted); font-style:italic; }
 
   .cart-close-btn {
@@ -6976,6 +6985,7 @@ async function _renderHistorialEnCarrito() {
       return;
     }
     body.innerHTML = cabecera + pedidos.map(p => {
+      if (p.detalle) return facturaDetalleHtml(p);
       const loc   = _lang === 'en' ? 'en-US' : 'es-CO';
       const fecha = new Date(p.fecha).toLocaleDateString(loc, { day:'2-digit', month:'long', year:'numeric' });
       const items = (p.items || []).map(it => `
@@ -6991,7 +7001,6 @@ async function _renderHistorialEnCarrito() {
           <span class="hist-num">${p.numero}</span>
           <span class="hist-fecha">${fecha}</span>
         </div>
-        ${p.factura ? estadoFacturaHtml(p.factura) : ''}
         ${p.docId ? `<div class="hist-estado" data-doc="${p.docId}"><span class="hist-estado-cargando">${_lang === 'en' ? 'Checking status…' : 'Consultando estado…'}</span></div>` : ''}
         ${items}
         <div class="hist-total-row">
@@ -7045,7 +7054,8 @@ async function facturasPorTelefono(q) {
   if (t10.length < 10 || !primerNombre) return [];
   try {
     const h = { apikey: PM_SB_KEY, Authorization: 'Bearer ' + PM_SB_KEY };
-    const r = await fetch(PM_SB_URL + '/rest/v1/facturas?select=invoice_num,client_name,client_phone,created_at,invoice_date,items,total,status' +
+    const r = await fetch(PM_SB_URL + '/rest/v1/facturas?select=invoice_num,invoice_date,created_at,status,client_name,client_phone,client_email,client_address,' +
+      'items,subtotal,shipping,discount_amount,total,payment_method,currency,notes,void_reason,void_at' +
       '&client_phone=ilike.*' + t10.slice(-4) + '*&order=created_at.desc&limit=100', { headers: h });
     if (!r.ok) return [];
     return (await r.json())
@@ -7053,13 +7063,62 @@ async function facturasPorTelefono(q) {
       .filter(f => _normNombre(f.client_name).split(' ').includes(primerNombre))
       .map(f => ({
         numero: f.invoice_num || '—',
-        fecha: f.created_at || f.invoice_date || new Date().toISOString(),
-        items: (Array.isArray(f.items) ? f.items : []).map(i => ({ name: i.name || '—', qty: Number(i.qty) || 1, price: Number(i.price) || 0 })),
+        // invoice_date es solo el día (AAAA-MM-DD): mediodía local para que no cambie de día por la zona horaria
+        fecha: f.invoice_date ? f.invoice_date + 'T12:00:00' : (f.created_at || new Date().toISOString()),
+        items: [],
         total: Number(f.total) || 0,
         descuento: 0,
         factura: f.status || 'pendiente',
+        detalle: f,
       }));
   } catch(e) { console.warn('No se pudieron consultar las facturas:', e.message); return []; }
+}
+// Factura completa en el historial: número, fecha, estado, datos, artículos y totales
+const _PAGO_FACTURA = { transfer:['Transferencia','Bank transfer'], cash:['Efectivo','Cash'], card:['Tarjeta','Card'], zelle:['Zelle','Zelle'],
+  paypal:['PayPal','PayPal'], cashapp:['Cash App','Cash App'], venmo:['Venmo','Venmo'], credito:['Crédito','Credit'], credit:['Crédito','Credit'] };
+function facturaDetalleHtml(p) {
+  const f = p.detalle, en = _lang === 'en', loc = en ? 'en-US' : 'es-CO';
+  const esc = t => String(t ?? '').replace(/[&<>"]/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[ch]));
+  const mon = f.currency || 'USD';
+  const m = n => (mon === 'DOP' ? 'RD$' : '$') + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fecha = new Date(p.fecha).toLocaleDateString(loc, { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  const pago = f.payment_method ? ((_PAGO_FACTURA[f.payment_method] || [f.payment_method, f.payment_method])[en ? 1 : 0]) : '';
+  const extra = it => [it.size, it.color].filter(v => v && v !== '—').join(' · ');
+  const items = (Array.isArray(f.items) ? f.items : []).map(it => {
+    const q = Number(it.qty) || 1, pu = Number(it.price) || 0;
+    return `<div class="hist-item hist-fac-item">
+      <span class="hist-item-name">${esc(it.name || '—')}${extra(it) ? `<small>${esc(extra(it))}</small>` : ''}</span>
+      <span class="hist-item-qty">${q} × ${m(pu)}</span>
+      <span class="hist-item-price">${m(q * pu)}</span>
+    </div>`;
+  }).join('');
+  const fila = (lbl, val, cls = '') => `<div class="hist-fac-fila ${cls}"><span>${lbl}</span><span>${val}</span></div>`;
+  const anulada = /cancel|anul/.test(f.status || '');
+  return `<div class="hist-pedido hist-factura${anulada ? ' anulada' : ''}">
+    <div class="hist-pedido-hdr">
+      <span class="hist-num">${en ? 'INVOICE' : 'FACTURA'} ${esc(f.invoice_num || '—')}</span>
+      <span class="hist-fecha">${fecha}</span>
+    </div>
+    ${estadoFacturaHtml(f.status || 'pendiente')}
+    <div class="hist-fac-datos">
+      ${fila(en ? 'Date' : 'Fecha', fecha)}
+      ${pago ? fila(en ? 'Payment' : 'Pago', esc(pago)) : ''}
+      ${fila(en ? 'Currency' : 'Moneda', esc(mon))}
+      ${f.client_address ? fila(en ? 'Ship to' : 'Envío a', esc(f.client_address)) : ''}
+    </div>
+    ${items || `<p class="hist-fac-nota">${en ? 'No items' : 'Sin artículos'}</p>`}
+    <div class="hist-fac-totales">
+      ${fila('Subtotal', m(f.subtotal))}
+      ${Number(f.shipping) ? fila(en ? 'Shipping' : 'Envío', m(f.shipping)) : ''}
+      ${Number(f.discount_amount) ? fila(en ? 'Discount' : 'Descuento', '−' + m(f.discount_amount)) : ''}
+    </div>
+    <div class="hist-total-row">
+      <span class="hist-total-lbl">${_t[_lang].historyTotal || 'Total'}</span>
+      <span class="hist-total-val">${m(f.total)}</span>
+    </div>
+    ${f.notes ? `<p class="hist-fac-nota">📝 ${esc(f.notes)}</p>` : ''}
+    ${anulada && (f.void_reason || f.void_at) ? `<p class="hist-fac-nota">${en ? 'Voided' : 'Anulada'}${f.void_at ? ' · ' + new Date(f.void_at).toLocaleDateString(loc) : ''}${f.void_reason ? ' · ' + esc(f.void_reason) : ''}</p>` : ''}
+  </div>`;
 }
 const _ESTADO_FACTURA = { pendiente:['Pendiente de pago','Pending payment'], pagado:['Pagada','Paid'], procesando:['En proceso','Processing'],
   enviado:['Enviada','Shipped'], entregado:['Entregada','Delivered'], cancelado:['Anulada','Cancelled'], anulado:['Anulada','Cancelled'] };

@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261102-2';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261102-3';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -1838,6 +1838,11 @@ textarea { resize: vertical; min-height: 80px; }
 .cli-chip.fac { background:var(--bg2); color:var(--text-mid); border:1px solid var(--border); }
 .cli-pedido.anulada { opacity:.55; }
 .cli-alias { font-style:italic; color:var(--text-muted); }
+.cli-fac-datos { display:flex; flex-wrap:wrap; gap:4px 16px; padding:6px 12px; font-size:11.5px; color:var(--text-mid); border-top:1px solid var(--border); }
+.cli-fac-datos b { color:var(--text-muted); font-weight:600; }
+.cli-extra { font-size:11px; color:var(--text-muted); }
+.cli-pedido tr.cli-tot td { color:var(--text-mid); }
+.cli-fac-nota { font-size:11.5px; color:var(--text-mid); padding:6px 12px; margin:0; border-top:1px solid var(--border); }
 @media (max-width:640px) {
   .cli-head { gap:10px; padding:10px 12px; }
   .cli-cifras b { font-size:13px; }
@@ -3567,7 +3572,7 @@ async function loadClientesCat() {
       _db.collection('clientes_catalogo').get(),
       _db.collection('pedidos').orderBy('fecha', 'desc').limit(1000).get(),
       pmSB('clientes?select=id,name,email,phone,shipping_address,created_at&order=name'),
-      pmSB('facturas?select=id,invoice_num,client_id,client_name,client_phone,total,status,created_at,items&order=created_at.desc')
+      pmSB('facturas?select=id,invoice_num,invoice_date,created_at,client_id,client_name,client_phone,client_email,client_address,items,subtotal,shipping,discount_amount,total,payment_method,currency,notes,status,void_reason,void_at&order=created_at.desc')
     ]);
     const catalogo = snapC.docs.map(d => ({ _docId: d.id, ...d.data() }));
     _pedidosPorCliente = {};
@@ -3675,18 +3680,7 @@ function renderClientesCat() {
         ${filas ? `<table>${filas}</table>` : ''}
       </div>`;
     }).join('') : '<p class="cli-vacio">Sin pedidos desde el catálogo.</p>';
-    const histFac = r.facturas.length ? r.facturas.map(f => {
-      const filas = (Array.isArray(f.items) ? f.items : []).map(it => `<tr><td>${escHtml(it.name || it.desc || '—')}</td><td style="text-align:center">×${Number(it.qty) || 1}</td><td style="text-align:right">${it.price != null ? _dinero(it.price) : '—'}</td></tr>`).join('');
-      return `<div class="cli-pedido${_facturaValida(f) ? '' : ' anulada'}">
-        <div class="cli-pedido-head">
-          <span class="pedido-numero">${escHtml(f.invoice_num || '—')}</span>
-          <span class="cli-chip fac">${escHtml(f.status || '—')}</span>
-          <span class="pedido-fecha">${_fechaCorta(_tsMs(f.created_at))}</span>
-          <span class="pedido-total-head">${_dinero(f.total)}</span>
-        </div>
-        ${filas ? `<table>${filas}</table>` : ''}
-      </div>`;
-    }).join('') : '<p class="cli-vacio">Sin facturas.</p>';
+    const histFac = r.facturas.length ? r.facturas.map(facturaClienteHtml).join('') : '<p class="cli-vacio">Sin facturas.</p>';
     return `
       <div class="cli-card${_cliAbiertas.has(e.key) ? ' abierta' : ''}" id="cli-${id}">
         <div class="cli-head" onclick="toggleClienteCat('${id}')">
@@ -3716,6 +3710,46 @@ function renderClientesCat() {
         </div>
       </div>`;
   }).join('');
+}
+
+// Factura completa (como en Facturas): fecha, estado, pago, artículos con talla/color y totales
+const _PAGOS_FAC = { transfer:'Transferencia', cash:'Efectivo', card:'Tarjeta', zelle:'Zelle', paypal:'PayPal', cashapp:'Cash App', venmo:'Venmo', credito:'Crédito', credit:'Crédito' };
+function _fechaFactura(f) {
+  return f.invoice_date ? new Date(f.invoice_date + 'T12:00:00').getTime() : _tsMs(f.created_at);
+}
+function facturaClienteHtml(f) {
+  const mon = f.currency || 'USD';
+  const m = n => (mon === 'DOP' ? 'RD$' : '$') + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fecha = new Date(_fechaFactura(f)).toLocaleDateString('es', { weekday:'short', day:'numeric', month:'long', year:'numeric' });
+  const extra = it => [it.size, it.color].filter(v => v && v !== '—').join(' · ');
+  const filas = (Array.isArray(f.items) ? f.items : []).map(it => {
+    const q = Number(it.qty) || 1, pu = Number(it.price) || 0;
+    return `<tr><td>${escHtml(it.name || '—')}${extra(it) ? ` <span class="cli-extra">${escHtml(extra(it))}</span>` : ''}</td>
+      <td style="text-align:center">${q} × ${m(pu)}</td><td style="text-align:right">${m(q * pu)}</td></tr>`;
+  }).join('');
+  const tot = (l, v) => `<tr class="cli-tot"><td colspan="2">${l}</td><td style="text-align:right">${v}</td></tr>`;
+  return `<div class="cli-pedido${_facturaValida(f) ? '' : ' anulada'}">
+    <div class="cli-pedido-head">
+      <span class="pedido-numero">${escHtml(f.invoice_num || '—')}</span>
+      <span class="cli-chip fac">${escHtml(f.status || '—')}</span>
+      <span class="pedido-fecha">${fecha}</span>
+      <span class="pedido-total-head">${m(f.total)}</span>
+    </div>
+    <div class="cli-fac-datos">
+      <span><b>Fecha:</b> ${fecha}</span>
+      ${f.payment_method ? `<span><b>Pago:</b> ${escHtml(_PAGOS_FAC[f.payment_method] || f.payment_method)}</span>` : ''}
+      <span><b>Moneda:</b> ${escHtml(mon)}</span>
+      ${f.client_address ? `<span><b>Envío a:</b> ${escHtml(f.client_address)}</span>` : ''}
+    </div>
+    <table>${filas}
+      ${tot('Subtotal', m(f.subtotal))}
+      ${Number(f.shipping) ? tot('Envío', m(f.shipping)) : ''}
+      ${Number(f.discount_amount) ? tot('Descuento', '−' + m(f.discount_amount)) : ''}
+      ${tot('<b>Total</b>', '<b>' + m(f.total) + '</b>')}
+    </table>
+    ${f.notes ? `<p class="cli-fac-nota">📝 ${escHtml(f.notes)}</p>` : ''}
+    ${!_facturaValida(f) && (f.void_reason || f.void_at) ? `<p class="cli-fac-nota">Anulada${f.void_at ? ' · ' + _fechaCorta(_tsMs(f.void_at)) : ''}${f.void_reason ? ' · ' + escHtml(f.void_reason) : ''}</p>` : ''}
+  </div>`;
 }
 
 function toggleClienteCat(id) {
