@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261102-9';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261102-10';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <script>(function(){
 /* Autocomprobación de versión. El rompe-caché de arriba compara el parámetro ?v=
    contra la V del HTML que ya se está ejecutando: si el navegador sirvió una copia
@@ -5399,6 +5399,8 @@ async function sincronizarCliente() {
     const act = { ...c };
     ['compras', 'total_comprado'].forEach(k => { if (typeof r[k] === 'number') act[k] = r[k]; });
     if (r.foto && !c.foto) act.foto = r.foto;
+    // Datos que el admin pudo corregir (Admin → Clientes → Editar)
+    Object.keys(ENVIO_CAMPOS).forEach(k => { if (k !== 'telefono' && typeof r[k] === 'string') act[k] = r[k]; });
     localStorage.setItem('pm_cliente', JSON.stringify(act));
     pintarRegistro();
     personalizarWelcome();
@@ -5604,6 +5606,21 @@ function cartEnvioClick() {
 }
 pintarRegistro();
 sincronizarCliente();
+registrarVisita();
+
+// Cuenta las visitas de las clientes registradas: una por sesión (no por recarga).
+// Guarda el total, la última visita y la lista de fechas en su documento.
+function registrarVisita() {
+  const c = clienteRegistrado();
+  if (!c || !_db) return;
+  try { if (sessionStorage.getItem('pm_visita_' + c.id)) return; sessionStorage.setItem('pm_visita_' + c.id, '1'); } catch(e) { return; }
+  const fs = firebase.firestore.FieldValue;
+  _db.collection('clientes_catalogo').doc(c.id).set({
+    visitas: fs.increment(1),
+    ultima_visita: fs.serverTimestamp(),
+    visitas_log: fs.arrayUnion(new Date().toISOString())
+  }, { merge: true }).catch(e => console.warn('No se pudo registrar la visita:', e.message));
+}
 
 function envTextoWhatsApp() {
   const d = envDatos();
