@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261102-3';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261102-4';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <script>(function(){
 /* Autocomprobación de versión. El rompe-caché de arriba compara el parámetro ?v=
    contra la V del HTML que ya se está ejecutando: si el navegador sirvió una copia
@@ -46,7 +46,7 @@ location.replace(location.pathname+'?v='+m[1]);})
 <meta name="twitter:image"      content="https://pleasemecatalogo.com/logo.png">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="pleaseme.png" type="image/png">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="pleaseme.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Cinzel:wght@400;600&family=Montserrat:wght@300;400;500&display=swap" onload="this.onload=null;this.rel='stylesheet'">
@@ -2857,6 +2857,35 @@ location.replace(location.pathname+'?v='+m[1]);})
     pointer-events: none;
   }
 
+  /* Ofertas de temporada con piezas nuevas (últimas 24 h): la esfera brilla más */
+  .cat-card--novedad .cat-card-bubble {
+    border-color: rgba(240,216,128,0.9);
+    animation: esferaNovedad 2.4s ease-in-out infinite;
+  }
+  .cat-card--novedad .cat-card-bubble::before {
+    inset: -14px; border-color: rgba(255,240,179,0.6);
+    animation: esferaOnda 2.4s ease-out infinite;
+  }
+  @keyframes esferaNovedad {
+    0%, 100% { box-shadow: 0 0 22px 6px rgba(232,197,110,0.35), 0 0 60px 16px rgba(201,151,58,0.18), inset 0 1px 0 rgba(255,240,179,0.3); }
+    50%      { box-shadow: 0 0 40px 14px rgba(255,226,140,0.65), 0 0 110px 34px rgba(232,197,110,0.32), inset 0 0 18px rgba(255,240,179,0.25); }
+  }
+  @keyframes esferaOnda {
+    0%   { transform: scale(0.82); opacity: 0.9; }
+    100% { transform: scale(1.18); opacity: 0; }
+  }
+  .cat-card-nuevo {
+    position: absolute; top: -6px; right: -10px; z-index: 3; white-space: nowrap;
+    font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 8.5px; letter-spacing: 1px; text-transform: uppercase;
+    color: #1a1206; background: linear-gradient(135deg, #e3c063, #fff0b3); padding: 3px 7px; border-radius: 999px;
+    box-shadow: 0 0 12px rgba(255,226,140,0.7);
+  }
+  .cat-card--novedad .cat-card-name { color: var(--gold-shine); text-shadow: 0 0 12px rgba(232,197,110,0.45); }
+  @media (prefers-reduced-motion: reduce) {
+    .cat-card--novedad .cat-card-bubble, .cat-card--novedad .cat-card-bubble::before { animation: none; }
+    .cat-card--novedad .cat-card-bubble { box-shadow: 0 0 36px 12px rgba(255,226,140,0.55); }
+  }
+
   .cat-card:hover .cat-card-bubble {
     border-color: rgba(201,151,58,0.70);
     box-shadow:
@@ -4072,6 +4101,18 @@ function _esProductoNuevoEnOferta(p) {
   return edad >= 0 && edad < TEMPORADA_NUEVO_MS;
 }
 
+// Piezas que entraron a Temporada en las últimas 24 h: hacen brillar más la esfera
+// y se anuncian con una notificación del teléfono que caduca a las 24 h.
+const TEMPORADA_NOVEDAD_MS = 24 * 60 * 60 * 1000;
+function _novedadesTemporada24h() {
+  const ahora = Date.now();
+  return products.filter(p => {
+    if (!p || p.category !== 'temporada') return false;
+    const edad = ahora - (Number(p.temporadaDesde) || 0);
+    return Number(p.temporadaDesde) > 0 && edad >= 0 && edad < TEMPORADA_NOVEDAD_MS;
+  });
+}
+
 // ─── SVG JEWELRY ICONS ───────────────────────────────────────────────
 const svgs = {
   anillo: (c1, c2) => `<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -4473,6 +4514,7 @@ fetchProductsFromFirebase()
     renderGrid();
     loadPhotosLazy();
     if (_welcomeClosed) checkNuevosEnTemporada();
+    notificarNovedadesTemporada();
   })
   .catch(err => {
     console.error('Error cargando productos:', err);
@@ -6150,9 +6192,13 @@ function categoryCardHTML(cat, i) {
   }
   const count = catProducts.length;
   const illustration = getCategoryIllustration(cat.key);
+  const novedades = cat.key === 'temporada' ? _novedadesTemporada24h().length : 0;
+  const es = _lang !== 'en';
+  const sello = novedades
+    ? `<span class="cat-card-nuevo">${novedades} ${es ? (novedades === 1 ? 'nueva' : 'nuevas') : 'new'}</span>` : '';
   return `
-    <div class="cat-card card-enter" style="animation-delay:${i * 0.07}s" onclick="openCategoryPanel('${cat.key}')">
-      <div class="cat-card-bubble">
+    <div class="cat-card card-enter${novedades ? ' cat-card--novedad' : ''}" style="animation-delay:${i * 0.07}s" onclick="openCategoryPanel('${cat.key}')">
+      <div class="cat-card-bubble">${sello}
         <div class="cat-card-illustration">${illustration}</div>
       </div>
       <div class="cat-card-info">
@@ -6970,7 +7016,7 @@ function _startCartReminder() {
       navigator.serviceWorker.ready.then(reg =>
         reg.showNotification('Tu carrito te espera 🛍', {
           body: `Tienes ${n} artículo${n > 1 ? 's' : ''} sin confirmar. ¡No los pierdas!`,
-          icon: './icon-192.png', badge: './icon-192.png',
+          icon: './pleaseme.png', badge: './pleaseme.png',
           vibrate: [200, 100, 200], tag: 'cart-reminder'
         })
       );
@@ -7323,6 +7369,51 @@ function checkNuevosEnTemporada() {
   if (!porAvisar.length) return;
   _yaAvisadoEstaCarga = true;
   mostrarToastOfertaNuevo(porAvisar.length);
+}
+
+// Notificación del teléfono (app instalada) por piezas nuevas en Temporada.
+// Solo se avisa de piezas de las últimas 24 h; la notificación caduca a las 24 h
+// de la pieza más reciente (sw.js la retira al pasar ese tiempo).
+const NOTIF_TEMPORADA_KEY = 'pm_notif_temporada_ids';
+function _appInstalada() {
+  return (window.matchMedia && (matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches))
+    || navigator.standalone === true;
+}
+async function notificarNovedadesTemporada() {
+  try {
+    if (!_appInstalada() || !('Notification' in window) || !('serviceWorker' in navigator)) return;
+    const reg = await navigator.serviceWorker.ready;
+    reg.active && reg.active.postMessage({ tipo: 'limpiar-caducadas' });
+    if (Notification.permission !== 'granted') return;
+    const nuevos = _novedadesTemporada24h();
+    if (!nuevos.length) return;
+    let avisados = [];
+    try { avisados = JSON.parse(localStorage.getItem(NOTIF_TEMPORADA_KEY) || '[]'); } catch(e) {}
+    const porAvisar = nuevos.filter(p => !avisados.includes(String(p.id)));
+    if (!porAvisar.length) return;
+    const expira = Math.max(...nuevos.map(p => Number(p.temporadaDesde))) + TEMPORADA_NOVEDAD_MS;
+    const n = nuevos.length, es = _lang !== 'en';
+    await reg.showNotification(es ? '✨ Nuevas Ofertas de temporada' : '✨ New seasonal offers', {
+      body: es ? `${n} ${n === 1 ? 'pieza nueva acaba' : 'piezas nuevas acaban'} de llegar. ¡Solo por tiempo limitado!`
+               : `${n} new piece${n === 1 ? '' : 's'} just arrived. Limited time only!`,
+      icon: './pleaseme.png', badge: './pleaseme.png', tag: 'temporada-nuevos', renotify: true,
+      vibrate: [200, 100, 200], data: { url: './index.html?abrir=temporada', expira }
+    });
+    try { localStorage.setItem(NOTIF_TEMPORADA_KEY, JSON.stringify(nuevos.map(p => String(p.id)))); } catch(e) {}
+  } catch(e) { console.warn('[Notif temporada]', e); }
+}
+// En la app instalada se pide el permiso con el primer toque (los navegadores lo exigen así).
+function _pedirPermisoNotificaciones() {
+  if (!_appInstalada() || !('Notification' in window) || Notification.permission !== 'default') return;
+  const pedir = () => {
+    Notification.requestPermission().then(r => { if (r === 'granted') notificarNovedadesTemporada(); }).catch(() => {});
+  };
+  document.addEventListener('click', pedir, { once: true, capture: true });
+}
+_pedirPermisoNotificaciones();
+// Abrir Temporada al entrar desde la notificación
+if (new URLSearchParams(location.search).get('abrir') === 'temporada') {
+  window.addEventListener('load', () => setTimeout(() => { try { openCategoryPanel('temporada'); } catch(e) {} }, 1500));
 }
 
 function mostrarToastOfertaNuevo(cantidad) {
