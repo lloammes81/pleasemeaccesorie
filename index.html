@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261102-8';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261102-9';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <script>(function(){
 /* Autocomprobación de versión. El rompe-caché de arriba compara el parámetro ?v=
    contra la V del HTML que ya se está ejecutando: si el navegador sirvió una copia
@@ -4514,11 +4514,45 @@ restoreCartFromStorage();
 // Refrescar badge/panel cuando updateCartUI esté disponible (está hoisted como function).
 try { if (typeof updateCartUI === 'function') updateCartUI(); } catch(e) {}
 
-fetchProductsFromFirebase()
-  .then(data => {
+// ── Ahorro de lecturas de Firebase ──────────────────────────────────
+// Bajar todos los productos cuesta ~500 lecturas por visita. El admin guarda en
+// config/catalogo_version la hora de su último cambio de productos; el catálogo
+// lee solo ese documento (1 lectura) y, si coincide con la versión de su copia
+// guardada, usa la copia sin volver a bajar nada. Sin ese documento (aún no se
+// ha guardado ningún producto desde el admin) la copia vale 30 minutos.
+const PM_PROD_VER_KEY = 'pm_products_ver', PM_PROD_TS_KEY = 'pm_products_ts';
+const PM_PROD_TTL_SIN_VERSION = 30 * 60 * 1000;
+async function cargarProductosAhorrando() {
+  let cache = null;
+  try { const c = JSON.parse(localStorage.getItem('pm_products_cache') || 'null'); if (Array.isArray(c) && c.length) cache = c; } catch(e) {}
+  let version = 0;
+  try {
+    const d = await _db.collection('config').doc('catalogo_version').get({ source: 'server' });
+    version = d.exists ? Number(d.data().value) || 0 : 0;
+  } catch(e) { /* sin red o sin cuota: se decide con lo que haya */ }
+  const verGuardada = Number(localStorage.getItem(PM_PROD_VER_KEY)) || 0;
+  const edad = Date.now() - (Number(localStorage.getItem(PM_PROD_TS_KEY)) || 0);
+  if (cache && (version ? version === verGuardada : edad < PM_PROD_TTL_SIN_VERSION)) {
+    return { data: cache, deCache: true };
+  }
+  try {
+    const data = await fetchProductsFromFirebase();
+    try {
+      localStorage.setItem(PM_PROD_VER_KEY, String(version));
+      localStorage.setItem(PM_PROD_TS_KEY, String(Date.now()));
+    } catch(e) {}
+    return { data, deCache: false };
+  } catch(e) {
+    if (cache) return { data: cache, deCache: true };   // sin cuota o sin red: la copia guardada
+    throw e;
+  }
+}
+
+cargarProductosAhorrando()
+  .then(({ data, deCache }) => {
     products = data.filter(p => p.active !== false);
     // Guardar en caché para próxima visita instantánea
-    try { localStorage.setItem('pm_products_cache', JSON.stringify(products)); } catch(e) {}
+    if (!deCache) try { localStorage.setItem('pm_products_cache', JSON.stringify(products)); } catch(e) {}
     renderFilters();
     renderGrid();
     loadPhotosLazy();

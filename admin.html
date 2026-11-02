@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261102-5';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261102-6';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -4020,6 +4020,14 @@ async function eliminarPedidosSeleccionados() {
   filtrarPedidos();
 }
 
+// Avisa al catálogo que los productos cambiaron: así solo los vuelve a bajar
+// cuando hace falta (ver cargarProductosAhorrando en index.html).
+function marcarCatalogoCambiado() {
+  if (!_db) return Promise.resolve();
+  return _db.collection('config').doc('catalogo_version').set({ value: Date.now() })
+    .catch(e => console.warn('[catalogo_version]', e.message));
+}
+
 function volverAlCatalogo() {
   // Si fue abierto desde index.html (tiene opener), cierra esta ventana
   // Si no tiene opener (abrió directo), navega al index
@@ -4470,6 +4478,7 @@ async function migrarImagenesACloudinary() {
       try {
         const url = await uploadPhotoToCloudinary(p.photo_data);
         await _db.collection('catalogo_productos').doc(p.id).update({ photo_data: url });
+        marcarCatalogoCambiado();
         ok++;
       } catch(e) {
         console.error(`Error migrando "${p.name}":`, e);
@@ -4530,6 +4539,7 @@ async function optimizarFotos() {
         if (compressedKB >= originalKB) { skipped++; continue; } // ya está optimizada
 
         await _db.collection('catalogo_productos').doc(p.id).update({ photo_data: compressed });
+        marcarCatalogoCambiado();
 
         ahorroTotal += originalKB - compressedKB;
         ok++;
@@ -4641,8 +4651,10 @@ async function saveProduct() {
   try {
     if (editingId) {
       await _db.collection('catalogo_productos').doc(String(editingId)).update(data);
+      marcarCatalogoCambiado();
     } else {
       await _db.collection('catalogo_productos').add(data);
+      marcarCatalogoCambiado();
     }
   } catch(e) {
     setBtnState(false, label);
@@ -4903,7 +4915,7 @@ function closeConfirm() {
 
 async function confirmDelete() {
   if (!deleteId) return;
-  try { await _db.collection('catalogo_productos').doc(String(deleteId)).delete(); } catch(e) { return showToast('Error al eliminar: ' + e.message); }
+  try { await _db.collection('catalogo_productos').doc(String(deleteId)).delete(); marcarCatalogoCambiado(); } catch(e) { return showToast('Error al eliminar: ' + e.message); }
   const error = null;
   if (error) return showToast('Error al eliminar: ' + error.message);
   await loadProducts();
