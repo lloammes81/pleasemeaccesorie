@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261031-3';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261102-1';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -1801,6 +1801,43 @@ textarea { resize: vertical; min-height: 80px; }
 .pedido-card.sel { border-color:#c0392b; box-shadow:0 0 0 1px #c0392b inset; }
 .pedido-card.sel > .pedido-card-head { background:rgba(192,57,43,.12); }
 
+/* ─── CLIENTES DEL CATÁLOGO ─── */
+#page-clientes .pedidos-search { width:auto; }
+#page-clientes .cli-orden { flex:0 0 auto; min-width:0; cursor:pointer; }
+.cli-resumen { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:18px; }
+.cli-kpi { flex:1; min-width:140px; background:var(--surface); border:1px solid var(--border); padding:12px 16px; }
+.cli-kpi b { display:block; font-family:'Cinzel',serif; font-size:20px; color:var(--gold); }
+.cli-kpi span { font-size:11px; color:var(--text-muted); letter-spacing:.5px; text-transform:uppercase; }
+.cli-card { background:var(--surface); border:1px solid var(--border); margin-bottom:10px; overflow:hidden; }
+.cli-head { display:flex; align-items:center; gap:14px; padding:12px 16px; cursor:pointer; user-select:none; }
+.cli-head:hover { background:var(--bg2); }
+.cli-avatar { width:42px; height:42px; border-radius:50%; flex-shrink:0; overflow:hidden; display:flex; align-items:center; justify-content:center;
+  background:radial-gradient(circle at 30% 25%, #4a3b1f, #1a140a); border:1.5px solid var(--gold); color:#e8c56e; font-family:'Cinzel',serif; font-size:17px; }
+.cli-avatar img { width:100%; height:100%; object-fit:cover; }
+.cli-datos { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+.cli-nombre { font-weight:600; color:var(--text); font-size:14px; }
+.cli-estrellas { color:var(--gold); letter-spacing:1px; font-size:12px; margin-left:6px; }
+.cli-linea { font-size:12px; color:var(--text-mid); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cli-cifras { text-align:right; flex-shrink:0; }
+.cli-cifras b { display:block; font-size:14px; color:var(--text); }
+.cli-cifras span { font-size:11px; color:var(--text-muted); }
+.cli-body { display:none; border-top:1px solid var(--border); padding:14px 16px; background:var(--bg); }
+.cli-card.abierta .cli-body { display:block; }
+.cli-card.abierta .pedido-arrow { transform:rotate(180deg); }
+.cli-ficha { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:8px 18px; font-size:12px; margin-bottom:14px; }
+.cli-ficha div span { display:block; font-size:10px; letter-spacing:.8px; text-transform:uppercase; color:var(--text-muted); }
+.cli-ficha a { color:var(--gold-deep); }
+.cli-hist-titulo { font-family:'Cinzel',serif; font-size:11px; letter-spacing:2px; color:var(--gold-deep); margin:4px 0 8px; }
+.cli-pedido { background:var(--surface); border:1px solid var(--border); margin-bottom:8px; }
+.cli-pedido-head { display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:8px 12px; font-size:12px; }
+.cli-pedido table { width:100%; border-collapse:collapse; font-size:12px; }
+.cli-pedido td { padding:5px 12px; border-top:1px solid var(--border); }
+.cli-vacio { font-size:12px; color:var(--text-muted); font-style:italic; }
+@media (max-width:640px) {
+  .cli-head { gap:10px; padding:10px 12px; }
+  .cli-cifras b { font-size:13px; }
+}
+
 /* ─── FACTURAS ─── */
 #page-facturas.active { padding: 0; }
 #facturasFrame {
@@ -1966,6 +2003,10 @@ body.is-mobile #facturasFrame { height: calc(100dvh - 58px - 68px); }
       <button class="nav-item" onclick="goTo('pedidos')" id="nav-pedidos">
         <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
         Pedidos
+      </button>
+      <button class="nav-item" onclick="goTo('clientes')" id="nav-clientes">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Clientes
       </button>
       <button class="nav-item" onclick="toggleFacturasMenu()" id="nav-facturas" aria-expanded="false" aria-controls="facturasSub">
         <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="13" y2="15"/></svg>
@@ -2695,6 +2736,22 @@ body.is-mobile #facturasFrame { height: calc(100dvh - 58px - 68px); }
       <div id="pedidosLista"><p class="pedidos-empty">Cargando pedidos…</p></div>
     </div>
 
+    <!-- PAGE: CLIENTES REGISTRADAS EN EL CATÁLOGO -->
+    <div class="page" id="page-clientes">
+      <div class="pedidos-toolbar">
+        <input class="pedidos-search" id="clientesSearch" type="text"
+          placeholder="Buscar por nombre, teléfono, correo o ciudad…" oninput="renderClientesCat()">
+        <select class="pedidos-search cli-orden" id="clientesOrden" onchange="renderClientesCat()">
+          <option value="reciente">Registro más reciente</option>
+          <option value="compras">Más comprado</option>
+          <option value="nombre">Nombre (A–Z)</option>
+        </select>
+        <button class="btn" onclick="loadClientesCat()" style="white-space:nowrap">↺ Actualizar</button>
+      </div>
+      <div class="cli-resumen" id="clientesResumen"></div>
+      <div id="clientesLista"><p class="pedidos-empty">Cargando clientes…</p></div>
+    </div>
+
     <!-- PAGE: FACTURAS (app de facturación embebida; se carga al abrirla) -->
     <div class="page" id="page-facturas">
       <iframe id="facturasFrame" title="Facturación" data-src="facturas.html?v=20261031-3"></iframe>
@@ -3337,7 +3394,7 @@ function goTo(page) {
   document.getElementById('page-' + page).classList.add('active');
   document.getElementById('nav-' + page).classList.add('active');
 
-  const titles = { productos: 'Productos', contacto: 'Información de contacto', banner: 'Banner de anuncio', visitas: 'Visitas al catálogo', info: 'Información del catálogo', config: 'Configuración · API Keys', pedidos: 'Pedidos de clientes', ofertas: 'Ofertas de temporada', facturas: 'Facturación' };
+  const titles = { productos: 'Productos', contacto: 'Información de contacto', banner: 'Banner de anuncio', visitas: 'Visitas al catálogo', info: 'Información del catálogo', config: 'Configuración · API Keys', pedidos: 'Pedidos de clientes', clientes: 'Clientes del catálogo', ofertas: 'Ofertas de temporada', facturas: 'Facturación' };
   document.getElementById('topbarTitle').textContent = titles[page] || '';
 
   const topAction = document.getElementById('topbarAction');
@@ -3346,6 +3403,7 @@ function goTo(page) {
   if (page === 'info') { loadCatalogInfo(); renderInfoTable(); loadWatermarkConfig(); }
   if (page === 'config') fillCloudinaryForm();
   if (page === 'pedidos') loadPedidos();
+  if (page === 'clientes') loadClientesCat();
   if (page === 'ofertas') loadOfertas();
   if (page === 'facturas') {
     const frame = document.getElementById('facturasFrame');
@@ -3449,6 +3507,125 @@ function renderPedidos(lista) {
         </div>
       </div>`;
   }).join('');
+}
+
+// ─── CLIENTES REGISTRADAS EN EL CATÁLOGO ─────────────────────────────
+// Colección clientes_catalogo (un documento por teléfono, id "tel-<número>").
+// Su historial son los pedidos con ese cliente_id.
+let _clientesCat = [];
+let _pedidosPorCliente = {};
+const _cliAbiertas = new Set();
+
+async function loadClientesCat() {
+  const lista = document.getElementById('clientesLista');
+  if (!lista) return;
+  lista.innerHTML = '<p class="pedidos-empty">Cargando clientes…</p>';
+  try {
+    const [snapC, snapP] = await Promise.all([
+      _db.collection('clientes_catalogo').get(),
+      _db.collection('pedidos').orderBy('fecha', 'desc').limit(1000).get()
+    ]);
+    _clientesCat = snapC.docs.map(d => ({ _docId: d.id, ...d.data() }));
+    _pedidosPorCliente = {};
+    snapP.docs.forEach(d => {
+      const p = { _docId: d.id, ...d.data() };
+      if (!p.cliente_id) return;
+      (_pedidosPorCliente[p.cliente_id] = _pedidosPorCliente[p.cliente_id] || []).push(p);
+    });
+    renderClientesCat();
+  } catch(e) {
+    console.error('[Clientes]', e);
+    lista.innerHTML = '<p class="pedidos-empty">Error al cargar las clientes: ' + escHtml(e.message) + '</p>';
+  }
+}
+
+const _tsMs = t => t && t.seconds ? t.seconds * 1000 : (typeof t === 'number' ? t : 0);
+const _fechaCorta = ms => ms ? new Date(ms).toLocaleDateString('es', { day:'numeric', month:'short', year:'numeric' }) : '—';
+const _dinero = n => '$' + Number(n || 0).toLocaleString('en-US');
+function _resumenCliente(c) {
+  const peds = (_pedidosPorCliente[c._docId] || []).filter(p => p.estado !== 'cancelado');
+  const total = peds.reduce((s, p) => s + Number(p.total_final ?? p.total ?? 0), 0);
+  return { pedidos: _pedidosPorCliente[c._docId] || [], compras: peds.length, total,
+           estrellas: ESTRELLAS_MIN.filter(m => total >= m).length };
+}
+
+function renderClientesCat() {
+  const el = document.getElementById('clientesLista');
+  if (!el) return;
+  const q = (document.getElementById('clientesSearch').value || '').toLowerCase().trim();
+  const orden = document.getElementById('clientesOrden').value;
+  let lista = _clientesCat.map(c => ({ c, r: _resumenCliente(c) }));
+  if (q) lista = lista.filter(({ c }) => [c.nombre, c.telefono, c.email, c.ciudad, c.estado, c.direccion]
+    .some(v => String(v || '').toLowerCase().includes(q)));
+  lista.sort((a, b) => orden === 'compras' ? b.r.total - a.r.total
+    : orden === 'nombre' ? String(a.c.nombre || '').localeCompare(String(b.c.nombre || ''), 'es')
+    : _tsMs(b.c.registrado || b.c.actualizado) - _tsMs(a.c.registrado || a.c.actualizado));
+
+  const todas = _clientesCat.map(_resumenCliente);
+  const conCompra = todas.filter(r => r.compras > 0).length;
+  const vendido = todas.reduce((s, r) => s + r.total, 0);
+  document.getElementById('clientesResumen').innerHTML = `
+    <div class="cli-kpi"><b>${_clientesCat.length}</b><span>Registradas</span></div>
+    <div class="cli-kpi"><b>${conCompra}</b><span>Con al menos 1 pedido</span></div>
+    <div class="cli-kpi"><b>${_dinero(vendido)}</b><span>Total pedido</span></div>`;
+
+  if (!lista.length) {
+    el.innerHTML = `<p class="pedidos-empty">${_clientesCat.length ? 'Ninguna clienta coincide con la búsqueda.' : 'Todavía no hay clientes registradas en el catálogo.'}</p>`;
+    return;
+  }
+  el.innerHTML = lista.map(({ c, r }) => {
+    const id = escHtml(c._docId);
+    const nombre = escHtml(c.nombre || 'Sin nombre');
+    const foto = /^https?:/.test(c.foto || '') ? `<img src="${escHtml(c.foto)}" alt="">` : escHtml((c.nombre || '?').trim().charAt(0).toUpperCase());
+    const tel = String(c.telefono || '').replace(/\D/g, '');
+    const lugar = [c.ciudad, [c.estado, c.zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    const dir = [c.direccion, lugar].filter(Boolean).join(', ') || (c.pais === 'RD' ? 'República Dominicana' : '');
+    const hist = r.pedidos.length ? r.pedidos.map(p => {
+      const est = estadoInfo(estadoPedido(p));
+      const filas = (p.items || []).map(it => `<tr><td>${escHtml(it.name || '—')}</td><td style="text-align:center">×${Number(it.qty) || 1}</td><td style="text-align:right">${it.price != null ? '$' + escHtml(it.price) : '—'}</td></tr>`).join('');
+      return `<div class="cli-pedido">
+        <div class="cli-pedido-head">
+          <span class="pedido-numero">${escHtml(p.numero || '—')}</span>
+          <span class="pedido-estado e-${estadoPedido(p)}">${est.icono} ${est.nombre}</span>
+          <span class="pedido-fecha">${_fechaCorta(_tsMs(p.fecha))}</span>
+          <span class="pedido-total-head">${_dinero(p.total_final ?? p.total)}</span>
+        </div>
+        ${filas ? `<table>${filas}</table>` : ''}
+      </div>`;
+    }).join('') : '<p class="cli-vacio">Todavía no ha hecho pedidos desde el catálogo.</p>';
+    return `
+      <div class="cli-card${_cliAbiertas.has(c._docId) ? ' abierta' : ''}" id="cli-${id}">
+        <div class="cli-head" onclick="toggleClienteCat('${id}')">
+          <span class="cli-avatar">${foto}</span>
+          <span class="cli-datos">
+            <span class="cli-nombre">${nombre}${r.estrellas ? `<span class="cli-estrellas">${'★'.repeat(r.estrellas)}</span>` : ''}</span>
+            <span class="cli-linea">${escHtml(c.telefono || '')}${c.email ? ' · ' + escHtml(c.email) : ''}</span>
+            <span class="cli-linea">${escHtml(dir)}</span>
+          </span>
+          <span class="cli-cifras"><b>${_dinero(r.total)}</b><span>${r.compras} pedido${r.compras === 1 ? '' : 's'}</span></span>
+          <svg class="pedido-arrow" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="cli-body">
+          <div class="cli-ficha">
+            <div><span>Teléfono</span>${tel ? `<a href="https://wa.me/${tel}" target="_blank" rel="noopener">${escHtml(c.telefono)} · WhatsApp</a>` : '—'}</div>
+            <div><span>Correo</span>${c.email ? `<a href="mailto:${escHtml(c.email)}">${escHtml(c.email)}</a>` : '—'}</div>
+            <div><span>Dirección</span>${escHtml(dir) || '—'}</div>
+            <div><span>País</span>${c.pais === 'RD' ? 'República Dominicana' : 'USA'}</div>
+            <div><span>Registrada</span>${_fechaCorta(_tsMs(c.registrado || c.actualizado))}</div>
+            <div><span>Último pedido</span>${r.pedidos.length ? _fechaCorta(_tsMs(r.pedidos[0].fecha)) : '—'}</div>
+          </div>
+          <div class="cli-hist-titulo">Historial de compras (${r.pedidos.length})</div>
+          ${hist}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleClienteCat(id) {
+  const card = document.getElementById('cli-' + id);
+  if (!card) return;
+  card.classList.toggle('abierta');
+  if (card.classList.contains('abierta')) _cliAbiertas.add(id); else _cliAbiertas.delete(id);
 }
 
 function escHtml(t) {
@@ -5254,6 +5431,10 @@ document.addEventListener('keydown', e => {
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 11.5 19.79 19.79 0 01.12 2.86 2 2 0 012.11.68h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.09a16 16 0 006 6l.61-.54a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
     Contacto
   </button>
+  <button class="mob-nav-btn" id="mob-nav-clientes" onclick="mobGoTo('clientes')">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+    Clientes
+  </button>
   <button class="mob-nav-btn" id="mob-nav-facturas" onclick="mobFacturas()">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="13" y2="15"/></svg>
     Facturas
@@ -5281,6 +5462,7 @@ function mobGoTo(page) {
     banner:    'Banner',
     visitas:   'Visitas',
     info:      'Información',
+    clientes:  'Clientes',
     facturas:  'Facturas'
   };
   const titleEl = document.getElementById('mobPageTitle');
