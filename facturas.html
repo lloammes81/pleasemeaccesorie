@@ -2489,8 +2489,11 @@ async function saveOnly(opts={}){
   registrarProductosNuevos(data.items);
 
   // ── Cliente: buscar existente o crear nuevo ──
+  // El teléfono es el código del cliente: primero se busca por teléfono, luego por nombre
   const clientNameLower = (data.clientName||'').toLowerCase().trim();
-  const clienteExistente = DB.clients.find(c=>(c.name||'').toLowerCase().trim()===clientNameLower);
+  const telNuevo = pmTel10(data.clientPhone);
+  const clienteExistente = (telNuevo.length===10 && DB.clients.find(c=>pmTel10(c.phone)===telNuevo))
+    || DB.clients.find(c=>(c.name||'').toLowerCase().trim()===clientNameLower);
 
   if(clienteExistente){
     // Cliente existente — linkear id y completar campos vacíos con los datos guardados
@@ -4547,6 +4550,9 @@ let _pmFichaAbierta = null;      // clave del cliente cuya ficha está abierta
 
 const pmClaveNombre = n => String(n||'').toLowerCase().replace(/\s+/g,' ').trim();
 
+// Últimos 10 dígitos del teléfono: el código que identifica al cliente (igual que en el catálogo)
+function pmTel10(t){ return String(t||'').replace(/\D/g,'').slice(-10); }
+
 function pmResumenClientes(){
   const map = new Map(), porId = {};
   DB.clients.forEach(c=>{
@@ -4989,6 +4995,10 @@ async function guardarCliente(){
   const editando = _pmClienteEditando !== null ? _pmClientes[_pmClienteEditando] : null;
   const otro = _pmClientes.find(x=>x.clave===pmClaveNombre(nombre) && x!==editando);
   if(otro){ toast('Ya existe un cliente llamado '+otro.nombre,'warn'); return; }
+  // El teléfono es el código del cliente: no puede repetirse
+  const telF = pmTel10(datos.phone);
+  const mismoTel = telF.length===10 && DB.clients.find(c=>pmTel10(c.phone)===telF && !(editando && c.id===editando.id));
+  if(mismoTel){ toast('Ya existe un cliente con ese teléfono: '+(mismoTel.name||''),'warn'); g('cf_tel').focus(); return; }
 
   const btn = g('cf_guardar'); btn.disabled = true;
   try{

@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261102-1';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261102-2';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -1833,6 +1833,11 @@ textarea { resize: vertical; min-height: 80px; }
 .cli-pedido table { width:100%; border-collapse:collapse; font-size:12px; }
 .cli-pedido td { padding:5px 12px; border-top:1px solid var(--border); }
 .cli-vacio { font-size:12px; color:var(--text-muted); font-style:italic; }
+.cli-chip { display:inline-block; margin-left:7px; padding:1px 7px; border-radius:999px; font-size:9.5px; font-weight:600; letter-spacing:.6px; text-transform:uppercase; vertical-align:middle; }
+.cli-chip.cat { background:rgba(201,151,58,.14); color:var(--gold-deep); border:1px solid rgba(201,151,58,.35); }
+.cli-chip.fac { background:var(--bg2); color:var(--text-mid); border:1px solid var(--border); }
+.cli-pedido.anulada { opacity:.55; }
+.cli-alias { font-style:italic; color:var(--text-muted); }
 @media (max-width:640px) {
   .cli-head { gap:10px; padding:10px 12px; }
   .cli-cifras b { font-size:13px; }
@@ -2740,7 +2745,7 @@ body.is-mobile #facturasFrame { height: calc(100dvh - 58px - 68px); }
     <div class="page" id="page-clientes">
       <div class="pedidos-toolbar">
         <input class="pedidos-search" id="clientesSearch" type="text"
-          placeholder="Buscar por nombre, teléfono, correo o ciudad…" oninput="renderClientesCat()">
+          placeholder="Buscar por nombre, teléfono, correo o dirección…" oninput="renderClientesCat()">
         <select class="pedidos-search cli-orden" id="clientesOrden" onchange="renderClientesCat()">
           <option value="reciente">Registro más reciente</option>
           <option value="compras">Más comprado</option>
@@ -3394,7 +3399,7 @@ function goTo(page) {
   document.getElementById('page-' + page).classList.add('active');
   document.getElementById('nav-' + page).classList.add('active');
 
-  const titles = { productos: 'Productos', contacto: 'Información de contacto', banner: 'Banner de anuncio', visitas: 'Visitas al catálogo', info: 'Información del catálogo', config: 'Configuración · API Keys', pedidos: 'Pedidos de clientes', clientes: 'Clientes del catálogo', ofertas: 'Ofertas de temporada', facturas: 'Facturación' };
+  const titles = { productos: 'Productos', contacto: 'Información de contacto', banner: 'Banner de anuncio', visitas: 'Visitas al catálogo', info: 'Información del catálogo', config: 'Configuración · API Keys', pedidos: 'Pedidos de clientes', clientes: 'Clientes', ofertas: 'Ofertas de temporada', facturas: 'Facturación' };
   document.getElementById('topbarTitle').textContent = titles[page] || '';
 
   const topAction = document.getElementById('topbarAction');
@@ -3509,29 +3514,98 @@ function renderPedidos(lista) {
   }).join('');
 }
 
-// ─── CLIENTES REGISTRADAS EN EL CATÁLOGO ─────────────────────────────
-// Colección clientes_catalogo (un documento por teléfono, id "tel-<número>").
-// Su historial son los pedidos con ese cliente_id.
-let _clientesCat = [];
+// ─── CLIENTES (catálogo + Facturas en una sola lista) ─────────────────
+// Catálogo: Firebase clientes_catalogo (id "tel-<número>"), con sus pedidos (cliente_id).
+// Facturas: Supabase clientes, con sus facturas (client_id o el mismo teléfono).
+// Se unen por los últimos 10 dígitos del teléfono. Las registradas en el catálogo
+// que aún no estén en Facturas se crean allí al abrir esta ventana.
+const PM_SB_URL = 'https://sqcggascnbcnfkymqcql.supabase.co';
+const PM_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxY2dnYXNjbmJjbmZreW1xY3FsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2ODQ2NzIsImV4cCI6MjA4NzI2MDY3Mn0.q0C_q3gOZZzcr6dWPrIhWS63gst5OBYIg9FDxThaKt4';
+const PM_SB_H = { apikey: PM_SB_KEY, Authorization: 'Bearer ' + PM_SB_KEY, 'Content-Type': 'application/json' };
+async function pmSB(path, opts = {}) {
+  const r = await fetch(PM_SB_URL + '/rest/v1/' + path, { ...opts, headers: { ...PM_SB_H, ...(opts.headers || {}) } });
+  if (!r.ok) throw new Error('Supabase ' + r.status + ': ' + (await r.text()).slice(0, 160));
+  const t = await r.text();
+  return t ? JSON.parse(t) : null;
+}
+const tel10 = t => String(t || '').replace(/\D/g, '').slice(-10);
+
+let _clientesCat = [];          // lista unida
 let _pedidosPorCliente = {};
 const _cliAbiertas = new Set();
+
+function _dirCatalogo(c) {
+  const lugar = [c.ciudad, [c.estado, c.zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+  return [c.direccion, lugar].filter(Boolean).join(', ') + (c.direccion || lugar ? (c.pais === 'RD' ? ', República Dominicana' : ', USA') : '');
+}
+
+// Crea en Facturas a una registrada del catálogo (o completa su correo/dirección si ya existía)
+async function _sincronizarEnFacturas(cat, sbCli) {
+  const ahora = new Date().toISOString();
+  const dir = _dirCatalogo(cat);
+  if (sbCli) {
+    const cambio = {};
+    if (cat.email && !sbCli.email) cambio.email = cat.email;
+    if (dir && !sbCli.shipping_address) cambio.shipping_address = dir;
+    if (!Object.keys(cambio).length) return sbCli;
+    cambio.updated_at = ahora;
+    await pmSB('clientes?id=eq.' + encodeURIComponent(sbCli.id), { method: 'PATCH', body: JSON.stringify(cambio), headers: { Prefer: 'return=minimal' } });
+    return { ...sbCli, ...cambio };
+  }
+  const fila = { id: 'cli-cat-' + String(cat.telefono || '').replace(/\D/g, ''), name: cat.nombre || '', email: cat.email || '',
+    phone: cat.telefono || '', shipping_address: dir, orders_count: 0, created_at: ahora, updated_at: ahora };
+  await pmSB('clientes', { method: 'POST', body: JSON.stringify(fila), headers: { Prefer: 'return=minimal,resolution=ignore-duplicates' } });
+  return fila;
+}
 
 async function loadClientesCat() {
   const lista = document.getElementById('clientesLista');
   if (!lista) return;
   lista.innerHTML = '<p class="pedidos-empty">Cargando clientes…</p>';
   try {
-    const [snapC, snapP] = await Promise.all([
+    const [snapC, snapP, sbClientes, sbFacturas] = await Promise.all([
       _db.collection('clientes_catalogo').get(),
-      _db.collection('pedidos').orderBy('fecha', 'desc').limit(1000).get()
+      _db.collection('pedidos').orderBy('fecha', 'desc').limit(1000).get(),
+      pmSB('clientes?select=id,name,email,phone,shipping_address,created_at&order=name'),
+      pmSB('facturas?select=id,invoice_num,client_id,client_name,client_phone,total,status,created_at,items&order=created_at.desc')
     ]);
-    _clientesCat = snapC.docs.map(d => ({ _docId: d.id, ...d.data() }));
+    const catalogo = snapC.docs.map(d => ({ _docId: d.id, ...d.data() }));
     _pedidosPorCliente = {};
     snapP.docs.forEach(d => {
       const p = { _docId: d.id, ...d.data() };
-      if (!p.cliente_id) return;
-      (_pedidosPorCliente[p.cliente_id] = _pedidosPorCliente[p.cliente_id] || []).push(p);
+      if (p.cliente_id) (_pedidosPorCliente[p.cliente_id] = _pedidosPorCliente[p.cliente_id] || []).push(p);
     });
+
+    // Unir por teléfono
+    const porTel = new Map();
+    const lista = [];
+    const porSbId = new Map();
+    (sbClientes || []).forEach(sb => {
+      const t = tel10(sb.phone);
+      const ya = t.length === 10 && porTel.get(t);
+      if (ya) { ya.otros.push(sb); porSbId.set(sb.id, ya); return; }   // mismo teléfono = mismo cliente
+      const e = { key: 'sb-' + sb.id, sb, cat: null, facturas: [], otros: [] };
+      lista.push(e);
+      porSbId.set(sb.id, e);
+      if (t.length === 10) porTel.set(t, e);
+    });
+    for (const cat of catalogo) {
+      const t = tel10(cat.telefono || cat._docId);
+      let e = porTel.get(t);
+      if (e && !e.cat) e.cat = cat;
+      else { e = { key: 'cat-' + cat._docId, sb: null, cat, facturas: [], otros: [] }; lista.push(e); if (t.length === 10) porTel.set(t, e); }
+      // Que también exista (o se complete) en Facturas
+      try {
+        const sb = await _sincronizarEnFacturas(cat, e.sb);
+        if (!e.sb) { e.sb = sb; porSbId.set(sb.id, e); }
+        else e.sb = sb;
+      } catch (err) { console.warn('[Clientes] No se pudo pasar a Facturas:', cat.nombre, err.message); }
+    }
+    (sbFacturas || []).forEach(f => {
+      const e = porSbId.get(f.client_id) || porTel.get(tel10(f.client_phone));
+      if (e) e.facturas.push(f);
+    });
+    _clientesCat = lista;
     renderClientesCat();
   } catch(e) {
     console.error('[Clientes]', e);
@@ -3539,48 +3613,56 @@ async function loadClientesCat() {
   }
 }
 
-const _tsMs = t => t && t.seconds ? t.seconds * 1000 : (typeof t === 'number' ? t : 0);
+const _tsMs = t => t && t.seconds ? t.seconds * 1000 : (typeof t === 'number' ? t : (t ? Date.parse(t) || 0 : 0));
 const _fechaCorta = ms => ms ? new Date(ms).toLocaleDateString('es', { day:'numeric', month:'short', year:'numeric' }) : '—';
-const _dinero = n => '$' + Number(n || 0).toLocaleString('en-US');
-function _resumenCliente(c) {
-  const peds = (_pedidosPorCliente[c._docId] || []).filter(p => p.estado !== 'cancelado');
-  const total = peds.reduce((s, p) => s + Number(p.total_final ?? p.total ?? 0), 0);
-  return { pedidos: _pedidosPorCliente[c._docId] || [], compras: peds.length, total,
-           estrellas: ESTRELLAS_MIN.filter(m => total >= m).length };
+const _dinero = n => '$' + Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
+const _facturaValida = f => !/cancel|anulad/i.test(f.status || '');
+function _resumenCliente(e) {
+  const pedidos = e.cat ? (_pedidosPorCliente[e.cat._docId] || []) : [];
+  const pedOk = pedidos.filter(p => p.estado !== 'cancelado');
+  const totalPed = pedOk.reduce((s, p) => s + Number(p.total_final ?? p.total ?? 0), 0);
+  const facOk = e.facturas.filter(_facturaValida);
+  const totalFac = facOk.reduce((s, f) => s + Number(f.total || 0), 0);
+  return { pedidos, totalPed, facturas: e.facturas, nFac: facOk.length, totalFac,
+           estrellas: ESTRELLAS_MIN.filter(m => totalPed >= m).length };
 }
+const _nombreCli = e => (e.cat && e.cat.nombre) || (e.sb && e.sb.name) || 'Sin nombre';
 
 function renderClientesCat() {
   const el = document.getElementById('clientesLista');
   if (!el) return;
   const q = (document.getElementById('clientesSearch').value || '').toLowerCase().trim();
   const orden = document.getElementById('clientesOrden').value;
-  let lista = _clientesCat.map(c => ({ c, r: _resumenCliente(c) }));
-  if (q) lista = lista.filter(({ c }) => [c.nombre, c.telefono, c.email, c.ciudad, c.estado, c.direccion]
-    .some(v => String(v || '').toLowerCase().includes(q)));
-  lista.sort((a, b) => orden === 'compras' ? b.r.total - a.r.total
-    : orden === 'nombre' ? String(a.c.nombre || '').localeCompare(String(b.c.nombre || ''), 'es')
-    : _tsMs(b.c.registrado || b.c.actualizado) - _tsMs(a.c.registrado || a.c.actualizado));
+  let lista = _clientesCat.map(e => ({ e, r: _resumenCliente(e) }));
+  if (q) lista = lista.filter(({ e }) => [_nombreCli(e), e.cat && e.cat.telefono, e.sb && e.sb.phone, e.cat && e.cat.email, e.sb && e.sb.email,
+      e.cat && e.cat.ciudad, e.sb && e.sb.shipping_address].some(v => String(v || '').toLowerCase().includes(q)));
+  const fechaReg = e => Math.max(_tsMs(e.cat && (e.cat.registrado || e.cat.actualizado)), _tsMs(e.sb && e.sb.created_at));
+  lista.sort((a, b) => orden === 'compras' ? (b.r.totalFac + b.r.totalPed) - (a.r.totalFac + a.r.totalPed)
+    : orden === 'nombre' ? _nombreCli(a.e).localeCompare(_nombreCli(b.e), 'es')
+    : fechaReg(b.e) - fechaReg(a.e));
 
   const todas = _clientesCat.map(_resumenCliente);
-  const conCompra = todas.filter(r => r.compras > 0).length;
-  const vendido = todas.reduce((s, r) => s + r.total, 0);
   document.getElementById('clientesResumen').innerHTML = `
-    <div class="cli-kpi"><b>${_clientesCat.length}</b><span>Registradas</span></div>
-    <div class="cli-kpi"><b>${conCompra}</b><span>Con al menos 1 pedido</span></div>
-    <div class="cli-kpi"><b>${_dinero(vendido)}</b><span>Total pedido</span></div>`;
+    <div class="cli-kpi"><b>${_clientesCat.length}</b><span>Clientes</span></div>
+    <div class="cli-kpi"><b>${_clientesCat.filter(e => e.cat).length}</b><span>Registradas en el catálogo</span></div>
+    <div class="cli-kpi"><b>${_dinero(todas.reduce((s, r) => s + r.totalFac, 0))}</b><span>Total facturado</span></div>`;
 
   if (!lista.length) {
-    el.innerHTML = `<p class="pedidos-empty">${_clientesCat.length ? 'Ninguna clienta coincide con la búsqueda.' : 'Todavía no hay clientes registradas en el catálogo.'}</p>`;
+    el.innerHTML = `<p class="pedidos-empty">${_clientesCat.length ? 'Ningún cliente coincide con la búsqueda.' : 'Todavía no hay clientes.'}</p>`;
     return;
   }
-  el.innerHTML = lista.map(({ c, r }) => {
-    const id = escHtml(c._docId);
-    const nombre = escHtml(c.nombre || 'Sin nombre');
-    const foto = /^https?:/.test(c.foto || '') ? `<img src="${escHtml(c.foto)}" alt="">` : escHtml((c.nombre || '?').trim().charAt(0).toUpperCase());
-    const tel = String(c.telefono || '').replace(/\D/g, '');
-    const lugar = [c.ciudad, [c.estado, c.zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
-    const dir = [c.direccion, lugar].filter(Boolean).join(', ') || (c.pais === 'RD' ? 'República Dominicana' : '');
-    const hist = r.pedidos.length ? r.pedidos.map(p => {
+  el.innerHTML = lista.map(({ e, r }) => {
+    const c = e.cat || {}, sb = e.sb || {};
+    const id = escHtml(e.key);
+    const nombre = escHtml(_nombreCli(e));
+    const foto = /^https?:/.test(c.foto || '') ? `<img src="${escHtml(c.foto)}" alt="">` : escHtml(_nombreCli(e).trim().charAt(0).toUpperCase());
+    const telTxt = c.telefono || sb.phone || '';
+    const tel = String(telTxt).replace(/\D/g, '');
+    const email = c.email || sb.email || '';
+    const dir = (e.cat && _dirCatalogo(c)) || sb.shipping_address || '';
+    const otrosNombres = [...new Set(e.otros.map(o => (o.name || '').trim()).filter(n => n && n.toLowerCase() !== _nombreCli(e).trim().toLowerCase()))].join(', ');
+    const chips = (e.cat ? '<span class="cli-chip cat">Catálogo</span>' : '') + (e.sb ? '<span class="cli-chip fac">Facturas</span>' : '');
+    const histPed = r.pedidos.length ? r.pedidos.map(p => {
       const est = estadoInfo(estadoPedido(p));
       const filas = (p.items || []).map(it => `<tr><td>${escHtml(it.name || '—')}</td><td style="text-align:center">×${Number(it.qty) || 1}</td><td style="text-align:right">${it.price != null ? '$' + escHtml(it.price) : '—'}</td></tr>`).join('');
       return `<div class="cli-pedido">
@@ -3592,30 +3674,45 @@ function renderClientesCat() {
         </div>
         ${filas ? `<table>${filas}</table>` : ''}
       </div>`;
-    }).join('') : '<p class="cli-vacio">Todavía no ha hecho pedidos desde el catálogo.</p>';
+    }).join('') : '<p class="cli-vacio">Sin pedidos desde el catálogo.</p>';
+    const histFac = r.facturas.length ? r.facturas.map(f => {
+      const filas = (Array.isArray(f.items) ? f.items : []).map(it => `<tr><td>${escHtml(it.name || it.desc || '—')}</td><td style="text-align:center">×${Number(it.qty) || 1}</td><td style="text-align:right">${it.price != null ? _dinero(it.price) : '—'}</td></tr>`).join('');
+      return `<div class="cli-pedido${_facturaValida(f) ? '' : ' anulada'}">
+        <div class="cli-pedido-head">
+          <span class="pedido-numero">${escHtml(f.invoice_num || '—')}</span>
+          <span class="cli-chip fac">${escHtml(f.status || '—')}</span>
+          <span class="pedido-fecha">${_fechaCorta(_tsMs(f.created_at))}</span>
+          <span class="pedido-total-head">${_dinero(f.total)}</span>
+        </div>
+        ${filas ? `<table>${filas}</table>` : ''}
+      </div>`;
+    }).join('') : '<p class="cli-vacio">Sin facturas.</p>';
     return `
-      <div class="cli-card${_cliAbiertas.has(c._docId) ? ' abierta' : ''}" id="cli-${id}">
+      <div class="cli-card${_cliAbiertas.has(e.key) ? ' abierta' : ''}" id="cli-${id}">
         <div class="cli-head" onclick="toggleClienteCat('${id}')">
           <span class="cli-avatar">${foto}</span>
           <span class="cli-datos">
-            <span class="cli-nombre">${nombre}${r.estrellas ? `<span class="cli-estrellas">${'★'.repeat(r.estrellas)}</span>` : ''}</span>
-            <span class="cli-linea">${escHtml(c.telefono || '')}${c.email ? ' · ' + escHtml(c.email) : ''}</span>
+            <span class="cli-nombre">${nombre}${r.estrellas ? `<span class="cli-estrellas">${'★'.repeat(r.estrellas)}</span>` : ''}${chips}</span>
+            <span class="cli-linea">${escHtml(telTxt)}${email ? ' · ' + escHtml(email) : ''}</span>
             <span class="cli-linea">${escHtml(dir)}</span>
+            ${otrosNombres ? `<span class="cli-linea cli-alias">También como: ${escHtml(otrosNombres)}</span>` : ''}
           </span>
-          <span class="cli-cifras"><b>${_dinero(r.total)}</b><span>${r.compras} pedido${r.compras === 1 ? '' : 's'}</span></span>
+          <span class="cli-cifras"><b>${_dinero(r.totalFac)}</b><span>${r.nFac} factura${r.nFac === 1 ? '' : 's'}${r.pedidos.length ? ' · ' + r.pedidos.length + ' pedido' + (r.pedidos.length === 1 ? '' : 's') : ''}</span></span>
           <svg class="pedido-arrow" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="cli-body">
           <div class="cli-ficha">
-            <div><span>Teléfono</span>${tel ? `<a href="https://wa.me/${tel}" target="_blank" rel="noopener">${escHtml(c.telefono)} · WhatsApp</a>` : '—'}</div>
-            <div><span>Correo</span>${c.email ? `<a href="mailto:${escHtml(c.email)}">${escHtml(c.email)}</a>` : '—'}</div>
+            <div><span>Teléfono</span>${tel ? `<a href="https://wa.me/${tel}" target="_blank" rel="noopener">${escHtml(telTxt)} · WhatsApp</a>` : '—'}</div>
+            <div><span>Correo</span>${email ? `<a href="mailto:${escHtml(email)}">${escHtml(email)}</a>` : '—'}</div>
             <div><span>Dirección</span>${escHtml(dir) || '—'}</div>
-            <div><span>País</span>${c.pais === 'RD' ? 'República Dominicana' : 'USA'}</div>
-            <div><span>Registrada</span>${_fechaCorta(_tsMs(c.registrado || c.actualizado))}</div>
-            <div><span>Último pedido</span>${r.pedidos.length ? _fechaCorta(_tsMs(r.pedidos[0].fecha)) : '—'}</div>
+            <div><span>Cliente desde</span>${_fechaCorta(fechaReg(e))}</div>
+            <div><span>Pedidos del catálogo</span>${r.pedidos.length} · ${_dinero(r.totalPed)}</div>
+            <div><span>Facturado</span>${r.nFac} · ${_dinero(r.totalFac)}</div>
           </div>
-          <div class="cli-hist-titulo">Historial de compras (${r.pedidos.length})</div>
-          ${hist}
+          <div class="cli-hist-titulo">Facturas (${r.facturas.length})</div>
+          ${histFac}
+          <div class="cli-hist-titulo" style="margin-top:14px">Pedidos del catálogo (${r.pedidos.length})</div>
+          ${histPed}
         </div>
       </div>`;
   }).join('');

@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261102-5';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261102-7';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <script>(function(){
 /* Autocomprobación de versión. El rompe-caché de arriba compara el parámetro ?v=
    contra la V del HTML que ya se está ejecutando: si el navegador sirvió una copia
@@ -4615,7 +4615,7 @@ function updateCartUI() {
   } else {
     badge.classList.add('hidden');
   }
-  // Temporada y ofertas especiales: precio fijo, sin descuento mayorista
+  // Temporada, ofertas especiales y Lentes: precio fijo, sin descuento mayorista
   const { regular: regularTotal, fixed: ofertaTotal } = cartSplit();
   const rawTotal = regularTotal + ofertaTotal;
 
@@ -5476,6 +5476,7 @@ async function guardarRegistro() {
       enNube = true;
     } catch(e) { console.warn('No se pudo guardar el registro en Firebase:', e.message); }
   }
+  pasarClienteAFacturas(d);   // misma clienta en la lista de Facturas (sin esperar)
   btn.disabled = false;
   if (!enNube) console.warn('Registro guardado solo en este dispositivo');
   pintarRegistro();
@@ -5483,6 +5484,38 @@ async function guardarRegistro() {
   msg.className = 'reg-msg ok';
   msg.textContent = anterior ? (es ? '✓ Datos actualizados' : '✓ Details updated') : (es ? '✓ ¡Registro completado!' : '✓ You are signed up!');
   setTimeout(() => { cerrarRegistro(); if (fn) fn(); }, fn ? 400 : 900);
+}
+
+// Las registradas del catálogo son las mismas clientes de Facturas (Supabase «clientes»).
+// Se busca por los últimos 10 dígitos del teléfono: si ya existe, solo se le completa el
+// correo y la dirección que falten; si no, se crea. Nunca se duplica.
+const PM_SB_URL = 'https://sqcggascnbcnfkymqcql.supabase.co';
+const PM_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxY2dnYXNjbmJjbmZreW1xY3FsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2ODQ2NzIsImV4cCI6MjA4NzI2MDY3Mn0.q0C_q3gOZZzcr6dWPrIhWS63gst5OBYIg9FDxThaKt4';
+async function pasarClienteAFacturas(d) {
+  try {
+    const h = { apikey: PM_SB_KEY, Authorization: 'Bearer ' + PM_SB_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' };
+    const digitos = String(d.telefono || '').replace(/\D/g, '');
+    const t10 = digitos.slice(-10);
+    if (t10.length < 10) return;
+    const lugar = [d.ciudad, [d.estado, d.zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    const dir = [d.direccion, lugar].filter(Boolean).join(', ') + (d.direccion || lugar ? (d.pais === 'RD' ? ', República Dominicana' : ', USA') : '');
+    const r = await fetch(PM_SB_URL + '/rest/v1/clientes?select=id,phone,email,shipping_address&phone=ilike.*' + t10.slice(-4) + '*', { headers: h });
+    const filas = r.ok ? await r.json() : [];
+    const ya = filas.find(x => String(x.phone || '').replace(/\D/g, '').slice(-10) === t10);
+    const ahora = new Date().toISOString();
+    if (ya) {
+      const cambio = {};
+      if (d.email && !ya.email) cambio.email = d.email;
+      if (dir && !ya.shipping_address) cambio.shipping_address = dir;
+      if (!Object.keys(cambio).length) return;
+      cambio.updated_at = ahora;
+      await fetch(PM_SB_URL + '/rest/v1/clientes?id=eq.' + encodeURIComponent(ya.id), { method: 'PATCH', headers: h, body: JSON.stringify(cambio) });
+    } else {
+      await fetch(PM_SB_URL + '/rest/v1/clientes', { method: 'POST', headers: { ...h, Prefer: 'return=minimal,resolution=ignore-duplicates' },
+        body: JSON.stringify({ id: 'cli-cat-' + digitos, name: d.nombre || '', email: d.email || '', phone: d.telefono || '',
+          shipping_address: dir, orders_count: 0, created_at: ahora, updated_at: ahora }) });
+    }
+  } catch(e) { console.warn('[Facturas] No se pudo pasar la clienta:', e.message); }
 }
 
 // Registro: solo en el carrito (abajo, junto al total); el catálogo no tiene botón de cuenta
@@ -6666,7 +6699,8 @@ function cartSplit() {
     const p = products.find(x => String(x.id) === String(item.id));
     if (!p) return;
     const monto = (Math.round(parseFloat(String(p.price))) || 0) * item.qty;
-    if (p.category === 'temporada' || ofertaIds.has(String(item.id))) fixed += monto;
+    // Precio fijo, sin descuento mayorista: Temporada, ofertas especiales y Lentes
+    if (p.category === 'temporada' || p.category === 'lentes' || ofertaIds.has(String(item.id))) fixed += monto;
     else regular += monto;
   });
   return { regular, fixed };
@@ -6931,9 +6965,10 @@ async function _renderHistorialEnCarrito() {
   body.innerHTML = `<p class="hist-empty">${_t[_lang].historyLoading || 'Cargando...'}</p>`;
   try {
     // Pedidos de este dispositivo + los que están en Firebase a su nombre y teléfono
-    const [locales, remotos] = await Promise.all([_histDB.obtenerTodos(), pedidosPorNombreTelefono(quien)]);
+    const [locales, remotos, facturas] = await Promise.all([_histDB.obtenerTodos(), pedidosPorNombreTelefono(quien), facturasPorTelefono(quien)]);
     const porNumero = new Map(locales.map(p => [p.numero, p]));
     (remotos || []).forEach(r => porNumero.set(r.numero, { ...(porNumero.get(r.numero) || {}), ...r }));
+    (facturas || []).forEach(f => { if (!porNumero.has(f.numero)) porNumero.set(f.numero, f); });
     const pedidos = [...porNumero.values()].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
     const cabecera = consultaHistorialHtml(quien);
     if (!pedidos.length) {
@@ -6956,6 +6991,7 @@ async function _renderHistorialEnCarrito() {
           <span class="hist-num">${p.numero}</span>
           <span class="hist-fecha">${fecha}</span>
         </div>
+        ${p.factura ? estadoFacturaHtml(p.factura) : ''}
         ${p.docId ? `<div class="hist-estado" data-doc="${p.docId}"><span class="hist-estado-cargando">${_lang === 'en' ? 'Checking status…' : 'Consultando estado…'}</span></div>` : ''}
         ${items}
         <div class="hist-total-row">
@@ -7000,6 +7036,38 @@ async function pedidosPorNombreTelefono(q) {
     return null;
   }
 }
+// Compras anteriores hechas con la tienda (Facturas, Supabase) con el mismo teléfono.
+// Así quien compró antes de registrarse ve todo su historial. Igual que con los pedidos,
+// solo se muestran si el nombre de la factura coincide con el de la clienta registrada.
+async function facturasPorTelefono(q) {
+  const t10 = String(q.telefono || '').replace(/\D/g, '').slice(-10);
+  const primerNombre = _normNombre(q.nombre).split(' ')[0];
+  if (t10.length < 10 || !primerNombre) return [];
+  try {
+    const h = { apikey: PM_SB_KEY, Authorization: 'Bearer ' + PM_SB_KEY };
+    const r = await fetch(PM_SB_URL + '/rest/v1/facturas?select=invoice_num,client_name,client_phone,created_at,invoice_date,items,total,status' +
+      '&client_phone=ilike.*' + t10.slice(-4) + '*&order=created_at.desc&limit=100', { headers: h });
+    if (!r.ok) return [];
+    return (await r.json())
+      .filter(f => String(f.client_phone || '').replace(/\D/g, '').slice(-10) === t10)
+      .filter(f => _normNombre(f.client_name).split(' ').includes(primerNombre))
+      .map(f => ({
+        numero: f.invoice_num || '—',
+        fecha: f.created_at || f.invoice_date || new Date().toISOString(),
+        items: (Array.isArray(f.items) ? f.items : []).map(i => ({ name: i.name || '—', qty: Number(i.qty) || 1, price: Number(i.price) || 0 })),
+        total: Number(f.total) || 0,
+        descuento: 0,
+        factura: f.status || 'pendiente',
+      }));
+  } catch(e) { console.warn('No se pudieron consultar las facturas:', e.message); return []; }
+}
+const _ESTADO_FACTURA = { pendiente:['Pendiente de pago','Pending payment'], pagado:['Pagada','Paid'], procesando:['En proceso','Processing'],
+  enviado:['Enviada','Shipped'], entregado:['Entregada','Delivered'], cancelado:['Anulada','Cancelled'], anulado:['Anulada','Cancelled'] };
+function estadoFacturaHtml(st) {
+  const en = _lang === 'en', par = _ESTADO_FACTURA[st] || [st, st];
+  return `<div class="hist-estado"><div class="hist-estado-txt${/cancel|anul/.test(st) ? ' cancelado' : ''}">🧾 ${en ? 'Invoice' : 'Factura'} · ${par[en ? 1 : 0]}</div></div>`;
+}
+
 function consultaHistorialHtml(q) {
   const esc = t => String(t || '').replace(/[&<>"]/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[ch]));
   return `<p class="hist-quien">${_lang === 'en' ? 'Orders for' : 'Pedidos de'} <b>${esc(q.nombre)}</b> · ${esc(formatoTel(q.telefono))}</p>`;
