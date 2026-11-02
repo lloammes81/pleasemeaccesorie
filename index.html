@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261031-2';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261102-1';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <script>(function(){
 /* Autocomprobación de versión. El rompe-caché de arriba compara el parámetro ?v=
    contra la V del HTML que ya se está ejecutando: si el navegador sirvió una copia
@@ -2131,6 +2131,53 @@ location.replace(location.pathname+'?v='+m[1]);})
     color: #6be89a;
   }
 
+  /* ─── PIE DEL CARRITO (rediseño) ─── */
+  .cart-footer { background: linear-gradient(180deg, rgba(201,151,58,0.035), transparent 140px); }
+  .cart-note-label { display: flex; align-items: center; gap: 7px; font-size: 9px; letter-spacing: 2.5px; color: var(--gold-mid); margin-bottom: 10px; }
+  .cart-note-label svg { opacity: .85; }
+  .cart-note { border-radius: 8px; background: rgba(0,0,0,0.28); border-color: rgba(201,151,58,0.2);
+    box-shadow: inset 0 1px 6px rgba(0,0,0,0.45); padding: 12px 14px; line-height: 1.55; margin-bottom: 18px;
+    transition: border-color .2s, box-shadow .2s; }
+  .cart-note:focus { border-color: var(--gold-mid); box-shadow: inset 0 1px 6px rgba(0,0,0,0.45), 0 0 0 3px rgba(201,151,58,0.14); }
+  .cart-note::placeholder { color: rgba(154,140,118,0.75); font-style: italic; }
+
+  .cart-envio { border-radius: 10px; margin-bottom: 18px; }
+  /* Tarjeta «Regístrate» (sin registro) */
+  .cart-envio.env-cta { display: flex; align-items: center; gap: 13px; padding: 14px 14px 14px 12px; position: relative; overflow: hidden;
+    border-color: rgba(201,151,58,0.45); background: linear-gradient(120deg, rgba(201,151,58,0.13), rgba(201,151,58,0.03) 60%); }
+  .cart-envio.env-cta::after { content: ''; position: absolute; top: 0; bottom: 0; left: -60%; width: 45%; pointer-events: none;
+    background: linear-gradient(100deg, transparent, rgba(255,240,179,0.13), transparent); animation: envBrillo 3.2s ease-in-out infinite; }
+  @keyframes envBrillo { 0%, 35% { left: -60%; } 75%, 100% { left: 120%; } }
+  .cart-envio.parpadeo { animation: envHalo 2.8s ease-in-out infinite; }
+  @keyframes envHalo {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(232,197,110,0); border-color: rgba(201,151,58,0.45); }
+    50% { box-shadow: 0 0 18px 0 rgba(232,197,110,0.22); border-color: rgba(240,216,128,0.85); }
+  }
+  .env-cta-ico { width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    color: #1a1206; background: linear-gradient(135deg, #b48226, #f0d880); box-shadow: 0 0 0 3px rgba(201,151,58,0.15), 0 4px 12px rgba(0,0,0,0.4); }
+  .env-cta-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; font-size: 11.5px; color: rgba(240,230,208,0.82); }
+  .cart-envio.env-cta .env-cta-txt b { margin: 0; font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 2.5px; color: var(--gold-light); }
+  .env-cta-flecha { color: var(--gold-mid); font-size: 24px; line-height: 1; transition: transform .2s; }
+  .cart-envio.env-cta:hover .env-cta-flecha { transform: translateX(3px); color: var(--gold-light); }
+  @media (prefers-reduced-motion: reduce) { .cart-envio.env-cta::after, .cart-envio.parpadeo { animation: none; } }
+
+  /* Total */
+  .cart-total-box { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; padding: 14px 16px; border-radius: 10px; border: 1px solid rgba(201,151,58,0.18);
+    background: radial-gradient(120% 140% at 100% 100%, rgba(201,151,58,0.12), rgba(0,0,0,0.2) 70%); }
+  .cart-total-top { display: flex; flex-direction: column; align-items: flex-start; gap: 7px; min-width: 0; }
+  .cart-total-top .cart-total-label { color: var(--gold-pale); opacity: .75; }
+  .cart-total-top .cart-discount-badge { align-self: flex-start; margin: 0; border-radius: 999px; }
+  .cart-total-bottom { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; }
+  .cart-total-bottom .cart-original-price { margin: 0; font-size: 15px; }
+  .cart-total-box .cart-total-amount { font-size: 40px; line-height: 1.1; text-shadow: 0 0 22px rgba(232,201,109,0.25); }
+  .cart-total-box .cart-total-amount .cur { font-size: 18px; vertical-align: 0.7em; color: var(--gold-mid); }
+
+  /* Barra inferior Catálogo / Historial */
+  .cart-nav { gap: 8px; padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px)); background: rgba(0,0,0,0.25); }
+  .cart-nav .cat-panel-footer-back { font-size: 9px; padding: 9px 12px; border: 1px solid transparent; border-radius: 999px; color: var(--text-cream); opacity: .8; }
+  .cart-nav .cat-panel-footer-back svg { color: var(--gold-mid); }
+  .cart-nav .cat-panel-footer-back:hover { opacity: 1; color: var(--gold-light); border-color: rgba(201,151,58,0.35); background: rgba(201,151,58,0.08); }
+
   .whatsapp-btn {
     width: 100%;
     padding: 15px;
@@ -3711,20 +3758,20 @@ location.replace(location.pathname+'?v='+m[1]);})
   <div class="cart-scroll-body" id="cartScrollBody">
   <div class="cart-items" id="cartItems"></div>
   <div class="cart-footer">
-    <p class="cart-note-label" data-i18n="noteLabel">Nota para tu pedido</p>
+    <label class="cart-note-label" for="cartNote">
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>
+      <span data-i18n="noteLabel">Nota para tu pedido</span>
+    </label>
     <textarea class="cart-note" id="cartNote" data-i18n-ph="cartPlaceholder" placeholder="Ej: talla del anillo, color preferido, si es regalo..."></textarea>
     <div class="cart-envio" id="cartEnvio" onclick="cartEnvioClick()"></div>
-    <div style="margin-bottom:18px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+    <div class="cart-total-box">
+      <div class="cart-total-top">
         <span class="cart-total-label" id="cartTotalLabel" data-i18n="totalEstimated">Total estimado</span>
         <span class="cart-discount-badge" id="cartDiscountBadge" data-i18n="discountBadge">35% OFF Mayorista</span>
       </div>
-      <div style="display:flex;justify-content:space-between;align-items:flex-end;">
-        <div style="flex:1"></div>
-        <div style="text-align:right;">
-          <div class="cart-original-price" id="cartOriginalPrice"></div>
-          <span class="cart-total-amount" id="cartTotalAmount"><span class="cur">$</span><span id="cartTotal">0</span></span>
-        </div>
+      <div class="cart-total-bottom">
+        <div class="cart-original-price" id="cartOriginalPrice"></div>
+        <span class="cart-total-amount" id="cartTotalAmount"><span class="cur">$</span><span id="cartTotal">0</span></span>
       </div>
     </div>
     <button class="whatsapp-btn" id="whatsappBtn" onclick="sendWhatsApp()" disabled style="display:none">
@@ -3733,12 +3780,12 @@ location.replace(location.pathname+'?v='+m[1]);})
     </button>
   </div>
   </div>
-  <div class="cat-panel-footer">
+  <div class="cat-panel-footer cart-nav">
     <button class="cat-panel-footer-back" onclick="closeCart()">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
       <span data-i18n="catalogBtn">Catálogo</span>
     </button>
-    <button class="cat-panel-footer-back" onclick="showCartView('history')" style="margin-left:20px;">
+    <button class="cat-panel-footer-back" onclick="showCartView('history')">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       <span data-i18n="historyBtn">Historial</span>
     </button>
@@ -5400,6 +5447,7 @@ function pintarRegistro() {
   if (!box) return;
   const esc = t => String(t || '').replace(/[&<>"]/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[ch]));
   box.classList.toggle('parpadeo', !c);      // invita a registrarse
+  box.classList.toggle('env-cta', !c);
   box.classList.toggle('registrada', !!c);
   box.classList.remove('menu-abierto');
   if (c) {
@@ -5421,7 +5469,10 @@ function pintarRegistro() {
         <button type="button" onclick="event.stopPropagation(); abrirRegistro()">✏️ ${es ? 'Editar mis datos' : 'Edit my details'}</button>
       </div></div>`;
   } else {
-    box.innerHTML = `<b>👤 ${es ? 'Regístrate' : 'Sign up'}</b>${es ? 'Guarda tus datos de envío una sola vez y pide más rápido.' : 'Save your shipping details once and order faster.'}`;
+    box.innerHTML = `
+      <span class="env-cta-ico" aria-hidden="true"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg></span>
+      <span class="env-cta-txt"><b>${es ? 'Regístrate' : 'Sign up'}</b><span>${es ? 'Guarda tus datos de envío una sola vez y pide más rápido.' : 'Save your shipping details once and order faster.'}</span></span>
+      <span class="env-cta-flecha" aria-hidden="true">›</span>`;
   }
 }
 // Sin registro abre el registro; registrada despliega su menú
