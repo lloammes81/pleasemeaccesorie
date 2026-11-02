@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261102-6';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261102-7';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -1841,6 +1841,15 @@ textarea { resize: vertical; min-height: 80px; }
 .cli-chip.fac { background:var(--bg2); color:var(--text-mid); border:1px solid var(--border); }
 .cli-pedido.anulada { opacity:.55; }
 .cli-alias { font-style:italic; color:var(--text-muted); }
+.cli-acciones { margin:0 0 12px; }
+.cli-form { display:grid; grid-template-columns:1fr 1fr; gap:10px 14px; margin:0 0 14px; padding:14px; background:var(--surface); border:1px solid var(--border-strong); }
+.cli-form .cli-full { grid-column:1 / -1; }
+.cli-form label { display:flex; flex-direction:column; gap:4px; font-size:10.5px; letter-spacing:.6px; text-transform:uppercase; color:var(--text-muted); }
+.cli-form input, .cli-form select { padding:8px 10px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-family:'Montserrat',sans-serif; font-size:13px; text-transform:none; letter-spacing:0; }
+.cli-form input:focus, .cli-form select:focus { outline:none; border-color:var(--gold); }
+.cli-form input:disabled { opacity:.6; }
+.cli-form-botones { display:flex; gap:8px; }
+@media (max-width:640px) { .cli-form { grid-template-columns:1fr; } }
 .cli-fac-datos { display:flex; flex-wrap:wrap; gap:4px 16px; padding:6px 12px; font-size:11.5px; color:var(--text-mid); border-top:1px solid var(--border); }
 .cli-fac-datos b { color:var(--text-muted); font-weight:600; }
 .cli-extra { font-size:11px; color:var(--text-muted); }
@@ -3690,7 +3699,7 @@ function renderClientesCat() {
           <span class="cli-avatar${e.cat ? ' cli-avatar--cat' : ''}" title="${e.cat ? 'Registrada en el catálogo' : 'Cliente de Facturas'}">${foto}</span>
           <span class="cli-datos">
             <span class="cli-nombre">${nombre}${r.estrellas ? `<span class="cli-estrellas">${'★'.repeat(r.estrellas)}</span>` : ''}${chips}</span>
-            <span class="cli-linea">${escHtml(telTxt)}${email ? ' · ' + escHtml(email) : ''}</span>
+            <span class="cli-linea">${escHtml(telTxt)}${email ? ' · ' + escHtml(email) : ''}${e.cat ? ` · 👁 ${Number(c.visitas) || 0} visita${Number(c.visitas) === 1 ? '' : 's'}` : ''}</span>
             <span class="cli-linea">${escHtml(dir)}</span>
             ${otrosNombres ? `<span class="cli-linea cli-alias">También como: ${escHtml(otrosNombres)}</span>` : ''}
           </span>
@@ -3705,7 +3714,11 @@ function renderClientesCat() {
             <div><span>Cliente desde</span>${_fechaCorta(fechaReg(e))}</div>
             <div><span>Pedidos del catálogo</span>${r.pedidos.length} · ${_dinero(r.totalPed)}</div>
             <div><span>Facturado</span>${r.nFac} · ${_dinero(r.totalFac)}</div>
+            ${e.cat ? `<div><span>Visitas al catálogo</span>${Number(c.visitas) || 0}${c.ultima_visita ? ' · última ' + _fechaHora(_tsMs(c.ultima_visita)) : ''}</div>` : ''}
           </div>
+          ${e.cat ? `<div class="cli-acciones"><button class="btn" onclick="event.stopPropagation(); editarClienteCat('${id}')">✏️ Editar datos</button></div>
+          <div id="cli-edit-${id}"></div>` : ''}
+          ${e.cat ? visitasHtml(c) : ''}
           <div class="cli-hist-titulo">Facturas (${r.facturas.length})</div>
           ${histFac}
           <div class="cli-hist-titulo" style="margin-top:14px">Pedidos del catálogo (${r.pedidos.length})</div>
@@ -3753,6 +3766,74 @@ function facturaClienteHtml(f) {
     ${f.notes ? `<p class="cli-fac-nota">📝 ${escHtml(f.notes)}</p>` : ''}
     ${!_facturaValida(f) && (f.void_reason || f.void_at) ? `<p class="cli-fac-nota">Anulada${f.void_at ? ' · ' + _fechaCorta(_tsMs(f.void_at)) : ''}${f.void_reason ? ' · ' + escHtml(f.void_reason) : ''}</p>` : ''}
   </div>`;
+}
+
+const _fechaHora = ms => ms ? new Date(ms).toLocaleString('es', { day:'numeric', month:'short', year:'numeric', hour:'numeric', minute:'2-digit' }) : '—';
+
+// Historial de visitas: total y las fechas más recientes (agrupadas por día)
+function visitasHtml(c) {
+  const log = (Array.isArray(c.visitas_log) ? c.visitas_log : []).map(t => Date.parse(t)).filter(Boolean).sort((a, b) => b - a);
+  if (!log.length) return `<div class="cli-hist-titulo" style="margin-top:14px">Visitas (${Number(c.visitas) || 0})</div><p class="cli-vacio">Aún no hay visitas registradas.</p>`;
+  const porDia = new Map();
+  log.forEach(ms => { const d = new Date(ms).toLocaleDateString('es', { weekday:'short', day:'numeric', month:'short', year:'numeric' }); porDia.set(d, [...(porDia.get(d) || []), ms]); });
+  const filas = [...porDia.entries()].slice(0, 30).map(([dia, horas]) =>
+    `<tr><td>${dia}</td><td style="text-align:center">${horas.length} visita${horas.length === 1 ? '' : 's'}</td>
+      <td style="text-align:right">${horas.map(ms => new Date(ms).toLocaleTimeString('es', { hour:'numeric', minute:'2-digit' })).join(', ')}</td></tr>`).join('');
+  return `<div class="cli-hist-titulo" style="margin-top:14px">Visitas al catálogo (${Number(c.visitas) || log.length})</div>
+    <div class="cli-pedido"><table>${filas}</table></div>
+    ${porDia.size > 30 ? '<p class="cli-vacio">Se muestran los últimos 30 días con visitas.</p>' : ''}`;
+}
+
+// Editar los datos de una registrada del catálogo. El teléfono es su código y no se cambia.
+const _CAMPOS_EDIT = [
+  ['nombre', 'Nombre', 'text'], ['email', 'Correo', 'email'], ['pais', 'País', 'pais'],
+  ['direccion', 'Dirección', 'text'], ['ciudad', 'Ciudad', 'text'], ['estado', 'Estado', 'text'], ['zip', 'Código postal', 'text'],
+];
+function editarClienteCat(key) {
+  const e = _clientesCat.find(x => x.key === key);
+  const box = document.getElementById('cli-edit-' + key);
+  if (!e || !e.cat || !box) return;
+  if (box.innerHTML) { box.innerHTML = ''; return; }
+  const c = e.cat;
+  box.innerHTML = `<div class="cli-form" onclick="event.stopPropagation()">
+    <label class="cli-full">Teléfono (código del cliente, no se cambia)<input value="${escHtml(c.telefono || '')}" disabled></label>
+    ${_CAMPOS_EDIT.map(([k, lbl, tipo]) => tipo === 'pais'
+      ? `<label>${lbl}<select data-k="${k}"><option value="USA"${c.pais !== 'RD' ? ' selected' : ''}>USA</option><option value="RD"${c.pais === 'RD' ? ' selected' : ''}>República Dominicana</option></select></label>`
+      : `<label${k === 'direccion' || k === 'nombre' ? ' class="cli-full"' : ''}>${lbl}<input type="${tipo}" data-k="${k}" value="${escHtml(c[k] || '')}"></label>`).join('')}
+    <div class="cli-full cli-form-botones">
+      <button class="btn btn-primary" onclick="guardarClienteCat('${escHtml(key)}', this)">💾 Guardar</button>
+      <button class="btn" onclick="editarClienteCat('${escHtml(key)}')">Cancelar</button>
+    </div>
+  </div>`;
+}
+async function guardarClienteCat(key, btn) {
+  const e = _clientesCat.find(x => x.key === key);
+  const box = document.getElementById('cli-edit-' + key);
+  if (!e || !e.cat || !box) return;
+  const datos = {};
+  box.querySelectorAll('[data-k]').forEach(el => { datos[el.dataset.k] = el.value.trim().replace(/\s+/g, ' '); });
+  if (!datos.nombre) return showToast('El nombre no puede quedar vacío');
+  if (datos.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(datos.email)) return showToast('Revisa el correo');
+  if (datos.pais === 'RD') { datos.estado = ''; datos.zip = ''; }
+  btn.disabled = true; btn.textContent = 'Guardando…';
+  try {
+    await _db.collection('clientes_catalogo').doc(e.cat._docId).set({ ...datos, actualizado: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    Object.assign(e.cat, datos);
+    // La misma clienta en Facturas: nombre, correo y dirección al día
+    if (e.sb) {
+      const dir = _dirCatalogo(e.cat);
+      const cambio = { name: datos.nombre, email: datos.email || '', shipping_address: dir, updated_at: new Date().toISOString() };
+      try {
+        await pmSB('clientes?id=eq.' + encodeURIComponent(e.sb.id), { method: 'PATCH', body: JSON.stringify(cambio), headers: { Prefer: 'return=minimal' } });
+        Object.assign(e.sb, cambio);
+      } catch (err) { showToast('Guardado en el catálogo; en Facturas no se pudo: ' + err.message); }
+    }
+    showToast('✅ Datos de ' + datos.nombre + ' guardados');
+    renderClientesCat();
+  } catch (err) {
+    btn.disabled = false; btn.textContent = '💾 Guardar';
+    showToast('No se pudo guardar: ' + err.message);
+  }
 }
 
 function toggleClienteCat(id) {
