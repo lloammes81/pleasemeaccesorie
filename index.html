@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261102-1';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261102-2';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <script>(function(){
 /* Autocomprobación de versión. El rompe-caché de arriba compara el parámetro ?v=
    contra la V del HTML que ya se está ejecutando: si el navegador sirvió una copia
@@ -2132,7 +2132,9 @@ location.replace(location.pathname+'?v='+m[1]);})
   }
 
   /* ─── PIE DEL CARRITO (rediseño) ─── */
-  .cart-footer { background: linear-gradient(180deg, rgba(201,151,58,0.035), transparent 140px); }
+  .cart-footer { background: linear-gradient(180deg, rgba(201,151,58,0.035), transparent 140px); display: flex; flex-direction: column; }
+  /* Registrada: su tarjeta va al final, debajo del total y del botón de WhatsApp */
+  .cart-envio.registrada { order: 10; margin: 18px 0 0; }
   .cart-note-label { display: flex; align-items: center; gap: 7px; font-size: 9px; letter-spacing: 2.5px; color: var(--gold-mid); margin-bottom: 10px; }
   .cart-note-label svg { opacity: .85; }
   .cart-note { border-radius: 8px; background: rgba(0,0,0,0.28); border-color: rgba(201,151,58,0.2);
@@ -3758,11 +3760,6 @@ location.replace(location.pathname+'?v='+m[1]);})
   <div class="cart-scroll-body" id="cartScrollBody">
   <div class="cart-items" id="cartItems"></div>
   <div class="cart-footer">
-    <label class="cart-note-label" for="cartNote">
-      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>
-      <span data-i18n="noteLabel">Nota para tu pedido</span>
-    </label>
-    <textarea class="cart-note" id="cartNote" data-i18n-ph="cartPlaceholder" placeholder="Ej: talla del anillo, color preferido, si es regalo..."></textarea>
     <div class="cart-envio" id="cartEnvio" onclick="cartEnvioClick()"></div>
     <div class="cart-total-box">
       <div class="cart-total-top">
@@ -5063,7 +5060,8 @@ function closeCart() {
 
 // ─── WHATSAPP ────────────────────────────────────────────────────────
 function buildOrderMsg() {
-  const note = document.getElementById('cartNote').value.trim();
+  const noteEl = document.getElementById('cartNote');
+  const note = noteEl ? noteEl.value.trim() : '';
   let waContact = {};
   try { waContact = JSON.parse(localStorage.getItem('pm_contact') || '{}'); } catch(e) {}
   let msg = (waContact.wa_msg && waContact.wa_msg.trim())
