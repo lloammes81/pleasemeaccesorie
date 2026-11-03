@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261103-2';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261103-3';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -1845,6 +1845,10 @@ textarea { resize: vertical; min-height: 80px; }
 .cli-chip.pend { background:rgba(192,57,43,.08); color:#b5651d; border:1px solid rgba(181,101,29,.35); }
 .cli-acciones { margin:0 0 12px; display:flex; flex-wrap:wrap; gap:8px; }
 .cli-acciones a.btn { text-decoration:none; display:inline-flex; align-items:center; }
+.cli-acciones .cli-bloquear { margin-left:auto; }
+.cli-acciones .cli-borrar { border-color:#c0392b; color:#c0392b; }
+.cli-chip.bloq { background:#c0392b; color:#fff; border:1px solid #c0392b; }
+.cli-acciones .cli-borrar:hover { background:#c0392b; color:#fff; }
 .cli-form { display:grid; grid-template-columns:1fr 1fr; gap:10px 14px; margin:0 0 14px; padding:14px; background:var(--surface); border:1px solid var(--border-strong); }
 .cli-form .cli-full { grid-column:1 / -1; }
 .cli-form label { display:flex; flex-direction:column; gap:4px; font-size:10.5px; letter-spacing:.6px; text-transform:uppercase; color:var(--text-muted); }
@@ -3621,6 +3625,13 @@ async function loadClientesCat() {
       pmSB('facturas?select=id,invoice_num,invoice_date,created_at,client_id,client_name,client_phone,client_email,client_address,items,subtotal,shipping,discount_amount,total,payment_method,currency,notes,status,void_reason,void_at&order=created_at.desc')
     ]);
     const catalogo = snapC.docs.map(d => ({ _docId: d.id, ...d.data() }));
+    // Registros antiguos: guardar correo y nombre normalizados para que el catálogo detecte cuentas repetidas
+    const normN = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/\s+/g, ' ');
+    catalogo.forEach(c => {
+      const em = String(c.email || '').trim().toLowerCase(), nn = normN(c.nombre);
+      if (c.email_norm !== em || c.nombre_norm !== nn)
+        _db.collection('clientes_catalogo').doc(c._docId).set({ email_norm: em, nombre_norm: nn }, { merge: true }).catch(() => {});
+    });
     _pedidosPorCliente = {};
     snapP.docs.forEach(d => {
       const p = { _docId: d.id, ...d.data() };
@@ -3712,7 +3723,8 @@ function renderClientesCat() {
     const email = c.email || sb.email || '';
     const dir = (e.cat && _dirCatalogo(c)) || sb.shipping_address || '';
     const otrosNombres = [...new Set(e.otros.map(o => (o.name || '').trim()).filter(n => n && n.toLowerCase() !== _nombreCli(e).trim().toLowerCase()))].join(', ');
-    const chips = (e.cat ? (c.verificado === true ? '<span class="cli-chip ok" title="Confirmó su número por WhatsApp">✔ Verificada</span>'
+    const chips = (e.cat && c.bloqueado === true ? '<span class="cli-chip bloq" title="Acceso al catálogo bloqueado">⛔ Bloqueada</span>' : '')
+      + (e.cat ? (c.verificado === true ? '<span class="cli-chip ok" title="Confirmó su número por WhatsApp">✔ Verificada</span>'
                                                : '<span class="cli-chip pend" title="Aún no confirma su número por WhatsApp">⏳ Sin verificar</span>') : '')
       + (e.cat && c.dir_verificada ? '<span class="cli-chip ok" title="La dirección se eligió del mapa">📍 Dirección verificada</span>' : '')
       + (e.cat ? '<span class="cli-chip cat">Catálogo</span>' : '') + (e.sb ? '<span class="cli-chip fac">Facturas</span>' : '');
@@ -3760,6 +3772,8 @@ function renderClientesCat() {
             ${c.direccion ? `<a class="btn" href="https://www.openstreetmap.org/search?query=${encodeURIComponent(_dirCatalogo(c))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🗺️ Buscar en el mapa</a>
             <a class="btn" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(_dirCatalogo(c))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">📍 Google Maps</a>
             <button class="btn${c.dir_verificada ? '' : ' btn-primary'}" onclick="event.stopPropagation(); confirmarDireccionCat('${id}', ${c.dir_verificada ? 'false' : 'true'})">${c.dir_verificada ? '↩ Quitar verificación de la dirección' : '✔ Confirmar dirección'}</button>` : ''}
+            <button class="btn cli-bloquear" onclick="event.stopPropagation(); bloquearClienteCat('${id}', ${c.bloqueado === true ? 'false' : 'true'})">${c.bloqueado === true ? '✅ Desbloquear acceso' : '⛔ Bloquear acceso'}</button>
+            <button class="btn cli-borrar" onclick="event.stopPropagation(); eliminarClienteCat('${id}')">🗑 Eliminar registro</button>
           </div>
           <div id="cli-edit-${id}"></div>` : ''}
           ${e.cat ? visitasHtml(c) : ''}
@@ -3833,6 +3847,32 @@ const _CAMPOS_EDIT = [
   ['nombre', 'Nombre', 'text'], ['email', 'Correo', 'email'], ['pais', 'País', 'pais'],
   ['direccion', 'Dirección', 'text'], ['ciudad', 'Ciudad', 'text'], ['estado', 'Estado', 'text'], ['zip', 'Código postal', 'text'],
 ];
+// Bloquear (o desbloquear) el acceso al catálogo de una registrada. El registro se conserva,
+// así que con ese teléfono, correo o nombre no puede volver a registrarse.
+async function bloquearClienteCat(key, bloquear) {
+  const e = _clientesCat.find(x => x.key === key);
+  if (!e || !e.cat) return;
+  if (bloquear && !confirm(`¿Bloquear el acceso al catálogo de ${e.cat.nombre || 'esta clienta'}?\n\nAl abrir el catálogo en su teléfono verá «Acceso restringido» y no podrá volver a registrarse con ese número, correo ni nombre.`)) return;
+  try {
+    await _db.collection('clientes_catalogo').doc(e.cat._docId).set({ bloqueado: bloquear, bloqueado_at: bloquear ? firebase.firestore.FieldValue.serverTimestamp() : null }, { merge: true });
+    e.cat.bloqueado = bloquear;
+    showToast(bloquear ? '⛔ Acceso bloqueado' : '✅ Acceso desbloqueado');
+    renderClientesCat();
+  } catch (err) { showToast('No se pudo guardar: ' + err.message); }
+}
+
+// Eliminar una cuenta del catálogo (p. ej. un registro repetido). No borra sus pedidos ni su ficha de Facturas.
+async function eliminarClienteCat(key) {
+  const e = _clientesCat.find(x => x.key === key);
+  if (!e || !e.cat) return;
+  if (!confirm(`¿Eliminar el registro del catálogo de ${e.cat.nombre || 'esta clienta'} (${e.cat.telefono || ''})?\n\nSus pedidos y su ficha en Facturas no se borran. Si vuelve a entrar al catálogo tendrá que registrarse de nuevo.`)) return;
+  try {
+    await _db.collection('clientes_catalogo').doc(e.cat._docId).delete();
+    showToast('🗑 Registro eliminado');
+    loadClientesCat();
+  } catch (err) { showToast('No se pudo eliminar: ' + err.message); }
+}
+
 // El administrador confirma (o quita) la verificación de la dirección después de mirarla en el mapa
 async function confirmarDireccionCat(key, valor) {
   const e = _clientesCat.find(x => x.key === key);

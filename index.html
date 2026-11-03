@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261103-5';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261103-6';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <script>(function(){
 /* Autocomprobación de versión. El rompe-caché de arriba compara el parámetro ?v=
    contra la V del HTML que ya se está ejecutando: si el navegador sirvió una copia
@@ -2079,6 +2079,14 @@ location.replace(location.pathname+'?v='+m[1]);})
   .reg-verif[hidden], .reg-sugs[hidden] { display: none !important; }
   .reg-grid label, .reg-dir > label { font-size: 9.5px; letter-spacing: 1.2px; color: rgba(240,230,208,.72); gap: 6px; }
   .reg-req { color: #e8c56e; font-weight: 600; }
+  #pmBloqueo { position: fixed; inset: 0; z-index: 2147483000; display: flex; align-items: center; justify-content: center; padding: 20px;
+    background: radial-gradient(circle at 50% 30%, #1d1810, #070604 70%); }
+  .pm-bloqueo-caja { max-width: 380px; text-align: center; color: #f3e7c9; font-family: 'Montserrat', sans-serif; }
+  .pm-bloqueo-ico { font-size: 44px; margin-bottom: 10px; }
+  .pm-bloqueo-caja h2 { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 500; font-size: 30px; color: #e8c56e; margin: 0 0 10px; }
+  .pm-bloqueo-caja p { font-size: 13px; line-height: 1.6; opacity: .8; margin: 0 0 20px; }
+  .pm-bloqueo-btn { display: inline-block; padding: 12px 28px; border-radius: 10px; background: linear-gradient(135deg, #1a8a3d, #25d366); color: #fff;
+    font-weight: 600; font-size: 13px; letter-spacing: 1px; text-decoration: none; }
   .reg-tel-pais { min-height: 14px; font-size: 10.5px; letter-spacing: 0; text-transform: none; color: rgba(240,230,208,.6); }
   .reg-tel-pais.ok { color: #8cf0d3; }
   .reg-tel-pais.err { color: #ff9a9a; }
@@ -5574,6 +5582,8 @@ async function sincronizarCliente() {
     if (r.foto && !c.foto) act.foto = r.foto;
     // Datos que el admin pudo corregir (Admin → Clientes → Editar)
     Object.keys(ENVIO_CAMPOS).forEach(k => { if (k !== 'telefono' && typeof r[k] === 'string') act[k] = r[k]; });
+    if (r.bloqueado === true) { mostrarBloqueo(); return; }
+    try { localStorage.removeItem('pm_bloqueado'); } catch(e) {}
     if (r.verificado === true) { act.verificado = true; delete act.codigo_verif; }
     else if (r.verificacion && r.verificacion.codigo) act.codigo_verif = r.verificacion.codigo;
     if (typeof r.dir_verificada === 'boolean') act.dir_verificada = r.dir_verificada;
@@ -5683,18 +5693,25 @@ async function guardarRegistro() {
   if (tel10Reg.length !== 10 || (paisDeTel(tel10Reg) === 'USA' && !/^[2-9]\d{2}[2-9]/.test(tel10Reg))) { msg.className = 'reg-msg err'; msg.textContent = es ? 'Escribe un teléfono válido (con código de área).' : 'Enter a valid phone number (with area code).'; return document.getElementById('envTel').focus(); }
   if (d.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email)) { msg.className = 'reg-msg err'; msg.textContent = es ? 'Revisa el correo electrónico.' : 'Check the email address.'; return document.getElementById('envEmail').focus(); }
   if (d.pais === 'RD') { d.estado = ''; d.zip = ''; }
+  d.email = d.email.toLowerCase();
   // La dirección puede no estar en el mapa: se guarda igual y el administrador la confirma
   d.dir_verificada = !!(d.direccion && _envDirVerif);
   d.dir_coords = d.dir_verificada && _envDirVerif.coords ? _envDirVerif.coords : null;
 
   const anterior = clienteRegistrado();
   d.id = 'tel-' + tel10Reg;
-  if (!anterior || anterior.id !== d.id) {
-    // Número nuevo en este dispositivo: no puede estar ya registrado por otra cuenta
+  {
+    // No puede haber dos cuentas con el mismo teléfono, el mismo correo o el mismo nombre completo
     const btnG = document.getElementById('regGuardar');
     btnG.disabled = true;
-    msg.className = 'reg-msg'; msg.textContent = es ? 'Comprobando el número…' : 'Checking the number…';
-    const yaExiste = await telefonoYaRegistrado(tel10Reg);
+    msg.className = 'reg-msg'; msg.textContent = es ? 'Comprobando tus datos…' : 'Checking your details…';
+    const propia = anterior && anterior.id === d.id ? d.id : null;
+    let yaExiste;
+    if (propia) yaExiste = await clienteDuplicado(d, propia);
+    else {
+      const porTel = await telefonoYaRegistrado(tel10Reg);
+      yaExiste = porTel === null ? null : (porTel ? 'telefono' : await clienteDuplicado(d, null));
+    }
     btnG.disabled = false;
     if (yaExiste === null) {
       msg.className = 'reg-msg err';
@@ -5702,8 +5719,11 @@ async function guardarRegistro() {
       return;
     }
     if (yaExiste) {
+      const motivo = yaExiste === 'email' ? (es ? 'Este correo ya está registrado con otra cuenta. ' : 'This email is already registered to another account. ')
+        : yaExiste === 'nombre' ? (es ? 'Ya hay una cuenta registrada con este nombre. ' : 'There is already an account with this name. ')
+        : (es ? 'Este número ya está registrado. ' : 'This number is already registered. ');
       msg.className = 'reg-msg err';
-      msg.innerHTML = (es ? 'Este número ya está registrado. Si es tuyo y cambiaste de teléfono, ' : 'This number is already registered. If it is yours and you changed phones, ')
+      msg.innerHTML = motivo + (es ? 'Si es tuya, ' : 'If it is yours, ')
         + `<a href="${_escD(enlaceWhatsAppTienda(es ? 'Hola, mi número ya está registrado en el catálogo y quiero recuperar mi cuenta.' : 'Hi, my number is already registered in the catalog and I want to recover my account.'))}" target="_blank" rel="noopener">`
         + (es ? 'escríbenos por WhatsApp' : 'message us on WhatsApp') + '</a>.';
       return document.getElementById('envTel').focus();
@@ -5729,6 +5749,7 @@ async function guardarRegistro() {
       const datos = { ...sinCompras, actualizado: firebase.firestore.FieldValue.serverTimestamp() };
       if (!anterior || anterior.id !== d.id) datos.registrado = firebase.firestore.FieldValue.serverTimestamp();
       delete datos.codigo_verif; delete datos.verificado;   // la verificación la marca solo el servidor
+      datos.email_norm = d.email || ''; datos.nombre_norm = _normNombre(d.nombre); datos.tel10 = tel10Reg;
       if (nuevoCodigo || !anterior || anterior.id !== d.id)
         datos.verificacion = { codigo: d.codigo_verif, creado: firebase.firestore.FieldValue.serverTimestamp() };
       await _db.collection('clientes_catalogo').doc(d.id).set(datos, { merge: true });
@@ -5758,6 +5779,22 @@ async function guardarRegistro() {
 
 // ¿Ya hay una cuenta con este teléfono? true / false, o null si no se pudo comprobar.
 // Se miran el documento «tel-<10 dígitos>» y el antiguo con el 1 delante.
+// ¿Otra cuenta con el mismo correo o el mismo nombre completo? 'email' | 'nombre' | false | null (sin conexión)
+async function clienteDuplicado(d, idPropio) {
+  if (!_db) return null;
+  try {
+    const col = _db.collection('clientes_catalogo');
+    const nombreN = _normNombre(d.nombre);
+    const [porEmail, porNombre] = await Promise.all([
+      d.email ? col.where('email_norm', '==', d.email.toLowerCase()).limit(3).get() : null,
+      nombreN.split(' ').length >= 2 ? col.where('nombre_norm', '==', nombreN).limit(3).get() : null,
+    ]);
+    const otro = snap => snap && snap.docs.some(x => x.id !== idPropio);
+    if (otro(porEmail)) return 'email';
+    if (otro(porNombre)) return 'nombre';
+    return false;
+  } catch(e) { console.warn('No se pudo comprobar el registro:', e.message); return null; }
+}
 async function telefonoYaRegistrado(tel10) {
   if (!_db) return null;
   try {
@@ -6112,7 +6149,11 @@ async function pasarClienteAFacturas(d) {
     const dir = [d.direccion, lugar].filter(Boolean).join(', ') + (d.direccion || lugar ? (d.pais === 'RD' ? ', República Dominicana' : ', USA') : '');
     const r = await fetch(PM_SB_URL + '/rest/v1/clientes?select=id,phone,email,shipping_address&phone=ilike.*' + t10.slice(-4) + '*', { headers: h });
     const filas = r.ok ? await r.json() : [];
-    const ya = filas.find(x => String(x.phone || '').replace(/\D/g, '').slice(-10) === t10);
+    let ya = filas.find(x => String(x.phone || '').replace(/\D/g, '').slice(-10) === t10);
+    if (!ya && d.email) {   // mismo correo con otro teléfono: es la misma clienta
+      const re = await fetch(PM_SB_URL + '/rest/v1/clientes?select=id,phone,email,shipping_address&email=ilike.' + encodeURIComponent(d.email) + '&limit=1', { headers: h });
+      ya = re.ok ? (await re.json())[0] : null;
+    }
     const ahora = new Date().toISOString();
     if (ya) {
       const cambio = {};
@@ -6171,8 +6212,28 @@ function cartEnvioClick() {
   box.classList.toggle('menu-abierto');
 }
 pintarRegistro();
+// Bloqueo desde el admin: se recuerda en el dispositivo para que se vea al instante en la próxima visita
+try { if (localStorage.getItem('pm_bloqueado') === '1' && clienteRegistrado()) mostrarBloqueo(); } catch(e) {}
 sincronizarCliente();
 registrarVisita();
+
+function mostrarBloqueo() {
+  try { localStorage.setItem('pm_bloqueado', '1'); } catch(e) {}
+  if (document.getElementById('pmBloqueo')) return;
+  const en = _lang === 'en';
+  const el = document.createElement('div');
+  el.id = 'pmBloqueo';
+  el.setAttribute('role', 'alertdialog');
+  el.innerHTML = `<div class="pm-bloqueo-caja">
+      <div class="pm-bloqueo-ico">⛔</div>
+      <h2>${en ? 'Access restricted' : 'Acceso restringido'}</h2>
+      <p>${en ? 'Your access to the catalog has been disabled. If you think this is a mistake, contact us.'
+              : 'Tu acceso al catálogo fue desactivado. Si crees que es un error, comunícate con nosotros.'}</p>
+      <a class="pm-bloqueo-btn" href="${_escD(enlaceWhatsAppTienda(en ? 'Hi, my access to the catalog is blocked.' : 'Hola, mi acceso al catálogo está bloqueado.'))}" target="_blank" rel="noopener">WhatsApp</a>
+    </div>`;
+  document.body.appendChild(el);
+  document.body.style.overflow = 'hidden';
+}
 
 // Cuenta las visitas de las clientes registradas: una por sesión (no por recarga).
 // Guarda el total, la última visita y la lista de fechas en su documento.
