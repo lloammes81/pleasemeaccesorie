@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261103-1';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261103-2';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <script>(function(){
 /* Autocomprobación de versión. El rompe-caché de arriba compara el parámetro ?v=
    contra la V del HTML que ya se está ejecutando: si el navegador sirvió una copia
@@ -2079,6 +2079,9 @@ location.replace(location.pathname+'?v='+m[1]);})
   .reg-verif[hidden], .reg-sugs[hidden] { display: none !important; }
   .reg-grid label, .reg-dir > label { font-size: 9.5px; letter-spacing: 1.2px; color: rgba(240,230,208,.72); gap: 6px; }
   .reg-req { color: #e8c56e; font-weight: 600; }
+  .reg-tel-pais { min-height: 14px; font-size: 10.5px; letter-spacing: 0; text-transform: none; color: rgba(240,230,208,.6); }
+  .reg-tel-pais.ok { color: #8cf0d3; }
+  .reg-tel-pais.err { color: #ff9a9a; }
   .reg-grid input, .reg-grid select { padding: 11px 12px; border-radius: 9px; border-color: rgba(201,151,58,0.24); background: rgba(0,0,0,.28);
     font-size: 14px; transition: border-color .2s, box-shadow .2s, background .2s; }
   .reg-grid input::placeholder { color: rgba(240,230,208,.3); }
@@ -3933,7 +3936,7 @@ location.replace(location.pathname+'?v='+m[1]);})
       <h3 class="reg-seccion-tit"><span class="reg-paso">1</span><span data-i18n="regDatos">Tus datos</span></h3>
       <div class="reg-grid">
         <label class="reg-full"><span><span data-i18n="envNombre">Nombre completo</span> <b class="reg-req">*</b></span><input id="envNombre" autocomplete="name" placeholder="María Pérez"></label>
-        <label><span><span data-i18n="envTel">Teléfono / WhatsApp</span> <b class="reg-req">*</b></span><input id="envTel" type="tel" inputmode="tel" autocomplete="tel" placeholder="809 555 1234" oninput="this.value = formatoTel(this.value); envTelCambiado()"></label>
+        <label><span><span data-i18n="envTel">Teléfono / WhatsApp</span> <b class="reg-req">*</b></span><input id="envTel" type="tel" inputmode="tel" autocomplete="tel" placeholder="(561) 555-1234 · 809-555-1234" maxlength="16" onfocus="_telDigitosAntes = this.value.replace(/\D/g, '')" oninput="envTelEscribir(this, event)"><small class="reg-tel-pais" id="envTelPais" aria-live="polite"></small></label>
         <label><span data-i18n="envEmail">Correo electrónico</span><input id="envEmail" type="email" autocomplete="email" placeholder="tu@correo.com"></label>
       </div>
       <div class="reg-verif" id="regVerif" hidden></div>
@@ -5393,10 +5396,51 @@ let _regOmitido = false;         // eligió "continuar sin registrarme" en esta 
 
 // 8095551234 → "809 555 1234" · 18095551234 → "+1 809 555 1234"
 // (ningún código de área empieza por 1, así que un 1 al inicio es el código del país)
+// Teléfonos de EE. UU. y República Dominicana (los dos usan el código +1).
+// RD se reconoce por su código de área: 809, 829 o 849.
+const AREAS_RD = ['809', '829', '849'];
+function paisDeTel(v) {
+  let d = String(v || '').replace(/\D/g, '');
+  if (d.length === 11 && d[0] === '1') d = d.slice(1);
+  if (d.length < 3) return '';
+  return AREAS_RD.includes(d.slice(0, 3)) ? 'RD' : 'USA';
+}
+// Formato de cada país mientras se escribe: RD «809-555-1234», EE. UU. «(561) 236-8835»
 function formatoTel(v) {
-  let d = String(v || '').replace(/\D/g, '').slice(0, 13), pre = '';
-  if (d[0] === '1') { pre = '+1 '; d = d.slice(1); }
-  return pre + [d.slice(0, 3), d.slice(3, 6), d.slice(6, 10), d.slice(10)].filter(Boolean).join(' ');
+  let d = String(v || '').replace(/\D/g, '');
+  if (d.length > 10 && d[0] === '1') d = d.slice(1);
+  d = d.slice(0, 10);
+  if (!d) return '';
+  const a = d.slice(0, 3), b = d.slice(3, 6), c = d.slice(6, 10);
+  if (AREAS_RD.includes(a) || (d.length < 3 && '809829849'.includes(d))) {
+    return [a, b, c].filter(Boolean).join('-');
+  }
+  if (d.length <= 3) return d.length === 3 ? '(' + a + ')' : a;
+  return '(' + a + ') ' + b + (c ? '-' + c : '');
+}
+// Escribir y borrar en la casilla del teléfono: si se borra un guion o paréntesis,
+// se borra también el número de antes (si no, no se podría borrar)
+let _telDigitosAntes = '';
+function envTelEscribir(el, ev) {
+  let dig = el.value.replace(/\D/g, '');
+  if (ev && ev.inputType && ev.inputType.startsWith('delete') && dig === _telDigitosAntes) dig = dig.slice(0, -1);
+  if (dig.length > 10 && dig[0] === '1') dig = dig.slice(1);
+  el.value = formatoTel(dig);
+  _telDigitosAntes = el.value.replace(/\D/g, '');
+  pintarPaisTel();
+  envTelCambiado();
+}
+function pintarPaisTel() {
+  const el = document.getElementById('envTel'), out = document.getElementById('envTelPais');
+  if (!el || !out) return;
+  const en = _lang === 'en', d = el.value.replace(/\D/g, ''), pais = paisDeTel(d);
+  if (!pais) { out.className = 'reg-tel-pais'; out.textContent = ''; return; }
+  const completo = d.length === 10;
+  const valido = pais === 'RD' || /^[2-9]\d{2}[2-9]/.test(d);   // códigos de área de EE. UU. no empiezan en 0 ni 1
+  out.className = 'reg-tel-pais' + (completo && valido ? ' ok' : (!valido ? ' err' : ''));
+  out.textContent = !valido ? (en ? '⚠ Check the area code' : '⚠ Revisa el código de área')
+    : (pais === 'RD' ? '🇩🇴 ' + (en ? 'Dominican Republic' : 'República Dominicana') : '🇺🇸 ' + (en ? 'United States' : 'Estados Unidos'))
+      + (completo ? '' : ' · ' + (10 - d.length) + (en ? ' digits left' : ' dígitos más'));
 }
 function clienteRegistrado() {
   try { const c = JSON.parse(localStorage.getItem('pm_cliente') || 'null'); return c && c.nombre && c.telefono ? c : null; }
@@ -5566,6 +5610,7 @@ function abrirRegistro(despues) {
     el.value = c[k] || (k === 'pais' ? 'USA' : '');
   });
   document.getElementById('envTel').value = formatoTel(c.telefono);
+  pintarPaisTel();
   envAplicarPais();
   _regFotoCanvas = null;
   document.getElementById('regFotoVista').innerHTML = avatarHtml(c);
@@ -5614,7 +5659,8 @@ async function guardarRegistro() {
   Object.entries(ENVIO_CAMPOS).forEach(([k, id]) => { d[k] = document.getElementById(id).value.trim().replace(/\s+/g, ' '); });
   const tel = d.telefono.replace(/\D/g, '');
   if (!d.nombre) { msg.className = 'reg-msg err'; msg.textContent = es ? 'Escribe tu nombre.' : 'Enter your name.'; return document.getElementById('envNombre').focus(); }
-  if (tel.length < 10) { msg.className = 'reg-msg err'; msg.textContent = es ? 'Escribe un teléfono válido (con código de área).' : 'Enter a valid phone number (with area code).'; return document.getElementById('envTel').focus(); }
+  const tel10Reg = tel.length === 11 && tel[0] === '1' ? tel.slice(1) : tel;
+  if (tel10Reg.length !== 10 || (paisDeTel(tel10Reg) === 'USA' && !/^[2-9]\d{2}[2-9]/.test(tel10Reg))) { msg.className = 'reg-msg err'; msg.textContent = es ? 'Escribe un teléfono válido (con código de área).' : 'Enter a valid phone number (with area code).'; return document.getElementById('envTel').focus(); }
   if (d.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email)) { msg.className = 'reg-msg err'; msg.textContent = es ? 'Revisa el correo electrónico.' : 'Check the email address.'; return document.getElementById('envEmail').focus(); }
   if (d.pais === 'RD') { d.estado = ''; d.zip = ''; }
   if (d.direccion && !_envDirVerif && !_envDirManual) {
