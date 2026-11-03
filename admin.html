@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261103-8';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261103-9';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -1858,6 +1858,64 @@ textarea { resize: vertical; min-height: 80px; }
 #adminWhatsApp svg { width:30px; height:30px; }
 #adminWhatsApp:hover { transform:translateY(-2px) scale(1.04); box-shadow:0 14px 32px rgba(18,140,60,.55), 0 0 0 6px rgba(37,211,102,.18); }
 body.admin-dentro #adminWhatsApp { display:flex; }
+.wa-fab-badge { position:absolute; top:-4px; right:-4px; min-width:22px; height:22px; padding:0 6px; border-radius:11px; background:#e53935; color:#fff;
+  font:700 11px/22px 'Montserrat',sans-serif; text-align:center; border:2px solid #fff; }
+.wa-fab-badge[hidden] { display:none; }
+/* Panel de chats */
+#waPanel { position:fixed; right:22px; bottom:94px; z-index:950; width:380px; height:min(620px, calc(100vh - 120px)); display:flex; flex-direction:column;
+  background:#efeae2; border-radius:16px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,.35), 0 0 0 1px rgba(0,0,0,.06);
+  font-family:'Montserrat',sans-serif; animation:waEntra .22s ease-out; }
+#waPanel[hidden] { display:none; }
+@keyframes waEntra { from { opacity:0; transform:translateY(16px) scale(.97); } to { opacity:1; transform:none; } }
+.wa-cab { display:flex; align-items:center; gap:10px; padding:12px 14px; background:#075e54; color:#fff; flex-shrink:0; }
+.wa-cab-txt { flex:1; min-width:0; display:flex; flex-direction:column; }
+.wa-cab-txt b { font-size:15px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.wa-cab-txt small { font-size:11px; opacity:.8; }
+.wa-cab button { background:none; border:none; color:#fff; cursor:pointer; font-size:18px; width:32px; height:32px; border-radius:50%; }
+.wa-cab button:hover { background:rgba(255,255,255,.12); }
+.wa-atras { font-size:28px !important; line-height:1; }
+.wa-cuerpo { flex:1; min-height:0; display:flex; flex-direction:column; }
+.wa-lista { flex:1; min-height:0; display:flex; flex-direction:column; background:#fff; }
+.wa-lista[hidden], .wa-chat[hidden], .wa-config[hidden], .wa-aviso[hidden], .wa-atras[hidden] { display:none !important; }
+.wa-buscar { padding:8px 10px; border-bottom:1px solid #eee; }
+.wa-buscar input { width:100%; padding:8px 12px; border:none; border-radius:18px; background:#f0f2f5; font:inherit; font-size:13px; outline:none; }
+.wa-chats { flex:1; overflow-y:auto; }
+.wa-item { display:flex; align-items:center; gap:10px; width:100%; padding:10px 12px; border:none; border-bottom:1px solid #f2f2f2; background:#fff; cursor:pointer; text-align:left; font:inherit; }
+.wa-item:hover { background:#f5f6f6; }
+.wa-av { width:42px; height:42px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:#dfe5e7; color:#54656f; font-weight:600; font-size:16px; }
+.wa-item-txt { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+.wa-item-txt b { font-size:14px; font-weight:500; color:#111b21; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.wa-item-txt small { font-size:12.5px; color:#667781; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.wa-item.nuevo .wa-item-txt b { font-weight:700; }
+.wa-item-der { display:flex; flex-direction:column; align-items:flex-end; gap:4px; flex-shrink:0; }
+.wa-item-der small { font-size:11px; color:#667781; }
+.wa-item.nuevo .wa-item-der small { color:#25d366; font-weight:600; }
+.wa-item-der i { font-style:normal; min-width:20px; height:20px; padding:0 6px; border-radius:10px; background:#25d366; color:#fff; font-size:11px; font-weight:700; line-height:20px; text-align:center; }
+.wa-chat { flex:1; min-height:0; display:flex; flex-direction:column; }
+.wa-msgs { flex:1; overflow-y:auto; padding:12px 12px 6px; display:flex; flex-direction:column; gap:4px;
+  background:#efeae2 radial-gradient(rgba(0,0,0,.035) 1px, transparent 1px) 0 0/14px 14px; }
+.wa-dia { align-self:center; margin:8px 0 4px; padding:4px 10px; border-radius:8px; background:#fff; color:#54656f; font-size:11px; box-shadow:0 1px 1px rgba(0,0,0,.06); }
+.wa-msg { max-width:82%; padding:6px 9px 5px; border-radius:8px; font-size:13.5px; line-height:1.38; color:#111b21; box-shadow:0 1px 1px rgba(0,0,0,.08); word-wrap:break-word; }
+.wa-msg.ella { align-self:flex-start; background:#fff; border-top-left-radius:2px; }
+.wa-msg.yo { align-self:flex-end; background:#d9fdd3; border-top-right-radius:2px; }
+.wa-msg.pendiente { opacity:.6; }
+.wa-msg small { display:flex; justify-content:flex-end; gap:4px; margin-top:2px; font-size:10.5px; color:#667781; }
+.wa-tick { font-style:normal; letter-spacing:-2px; }
+.wa-tick.leido { color:#53bdeb; }
+.wa-tick.error { color:#e53935; letter-spacing:0; font-weight:700; }
+.wa-aviso { padding:8px 12px; background:#fff8e1; color:#8a6d00; font-size:11.5px; line-height:1.45; border-top:1px solid #f3e3a3; }
+.wa-escribir { display:flex; align-items:flex-end; gap:8px; padding:8px 10px; background:#f0f2f5; flex-shrink:0; }
+.wa-escribir textarea { flex:1; resize:none; border:none; border-radius:20px; padding:10px 14px; font:inherit; font-size:14px; line-height:1.35; outline:none;
+  height:42px; min-height:42px; max-height:120px; background:#fff; box-sizing:border-box; }
+.wa-escribir button { width:42px; height:42px; border-radius:50%; border:none; background:#00a884; color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.wa-vacio { padding:28px 20px; text-align:center; color:#667781; font-size:13px; line-height:1.5; }
+.wa-config { padding:22px 20px; background:#fff; flex:1; display:flex; flex-direction:column; gap:12px; font-size:13px; line-height:1.55; color:#3b4a54; overflow-y:auto; }
+.wa-config p { margin:0; }
+.wa-config-sep { margin-top:10px !important; padding-top:12px; border-top:1px solid #eee; color:#667781; }
+@media (max-width:768px) {
+  #waPanel { inset:0; right:0; bottom:0; width:auto; height:auto; border-radius:0; z-index:1200; }
+  body.wa-abierto #adminWhatsApp { display:none; }
+}
 @media (max-width:768px) { #adminWhatsApp { right:16px; bottom:calc(84px + env(safe-area-inset-bottom, 0px)); width:52px; height:52px; } }
 .cli-acciones { margin:0 0 12px; display:flex; flex-wrap:wrap; gap:8px; }
 .cli-acciones a.btn { text-decoration:none; display:inline-flex; align-items:center; }
@@ -2864,6 +2922,30 @@ body.is-mobile #facturasFrame { height: calc(100dvh - 58px - 68px); }
           </div>
         </div>
 
+        <!-- ── Bandeja de WhatsApp ── -->
+        <div class="section-card" style="margin-top:24px;">
+          <div class="section-title">Bandeja de chats de WhatsApp</div>
+          <div class="contact-form" style="max-width:480px">
+            <div class="field">
+              <label>Dirección de la función «whatsappAdmin»</label>
+              <input type="text" id="c_wa_url" placeholder="https://us-central1-pleasemecatalogo.cloudfunctions.net/whatsappAdmin">
+            </div>
+            <div class="field">
+              <label>Clave de administrador (WHATSAPP_ADMIN_KEY)</label>
+              <input type="password" id="c_wa_key" autocomplete="off" placeholder="La misma que guardaste al publicar la función">
+              <div style="font-size:9.5px;color:var(--text-muted);margin-top:4px;line-height:1.6;">
+                Se guarda solo en este dispositivo. Con esto el icono verde abre los chats dentro del admin.
+                Instrucciones en <b>functions/LEEME.md</b>.
+              </div>
+            </div>
+            <div id="waCfgEstado" style="font-size:10.5px;margin-bottom:8px;"></div>
+            <div class="save-row">
+              <button class="btn" onclick="probarBandejaWA()" style="border:1px solid var(--gold);color:var(--gold);background:transparent;">Probar conexión</button>
+              <button class="btn btn-primary" onclick="guardarBandejaWA()">Guardar</button>
+            </div>
+          </div>
+        </div>
+
         <!-- ── Firebase Connection ── -->
         <div class="section-card" style="margin-top:24px;">
           <div class="section-title">Base de datos · Firebase</div>
@@ -3473,8 +3555,7 @@ function sendCatalogToNumber() {
 // página (X-Frame-Options: DENY), por eso es una ventana aparte. En el teléfono abre la app.
 // (WhatsApp corta el enlace con la página que lo abre, así que no se puede saber si sigue abierta;
 // se abre siempre con el mismo nombre para que el navegador reutilice la ventana cuando puede.)
-function abrirWhatsAppAdmin(ev) {
-  ev.preventDefault();
+function abrirWhatsAppWebVentana() {
   if (esMobile()) { location.href = 'whatsapp://send'; setTimeout(() => window.open('https://wa.me/', '_blank'), 900); return false; }
   const ancho = Math.min(460, screen.availWidth - 40), alto = Math.min(760, screen.availHeight - 60);
   const izq = (screen.availLeft || 0) + screen.availWidth - ancho - 24;
@@ -3484,10 +3565,209 @@ function abrirWhatsAppAdmin(ev) {
   if (!w) window.open('https://web.whatsapp.com/', '_blank');   // si el navegador bloquea ventanas emergentes
   return false;
 }
+// ─── BANDEJA DE CHATS DE WHATSAPP (dentro del admin) ─────────────────
+// Habla con la función «whatsappAdmin» (functions/index.js), que guarda los mensajes que
+// llegan al número de la tienda y envía las respuestas por la WhatsApp Cloud API.
+const WA_URL_DEF = 'https://us-central1-pleasemecatalogo.cloudfunctions.net/whatsappAdmin';
+const waCfg = () => {
+  let url = '', key = '';
+  try { url = localStorage.getItem('pm_wa_admin_url') || WA_URL_DEF; key = localStorage.getItem('pm_wa_admin_key') || ''; } catch(e) {}
+  return { url, key };
+};
+let _waChats = [], _waChatAbierto = null, _waMsgs = [], _waTimerLista = null, _waTimerChat = null, _waTimerBadge = null;
+async function waApi(accion, datos = {}) {
+  const { url, key } = waCfg();
+  const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-key': key }, body: JSON.stringify({ accion, ...datos }) });
+  if (r.status === 401) throw new Error('La clave de administrador no es correcta');
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || 'Error ' + r.status);
+  return d;
+}
+function abrirWhatsAppAdmin(ev) {
+  ev.preventDefault();
+  const panel = document.getElementById('waPanel');
+  if (!panel.hidden) { cerrarPanelWA(); return false; }
+  panel.hidden = false;
+  document.body.classList.add('wa-abierto');
+  if (!waCfg().key) {
+    document.getElementById('waConfig').hidden = false;
+    document.getElementById('waLista').hidden = true;
+    document.getElementById('waChat').hidden = true;
+    document.getElementById('waSub').textContent = 'Sin conectar';
+    return false;
+  }
+  document.getElementById('waConfig').hidden = true;
+  waVolverLista();
+  cargarChatsWA();
+  clearInterval(_waTimerLista);
+  _waTimerLista = setInterval(() => { if (!_waChatAbierto) cargarChatsWA(true); }, 8000);
+  return false;
+}
+function cerrarPanelWA() {
+  document.getElementById('waPanel').hidden = true;
+  document.body.classList.remove('wa-abierto');
+  clearInterval(_waTimerLista); clearInterval(_waTimerChat);
+  _waChatAbierto = null;
+}
+const _waHora = ms => {
+  if (!ms) return '';
+  const d = new Date(ms), hoy = new Date();
+  return d.toDateString() === hoy.toDateString() ? d.toLocaleTimeString('es', { hour: 'numeric', minute: '2-digit' })
+    : d.toLocaleDateString('es', { day: 'numeric', month: 'short' });
+};
+const _waTelBonito = t => { const d = String(t || '').replace(/\D/g, '').slice(-10); return d.length === 10 ? `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}` : t; };
+// Nombre: el de la clienta en Clientes (si ya se cargó), o el de su perfil de WhatsApp
+function _waNombre(ch) {
+  const t = tel10(ch.telefono);
+  const e = (typeof _clientesCat !== 'undefined' ? _clientesCat : []).find(x => tel10((x.cat && x.cat.telefono) || (x.sb && x.sb.phone)) === t);
+  return (e && _nombreCli(e)) || ch.nombre || _waTelBonito(ch.telefono);
+}
+async function cargarChatsWA(silencioso) {
+  const cont = document.getElementById('waChats');
+  if (!silencioso) cont.innerHTML = '<p class="wa-vacio">Cargando chats…</p>';
+  try {
+    _waChats = (await waApi('chats')).chats || [];
+    document.getElementById('waSub').textContent = _waChats.length + ' conversacion' + (_waChats.length === 1 ? '' : 'es');
+    pintarChatsWA();
+    pintarBadgeWA();
+  } catch (e) { if (!silencioso) cont.innerHTML = '<p class="wa-vacio">No se pudo conectar: ' + escHtml(e.message) + '</p>'; }
+}
+function pintarChatsWA() {
+  const cont = document.getElementById('waChats');
+  const q = (document.getElementById('waBuscar').value || '').toLowerCase().trim();
+  const lista = _waChats.filter(ch => !q || (_waNombre(ch) + ' ' + ch.telefono + ' ' + ch.ultimo_texto).toLowerCase().includes(q));
+  if (!lista.length) { cont.innerHTML = `<p class="wa-vacio">${_waChats.length ? 'Ningún chat coincide.' : 'Todavía no hay mensajes. Cuando una clienta escriba al número de la tienda aparecerá aquí.'}</p>`; return; }
+  cont.innerHTML = lista.map(ch => {
+    const nombre = _waNombre(ch);
+    return `<button type="button" class="wa-item${ch.no_leidos ? ' nuevo' : ''}" onclick="abrirChatWA('${escHtml(ch.id)}')">
+      <span class="wa-av">${escHtml(nombre.trim().charAt(0).toUpperCase() || '#')}</span>
+      <span class="wa-item-txt"><b>${escHtml(nombre)}</b><small>${ch.ultimo_de === 'tienda' ? '✓ ' : ''}${escHtml(ch.ultimo_texto)}</small></span>
+      <span class="wa-item-der"><small>${_waHora(ch.ultimo_at)}</small>${ch.no_leidos ? `<i>${ch.no_leidos}</i>` : ''}</span>
+    </button>`;
+  }).join('');
+}
+function pintarBadgeWA() {
+  const n = _waChats.reduce((s, ch) => s + (ch.no_leidos || 0), 0);
+  const b = document.getElementById('waBadge');
+  b.hidden = !n; b.textContent = n > 99 ? '99+' : n;
+}
+async function abrirChatWA(id) {
+  _waChatAbierto = id;
+  const ch = _waChats.find(x => x.id === id) || { id, telefono: id };
+  document.getElementById('waTitulo').textContent = _waNombre(ch);
+  document.getElementById('waSub').textContent = _waTelBonito(ch.telefono);
+  document.getElementById('waLista').hidden = true;
+  document.getElementById('waChat').hidden = false;
+  document.getElementById('waAtras').hidden = false;
+  document.getElementById('waMsgs').innerHTML = '<p class="wa-vacio">Cargando…</p>';
+  await cargarMensajesWA();
+  ch.no_leidos = 0; pintarBadgeWA();
+  clearInterval(_waTimerChat);
+  _waTimerChat = setInterval(() => cargarMensajesWA(true), 4000);
+  setTimeout(() => document.getElementById('waTexto').focus(), 50);
+}
+async function cargarMensajesWA(silencioso) {
+  const id = _waChatAbierto;
+  if (!id) return;
+  try {
+    const msgs = (await waApi('mensajes', { chat: id })).mensajes || [];
+    if (id !== _waChatAbierto) return;
+    const cambio = msgs.length !== _waMsgs.length || JSON.stringify(msgs.slice(-3)) !== JSON.stringify(_waMsgs.slice(-3));
+    _waMsgs = msgs;
+    if (cambio || !silencioso) pintarMensajesWA();
+  } catch (e) { if (!silencioso) document.getElementById('waMsgs').innerHTML = '<p class="wa-vacio">No se pudieron cargar: ' + escHtml(e.message) + '</p>'; }
+}
+function pintarMensajesWA() {
+  const cont = document.getElementById('waMsgs');
+  const abajo = cont.scrollHeight - cont.scrollTop - cont.clientHeight < 60;
+  const tick = st => st === 'read' ? '<i class="wa-tick leido">✓✓</i>' : st === 'delivered' ? '<i class="wa-tick">✓✓</i>' : st === 'failed' ? '<i class="wa-tick error">!</i>' : '<i class="wa-tick">✓</i>';
+  let dia = '';
+  cont.innerHTML = _waMsgs.length ? _waMsgs.map(m => {
+    let d = m.at ? new Date(m.at).toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' }) : '';
+    d = d.charAt(0).toUpperCase() + d.slice(1);
+    const sep = d && d !== dia ? (dia = d, `<div class="wa-dia">${d}</div>`) : '';
+    return sep + `<div class="wa-msg ${m.de === 'tienda' ? 'yo' : 'ella'}${m.pendiente ? ' pendiente' : ''}">
+      <span>${escHtml(m.texto).replace(/\n/g, '<br>')}</span>
+      <small>${m.at ? new Date(m.at).toLocaleTimeString('es', { hour: 'numeric', minute: '2-digit' }) : ''}${m.de === 'tienda' ? tick(m.estado) : ''}</small>
+    </div>`;
+  }).join('') : '<p class="wa-vacio">Sin mensajes.</p>';
+  if (abajo || cont.dataset.chat !== _waChatAbierto) cont.scrollTop = cont.scrollHeight;
+  cont.dataset.chat = _waChatAbierto;
+  // WhatsApp solo deja responder libremente hasta 24 h después del último mensaje de la clienta
+  const ch = _waChats.find(x => x.id === _waChatAbierto);
+  const ultimoElla = [..._waMsgs].reverse().find(m => m.de === 'cliente');
+  const t = (ultimoElla && ultimoElla.at) || (ch && ch.ultimo_cliente_at);
+  const aviso = document.getElementById('waAviso');
+  aviso.hidden = !(t && Date.now() - t > 24 * 3600e3);
+  aviso.textContent = 'Pasaron más de 24 h desde su último mensaje: WhatsApp no deja responder con texto libre hasta que ella vuelva a escribir.';
+}
+async function enviarWA() {
+  const ta = document.getElementById('waTexto');
+  const texto = ta.value.trim();
+  if (!texto || !_waChatAbierto) return;
+  ta.value = ''; ta.style.height = '';
+  const temp = { de: 'tienda', texto, at: Date.now(), pendiente: true };
+  _waMsgs.push(temp); pintarMensajesWA();
+  try {
+    const r = await waApi('enviar', { chat: _waChatAbierto, texto });
+    if (!r.ok) throw new Error(r.error === 'fuera_de_24h' ? 'Pasaron más de 24 h desde su último mensaje: no se puede responder con texto libre.' : r.error);
+    temp.pendiente = false; temp.estado = 'sent';
+    cargarMensajesWA(true);
+  } catch (e) {
+    _waMsgs = _waMsgs.filter(x => x !== temp); pintarMensajesWA();
+    ta.value = texto;
+    showToast('No se envió: ' + e.message);
+  }
+}
+function waVolverLista() {
+  _waChatAbierto = null; _waMsgs = [];
+  clearInterval(_waTimerChat);
+  document.getElementById('waTitulo').textContent = 'WhatsApp';
+  document.getElementById('waSub').textContent = _waChats.length ? _waChats.length + ' conversaciones' : '';
+  document.getElementById('waLista').hidden = false;
+  document.getElementById('waChat').hidden = true;
+  document.getElementById('waAtras').hidden = true;
+  if (_waChats.length) pintarChatsWA();
+}
+// Mensajes sin leer en el icono, aunque el panel esté cerrado (cada minuto)
+function iniciarBadgeWA() {
+  clearInterval(_waTimerBadge);
+  if (!waCfg().key) return;
+  const tick = () => { if (document.body.classList.contains('admin-dentro') && document.getElementById('waPanel').hidden)
+    waApi('chats').then(d => { _waChats = d.chats || []; pintarBadgeWA(); }).catch(() => {}); };
+  tick(); _waTimerBadge = setInterval(tick, 60000);
+}
+// Configuración
+function llenarBandejaWA() {
+  const { url, key } = waCfg();
+  const u = document.getElementById('c_wa_url'), k = document.getElementById('c_wa_key');
+  if (u) u.value = url === WA_URL_DEF ? '' : url;
+  if (k) k.value = key;
+}
+function guardarBandejaWA() {
+  const url = document.getElementById('c_wa_url').value.trim(), key = document.getElementById('c_wa_key').value.trim();
+  try {
+    if (url) localStorage.setItem('pm_wa_admin_url', url); else localStorage.removeItem('pm_wa_admin_url');
+    if (key) localStorage.setItem('pm_wa_admin_key', key); else localStorage.removeItem('pm_wa_admin_key');
+  } catch(e) {}
+  showToast(key ? '✅ Bandeja de WhatsApp guardada' : 'Bandeja de WhatsApp desconectada en este dispositivo');
+  iniciarBadgeWA();
+}
+async function probarBandejaWA() {
+  guardarBandejaWA();
+  const est = document.getElementById('waCfgEstado');
+  est.style.color = 'var(--text-muted)'; est.textContent = 'Probando…';
+  try { const d = await waApi('chats'); est.style.color = 'var(--green)'; est.textContent = '✔ Conectado · ' + (d.chats || []).length + ' conversaciones'; }
+  catch (e) { est.style.color = 'var(--red)'; est.textContent = '✖ ' + e.message; }
+}
+
 // El botón solo se ve con el admin abierto (sesión iniciada, fuera de la pantalla de acceso)
 function actualizarBotonWhatsApp() {
   const login = document.getElementById('loginScreen');
-  document.body.classList.toggle('admin-dentro', !!login && login.classList.contains('hidden'));
+  const dentro = !!login && login.classList.contains('hidden');
+  document.body.classList.toggle('admin-dentro', dentro);
+  if (dentro && !_waTimerBadge) iniciarBadgeWA();
+  if (!dentro) { cerrarPanelWA(); clearInterval(_waTimerBadge); _waTimerBadge = null; }
 }
 document.addEventListener('DOMContentLoaded', () => {
   actualizarBotonWhatsApp();
@@ -3508,7 +3788,7 @@ function goTo(page) {
   if (page === 'banner') { loadBanner(); loadDiscount(); }
   if (page === 'visitas') loadVisitas();
   if (page === 'info') { loadCatalogInfo(); renderInfoTable(); loadWatermarkConfig(); }
-  if (page === 'config') { fillCloudinaryForm(); llenarVerificacionWA(); }
+  if (page === 'config') { fillCloudinaryForm(); llenarVerificacionWA(); llenarBandejaWA(); }
   if (page === 'pedidos') loadPedidos();
   if (page === 'clientes') loadClientesCat();
   if (page === 'ofertas') loadOfertas();
@@ -5825,9 +6105,39 @@ document.addEventListener('keydown', e => {
 </div>
 
 <!-- Botón flotante: abre WhatsApp (solo existe en el admin) -->
-<a id="adminWhatsApp" href="https://web.whatsapp.com/" target="_blank" rel="noopener" title="Abrir WhatsApp (código QR y chats)" aria-label="Abrir WhatsApp" onclick="return abrirWhatsAppAdmin(event)">
+<a id="adminWhatsApp" href="https://web.whatsapp.com/" target="_blank" rel="noopener" title="Chats de WhatsApp" aria-label="Chats de WhatsApp" onclick="return abrirWhatsAppAdmin(event)">
+  <span class="wa-fab-badge" id="waBadge" hidden></span>
   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
 </a>
+
+<!-- Bandeja de chats de WhatsApp: sale del icono verde, dentro del admin -->
+<section id="waPanel" hidden aria-label="Chats de WhatsApp">
+  <header class="wa-cab">
+    <button type="button" class="wa-atras" id="waAtras" onclick="waVolverLista()" aria-label="Volver" hidden>‹</button>
+    <div class="wa-cab-txt"><b id="waTitulo">WhatsApp</b><small id="waSub"></small></div>
+    <button type="button" class="wa-cerrar" onclick="cerrarPanelWA()" aria-label="Cerrar">✕</button>
+  </header>
+  <div class="wa-cuerpo" id="waCuerpo">
+    <div class="wa-lista" id="waLista">
+      <div class="wa-buscar"><input id="waBuscar" type="search" placeholder="Buscar chat…" oninput="pintarChatsWA()"></div>
+      <div id="waChats" class="wa-chats"></div>
+    </div>
+    <div class="wa-chat" id="waChat" hidden>
+      <div class="wa-msgs" id="waMsgs"></div>
+      <div class="wa-aviso" id="waAviso" hidden></div>
+      <form class="wa-escribir" onsubmit="event.preventDefault(); enviarWA()">
+        <textarea id="waTexto" rows="1" placeholder="Escribe un mensaje" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); enviarWA();}" oninput="this.style.height='auto'; this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+        <button type="submit" aria-label="Enviar"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg></button>
+      </form>
+    </div>
+    <div class="wa-config" id="waConfig" hidden>
+      <p>Para ver y responder los chats aquí dentro hace falta conectar la <b>WhatsApp Cloud API</b> (instrucciones en <b>functions/LEEME.md</b>) y escribir la clave en <b>Configuración → Bandeja de chats de WhatsApp</b>.</p>
+      <button type="button" class="btn btn-primary" onclick="cerrarPanelWA(); goTo('config')">Ir a Configuración</button>
+      <p class="wa-config-sep">Mientras tanto puedes usar WhatsApp Web:</p>
+      <button type="button" class="btn" onclick="abrirWhatsAppWebVentana()">Abrir WhatsApp Web</button>
+    </div>
+  </div>
+</section>
 
 <nav id="mobileNav">
   <button class="mob-nav-btn active" id="mob-nav-productos" onclick="mobGoTo('productos')">

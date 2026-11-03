@@ -1,4 +1,13 @@
-# Verificación del teléfono por WhatsApp
+# WhatsApp de la tienda: bandeja de chats y verificación del teléfono
+
+Con la WhatsApp Cloud API de Meta, el número de la tienda queda conectado a dos funciones:
+
+- **whatsappAdmin** — la **bandeja de chats dentro del admin** (el icono verde abajo a la
+  derecha): lista de conversaciones, mensajes y caja para responder.
+- **whatsappWebhook** — recibe cada mensaje que llega al número, lo guarda para la bandeja y,
+  si trae el código de 6 dígitos de un registro, verifica el teléfono de esa clienta.
+
+## Verificación del teléfono
 
 Cuando una clienta se registra en el catálogo recibe un código de 6 dígitos. Lo envía
 desde su WhatsApp al **número de verificación** de la tienda; esta función lo recibe,
@@ -55,6 +64,19 @@ firebase functions:secrets:set WHATSAPP_VERIFY_TOKEN
 (En `WHATSAPP_VERIFY_TOKEN` escribe una palabra secreta que inventes; la usarás en el paso siguiente.)
 
 ```bash
+firebase functions:secrets:set WHATSAPP_PHONE_ID
+```
+
+(El **Phone number ID** del número de la tienda.)
+
+```bash
+firebase functions:secrets:set WHATSAPP_ADMIN_KEY
+```
+
+(Una clave larga que inventes, por ejemplo de 20 letras y números. Es la que escribirás en el
+admin para abrir la bandeja; quien no la tenga no puede leer ni enviar mensajes.)
+
+```bash
 firebase deploy --only functions
 ```
 
@@ -69,7 +91,25 @@ En Meta → *WhatsApp → Configuración* → **Webhook** → *Editar*:
 - **Token de verificación:** la palabra secreta de `WHATSAPP_VERIFY_TOKEN`.
 - Después, en *Campos del webhook*, suscríbete a **messages**.
 
-## Activarla en el catálogo
+## Bandeja de chats en el admin
+
+En **Admin → Configuración → Bandeja de chats de WhatsApp**:
+
+- **Dirección de la función:** déjala vacía si es
+  `https://us-central1-pleasemecatalogo.cloudfunctions.net/whatsappAdmin` (la que muestra
+  `firebase deploy`); si es otra, cópiala aquí.
+- **Clave de administrador:** la misma de `WHATSAPP_ADMIN_KEY`. Se guarda solo en ese
+  dispositivo (hay que escribirla una vez en cada computadora o teléfono).
+
+Pulsa **Probar conexión**. Desde ese momento el icono verde abre los chats dentro del admin y
+muestra en rojo cuántos mensajes sin leer hay.
+
+**Regla de WhatsApp:** se puede responder con texto libre hasta 24 horas después del último
+mensaje de la clienta. Pasado ese tiempo, WhatsApp solo deja escribirle con una plantilla
+aprobada por Meta; la bandeja lo avisa. Los chats son con el número conectado a la API, no con
+el WhatsApp personal del teléfono.
+
+## Activar la verificación en el catálogo
 
 En **Admin → Configuración → Verificación por WhatsApp** escribe el número de
 verificación (con código de país, por ejemplo `18095551234`) y guarda. Desde ese
@@ -80,6 +120,16 @@ momento:
 - En el historial del catálogo, las facturas solo se muestran a quien verificó su número.
 
 Si dejas el número vacío, la verificación queda apagada y el catálogo funciona como antes.
+
+## Recomendado: proteger los chats
+
+Los chats solo los lee la función. En Firebase → Firestore → **Reglas** añade:
+
+```
+match /wa_chats/{chat=**} {
+  allow read, write: if false;
+}
+```
 
 ## Recomendado: que nadie pueda marcarse «verificada» ni quitarse un bloqueo a mano
 
