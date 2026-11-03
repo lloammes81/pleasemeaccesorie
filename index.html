@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261103-10';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261103-11';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <script>(function(){
 /* Autocomprobación de versión. El rompe-caché de arriba compara el parámetro ?v=
    contra la V del HTML que ya se está ejecutando: si el navegador sirvió una copia
@@ -2797,14 +2797,6 @@ location.replace(location.pathname+'?v='+m[1]);})
   @keyframes wpAro { 0% { opacity: 0; transform: scale(.3) rotate(-90deg); } 100% { opacity: 1; transform: none; } }
   @keyframes wpLatido { 0%,100% { box-shadow: 0 0 0 0 rgba(232,197,110,.0); } 50% { box-shadow: 0 0 0 6px rgba(232,197,110,.14), 0 8px 26px rgba(201,151,58,.35); } }
   .wp-crown img { filter: drop-shadow(0 0 14px rgba(255,215,120,.55)); }
-  .wp-ofertas { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 2px 20px 16px; padding: 9px 12px;
-    border-radius: 12px; background: linear-gradient(135deg, rgba(201,151,58,.18), rgba(201,151,58,.06)); border: 1px solid rgba(232,197,110,.45);
-    font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 600; color: #f5d98c; box-shadow: 0 0 22px rgba(232,197,110,.15); }
-  .wp-ofertas[hidden] { display: none; }
-  .wp-ofertas button { padding: 6px 12px; border-radius: 999px; border: none; cursor: pointer; background: linear-gradient(135deg, #b48226, #f0d880); color: #1a1206;
-    font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 10.5px; letter-spacing: .5px; }
-  #welcomeOverlay.anim .wp-ofertas { animation: wpSube1 .7s cubic-bezier(.2,.8,.2,1) .88s both, wpBrillaOferta 2.8s ease-in-out 2s infinite; }
-  @keyframes wpBrillaOferta { 0%,100% { box-shadow: 0 0 18px rgba(232,197,110,.12); } 50% { box-shadow: 0 0 30px rgba(232,197,110,.4); } }
   .wp-title { font-size: 22px; }
   /* Aro del descuento con órbita */
   .wp-discount-ring { width: 104px; height: 104px; }
@@ -7109,7 +7101,6 @@ function ofertaCardHTML(oferta) {
 // ─── RENDER GRID ─────────────────────────────────────────────────────
 function renderGrid() {
   _inicializarVistasEsferas();
-  try { actualizarOfertasWelcome(); } catch(e) {}
   const grid = document.getElementById('catalogGrid');
   const empty = document.getElementById('emptyState');
 
@@ -8312,27 +8303,6 @@ loadContactInfo();
     `directo en tu carrito de selección.`;
 })();
 
-// Hay ofertas: la oferta especial está activa o hay piezas en Ofertas de temporada
-function hayOfertasTemporada() {
-  try { if (typeof _seasonalOffer !== 'undefined' && _seasonalOffer && _seasonalOffer.active) return true; } catch(e) {}
-  return typeof products !== 'undefined' && products.some(p => p.category === 'temporada' || (typeof _esProductoDeOferta === 'function' && _esProductoDeOferta(p)));
-}
-function actualizarOfertasWelcome() {
-  const box = document.getElementById('wpOfertas');
-  if (!box) return;
-  const hay = hayOfertasTemporada();
-  box.hidden = !hay;
-  if (!hay) return;
-  const en = _lang === 'en';
-  document.getElementById('wpOfertasTxt').textContent = en ? "✨ Don't miss this season's deals!" : '✨ ¡Aprovecha las ofertas de la temporada!';
-  document.getElementById('wpOfertasBtn').textContent = en ? 'See deals' : 'Ver ofertas';
-}
-function verOfertasDesdeWelcome() {
-  _verOfertasAlCerrar = true;
-  cerrarWelcome();
-}
-let _verOfertasAlCerrar = false;
-
 // El % del descuento cuenta desde 0 al abrir
 function contarPorcentaje() {
   const el = document.querySelector('.wp-pct');
@@ -8352,7 +8322,7 @@ function mostrarWelcome() {
   const overlay = document.getElementById('welcomeOverlay');
   if (!overlay) return;
   try { personalizarWelcome(); } catch(e) {}
-  try { contarPorcentaje(); actualizarOfertasWelcome(); } catch(e) {}
+  try { contarPorcentaje(); } catch(e) {}
   overlay.classList.remove('anim'); void overlay.offsetWidth; overlay.classList.add('anim');
   overlay.style.opacity = '1';
   overlay.style.pointerEvents = '';
@@ -8380,8 +8350,7 @@ function cerrarWelcome() {
     _welcomeClosed = true;
     const logoRing = document.getElementById('logoRing');
     if (logoRing) logoRing.style.animation = 'logoSubmerge 2.2s ease-out forwards, logoHeartbeat 7s ease-in-out 2.2s infinite';
-    if (_verOfertasAlCerrar) { _verOfertasAlCerrar = false; try { openCategoryPanel('temporada'); } catch(e) {} }
-    else if (_seasonalOffer && _seasonalOffer.active) mostrarOfertaModal();
+    if (_seasonalOffer && _seasonalOffer.active) mostrarOfertaModal();
     checkNuevosEnTemporada();
   }, 370);
 }
@@ -8782,10 +8751,6 @@ function cerrarPagina() {
     <div id="wpSaludo" hidden></div>
     <p class="wp-eyebrow">Pleaseme Accessories</p>
     <h2 class="wp-title">Bienvenida a nuestro<br><em>catálogo exclusivo</em></h2>
-    <div class="wp-ofertas" id="wpOfertas" hidden>
-      <span id="wpOfertasTxt"></span>
-      <button type="button" onclick="verOfertasDesdeWelcome()" id="wpOfertasBtn">Ver ofertas</button>
-    </div>
     <div class="wp-discount-ring">
       <span class="wp-orbita" aria-hidden="true"><i></i></span>
       <span class="wp-pct">35%</span>
