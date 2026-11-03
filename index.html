@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261103-3';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261103-5';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <script>(function(){
 /* Autocomprobación de versión. El rompe-caché de arriba compara el parámetro ?v=
    contra la V del HTML que ya se está ejecutando: si el navegador sirvió una copia
@@ -2106,6 +2106,10 @@ location.replace(location.pathname+'?v='+m[1]);})
   .reg-dir-estado { min-height: 16px; font-size: 11px; text-transform: none; letter-spacing: 0; line-height: 1.45; color: rgba(240,230,208,.5); }
   .reg-loc { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, .8fr) minmax(0, 1.1fr); gap: 12px 14px; }
   .reg-loc > * { min-width: 0; }
+  .reg-loc .reg-dir { gap: 6px; }
+  .reg-loc .reg-dir > label { font-size: 9.5px; letter-spacing: 1.2px; color: rgba(240,230,208,.72); }
+  .reg-loc .reg-dir-campo input { padding-left: 34px; }
+  .reg-loc .reg-sugs { min-width: 240px; }
   #regModal.env-rd .reg-loc { grid-template-columns: 1fr; }
   @media (max-width: 480px) {
     .reg-loc { grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); }
@@ -3952,7 +3956,7 @@ location.replace(location.pathname+'?v='+m[1]);})
     <section class="reg-seccion">
       <h3 class="reg-seccion-tit"><span class="reg-paso">2</span><span data-i18n="regEnvio">Dirección de envío</span></h3>
       <div class="reg-grid">
-        <label class="reg-full"><span data-i18n="envPais">País</span><select id="envPais" onchange="envAplicarPais(); envDirInvalidar()"><option value="USA">Estados Unidos</option><option value="RD">República Dominicana</option></select></label>
+        <label class="reg-full"><span data-i18n="envPais">País</span><select id="envPais" onchange="envAplicarPais(); envDirInvalidar(); _envCiudadCoords = null; envOcultarCiudades()"><option value="USA">Estados Unidos</option><option value="RD">República Dominicana</option></select></label>
         <div class="reg-full reg-dir">
           <label for="envDir"><span data-i18n="envDir">Dirección (calle y número)</span></label>
           <div class="reg-dir-campo">
@@ -3963,7 +3967,14 @@ location.replace(location.pathname+'?v='+m[1]);})
           <div class="reg-dir-estado" id="envDirEstado"></div>
         </div>
         <div class="reg-full reg-loc">
-          <label class="reg-loc-ciudad"><span data-i18n="envCiudad">Ciudad</span><input id="envCiudad" autocomplete="address-level2" oninput="envDirInvalidar()"></label>
+          <div class="reg-loc-ciudad reg-dir">
+            <label for="envCiudad"><span data-i18n="envCiudad">Ciudad</span></label>
+            <div class="reg-dir-campo">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1M14 9h1M9 13h1M14 13h1M9 17h1M14 17h1"/></svg>
+              <input id="envCiudad" autocomplete="off" oninput="envDirInvalidar(); envBuscarCiudad(this.value)" onkeydown="envCiudadTeclas(event)" onblur="setTimeout(envOcultarCiudades, 180)" role="combobox" aria-autocomplete="list" aria-controls="envCiudadSugs">
+            </div>
+            <div class="reg-sugs" id="envCiudadSugs" role="listbox" hidden></div>
+          </div>
           <label class="env-usa"><span data-i18n="envEstado">Estado</span><input id="envEstado" maxlength="2" autocomplete="address-level1" placeholder="FL" oninput="this.value = this.value.toUpperCase(); envDirInvalidar()"></label>
           <label class="env-usa"><span data-i18n="envZip">Código postal</span><input id="envZip" inputmode="numeric" maxlength="5" autocomplete="postal-code" oninput="this.value = this.value.replace(/\D/g, ''); envZipLookup(this.value); envDirInvalidar()"></label>
         </div>
@@ -5672,17 +5683,32 @@ async function guardarRegistro() {
   if (tel10Reg.length !== 10 || (paisDeTel(tel10Reg) === 'USA' && !/^[2-9]\d{2}[2-9]/.test(tel10Reg))) { msg.className = 'reg-msg err'; msg.textContent = es ? 'Escribe un teléfono válido (con código de área).' : 'Enter a valid phone number (with area code).'; return document.getElementById('envTel').focus(); }
   if (d.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email)) { msg.className = 'reg-msg err'; msg.textContent = es ? 'Revisa el correo electrónico.' : 'Check the email address.'; return document.getElementById('envEmail').focus(); }
   if (d.pais === 'RD') { d.estado = ''; d.zip = ''; }
-  if (d.direccion && !_envDirVerif && !_envDirManual) {
-    msg.className = 'reg-msg err';
-    msg.textContent = es ? 'Elige tu dirección de la lista para comprobar que existe (o toca «No encuentro mi dirección»).'
-                         : 'Pick your address from the list so we can confirm it exists (or tap "I can\'t find my address").';
-    return document.getElementById('envDir').focus();
-  }
+  // La dirección puede no estar en el mapa: se guarda igual y el administrador la confirma
   d.dir_verificada = !!(d.direccion && _envDirVerif);
   d.dir_coords = d.dir_verificada && _envDirVerif.coords ? _envDirVerif.coords : null;
 
   const anterior = clienteRegistrado();
-  d.id = 'tel-' + tel;
+  d.id = 'tel-' + tel10Reg;
+  if (!anterior || anterior.id !== d.id) {
+    // Número nuevo en este dispositivo: no puede estar ya registrado por otra cuenta
+    const btnG = document.getElementById('regGuardar');
+    btnG.disabled = true;
+    msg.className = 'reg-msg'; msg.textContent = es ? 'Comprobando el número…' : 'Checking the number…';
+    const yaExiste = await telefonoYaRegistrado(tel10Reg);
+    btnG.disabled = false;
+    if (yaExiste === null) {
+      msg.className = 'reg-msg err';
+      msg.textContent = es ? 'No se pudo comprobar el número ahora mismo. Inténtalo de nuevo en un momento.' : 'Could not check the number right now. Please try again shortly.';
+      return;
+    }
+    if (yaExiste) {
+      msg.className = 'reg-msg err';
+      msg.innerHTML = (es ? 'Este número ya está registrado. Si es tuyo y cambiaste de teléfono, ' : 'This number is already registered. If it is yours and you changed phones, ')
+        + `<a href="${_escD(enlaceWhatsAppTienda(es ? 'Hola, mi número ya está registrado en el catálogo y quiero recuperar mi cuenta.' : 'Hi, my number is already registered in the catalog and I want to recover my account.'))}" target="_blank" rel="noopener">`
+        + (es ? 'escríbenos por WhatsApp' : 'message us on WhatsApp') + '</a>.';
+      return document.getElementById('envTel').focus();
+    }
+  }
   // Conservar foto y compras del mismo cliente
   if (anterior && anterior.id === d.id) ['foto', 'compras', 'total_comprado', 'verificado', 'codigo_verif'].forEach(k => { if (anterior[k] != null) d[k] = anterior[k]; });
   // Número nuevo (o aún sin verificar): código para confirmar por WhatsApp que el teléfono es suyo
@@ -5730,6 +5756,19 @@ async function guardarRegistro() {
   setTimeout(() => { cerrarRegistro(); if (fn) fn(); }, fn ? 400 : 900);
 }
 
+// ¿Ya hay una cuenta con este teléfono? true / false, o null si no se pudo comprobar.
+// Se miran el documento «tel-<10 dígitos>» y el antiguo con el 1 delante.
+async function telefonoYaRegistrado(tel10) {
+  if (!_db) return null;
+  try {
+    const docs = await Promise.all(['tel-' + tel10, 'tel-1' + tel10].map(id => _db.collection('clientes_catalogo').doc(id).get()));
+    return docs.some(x => x.exists && (x.data().nombre || x.data().telefono));
+  } catch(e) { console.warn('No se pudo comprobar el teléfono:', e.message); return null; }
+}
+function enlaceWhatsAppTienda(texto) {
+  return 'https://wa.me/' + getWhatsAppNumber() + '?text=' + encodeURIComponent(texto);
+}
+
 // ─── DIRECCIÓN: búsqueda en el directorio de mapas (Photon / OpenStreetMap) ─────
 // La clienta escribe y elige su dirección de la lista: así se comprueba que existe y se
 // llenan solos la ciudad, el estado y el código postal. Si no aparece puede guardarla
@@ -5766,6 +5805,7 @@ async function envConsultarDirecciones(q) {
     let url = 'https://photon.komoot.io/api/?limit=25&lang=' + (rd ? 'default' : 'en')
       + '&bbox=' + (rd ? '-72.1,17.4,-68.2,20.1' : '-171,18,-66,72') + '&q=' + encodeURIComponent(q);
     if (!rd && _envZipCoords && _envZipCoords.zip === zip) url += '&lat=' + _envZipCoords.lat + '&lon=' + _envZipCoords.lon + '&zoom=12';
+    else if (_envCiudadCoords) url += '&lat=' + _envCiudadCoords.lat + '&lon=' + _envCiudadCoords.lon + '&zoom=11';
     const pais = rd ? 'DO' : 'US';
     // Palabras del nombre de la calle que escribió (sin el número ni «Dr», «St», «Calle»…)
     const comunes = new Set(['dr','drive','st','street','ave','avenue','av','rd','road','blvd','ln','lane','ct','court','way','pl','place','cir','ter','pkwy','hwy',
@@ -5901,13 +5941,10 @@ function pintarEstadoDireccion(avisoExtra) {
   if (_envDirVerif) {
     el.className = 'reg-dir-estado ok';
     el.textContent = '✔ ' + (en ? 'Address found on the map' : 'Dirección encontrada en el mapa') + (avisoExtra ? ' · ' + avisoExtra : '');
-  } else if (_envDirManual && dir) {
-    el.className = 'reg-dir-estado aviso';
-    el.textContent = '⚠ ' + (en ? 'Saved without map verification' : 'Se guardará sin verificar en el mapa');
   } else if (dir) {
     el.className = 'reg-dir-estado';
-    el.innerHTML = (en ? 'Choose your address from the list. ' : 'Elige tu dirección de la lista. ')
-      + `<button type="button" onclick="envDirManual()">${en ? "I can't find my address" : 'No encuentro mi dirección'}</button>`;
+    el.textContent = en ? 'Pick it from the list if it appears. If not, you can save it as is and we will confirm it.'
+                        : 'Elígela de la lista si aparece. Si no aparece, puedes guardarla así y nosotros la confirmamos.';
   } else {
     el.className = 'reg-dir-estado';
     const usa = document.getElementById('envPais').value !== 'RD';
@@ -5915,6 +5952,84 @@ function pintarEstadoDireccion(avisoExtra) {
                                : 'Escribe tu calle y número y elígela de la lista. Ciudad, estado y código postal se llenan solos.')
                          : (en ? 'Type your street, number and sector, then pick it from the list.' : 'Escribe tu calle, número y sector, y elígela de la lista.');
   }
+}
+
+// ─── CIUDAD: también se busca en el directorio de mapas ─────────────────
+// Sugiere ciudades y pueblos del país elegido; en EE. UU. al elegirla se llena el estado.
+// La ciudad elegida también ubica la zona para buscar la calle.
+let _envCiudadTimer = null, _envCiudadReq = 0, _envCiudades = [], _envCiudadActiva = -1, _envCiudadCoords = null;
+const _ORDEN_LUGAR = { city: 0, town: 1, municipality: 1, village: 2, suburb: 3, hamlet: 4, neighbourhood: 5 };
+function envBuscarCiudad(texto) {
+  _envCiudadCoords = null;
+  clearTimeout(_envCiudadTimer);
+  const q = String(texto || '').trim();
+  if (q.length < 2) return envOcultarCiudades();
+  _envCiudadTimer = setTimeout(() => envConsultarCiudades(q), 300);
+}
+async function envConsultarCiudades(q) {
+  const box = document.getElementById('envCiudadSugs');
+  const rd = document.getElementById('envPais').value === 'RD';
+  const pedido = ++_envCiudadReq;
+  box.hidden = false;
+  box.innerHTML = `<div class="reg-sug-buscando">${_lang === 'en' ? 'Searching…' : 'Buscando…'}</div>`;
+  try {
+    const r = await fetch('https://photon.komoot.io/api/?limit=15&osm_tag=place&lang=' + (rd ? 'default' : 'en')
+      + '&bbox=' + (rd ? '-72.1,17.4,-68.2,20.1' : '-171,18,-66,72') + '&q=' + encodeURIComponent(q));
+    if (pedido !== _envCiudadReq) return;
+    const d = await r.json();
+    const pais = rd ? 'DO' : 'US';
+    const tipos = rd ? ['city', 'town', 'municipality', 'village', 'suburb', 'hamlet', 'neighbourhood'] : ['city', 'town', 'municipality', 'village', 'hamlet'];
+    _envCiudades = (d.features || []).map(f => ({ p: f.properties || {}, g: f.geometry }))
+      .filter(x => x.p.countrycode === pais && x.p.name && tipos.includes(x.p.osm_value))
+      .sort((a, b) => (_ORDEN_LUGAR[a.p.osm_value] ?? 9) - (_ORDEN_LUGAR[b.p.osm_value] ?? 9))
+      .map(x => ({
+        nombre: x.p.name,
+        estado: rd ? (x.p.state || '') : (ESTADOS_US[String(x.p.state || '').toLowerCase()] || ''),
+        estadoNombre: x.p.state || '',
+        zona: rd ? [x.p.county, x.p.state].filter(Boolean).join(', ') : [x.p.county, x.p.state].filter(Boolean).join(', '),
+        coords: x.g && x.g.coordinates ? { lat: x.g.coordinates[1], lon: x.g.coordinates[0] } : null,
+      }))
+      .filter((x, i, a) => a.findIndex(y => y.nombre === x.nombre && y.estadoNombre === x.estadoNombre) === i)
+      .slice(0, 6);
+    _envCiudadActiva = -1;
+    pintarCiudades();
+  } catch(e) {
+    if (pedido !== _envCiudadReq) return;
+    box.innerHTML = `<div class="reg-sug-buscando">${_lang === 'en' ? 'Could not search right now.' : 'No se pudo buscar ahora mismo.'}</div>`;
+  }
+}
+function pintarCiudades() {
+  const box = document.getElementById('envCiudadSugs');
+  if (!_envCiudades.length) {
+    box.innerHTML = `<div class="reg-sug-buscando">${_lang === 'en' ? 'No matches.' : 'Sin resultados.'}</div>`;
+    return;
+  }
+  box.innerHTML = _envCiudades.map((x, i) => `<button type="button" role="option" class="reg-sug${i === _envCiudadActiva ? ' activa' : ''}" onmousedown="event.preventDefault()" onclick="envElegirCiudad(${i})">
+      <svg class="reg-sug-ico" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>
+      <span><b>${_escD(x.nombre)}</b><small>${_escD(x.zona)}</small></span></button>`).join('')
+    + '<div class="reg-sugs-pie">© OpenStreetMap</div>';
+}
+function envCiudadTeclas(ev) {
+  const box = document.getElementById('envCiudadSugs');
+  if (box.hidden || !_envCiudades.length) return;
+  if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+    ev.preventDefault();
+    _envCiudadActiva = (_envCiudadActiva + (ev.key === 'ArrowDown' ? 1 : -1) + _envCiudades.length) % _envCiudades.length;
+    pintarCiudades();
+  } else if (ev.key === 'Enter' && _envCiudadActiva >= 0) { ev.preventDefault(); envElegirCiudad(_envCiudadActiva); }
+  else if (ev.key === 'Escape') envOcultarCiudades();
+}
+function envOcultarCiudades() {
+  const box = document.getElementById('envCiudadSugs');
+  if (box) { box.hidden = true; box.innerHTML = ''; }
+}
+function envElegirCiudad(i) {
+  const x = _envCiudades[i];
+  if (!x) return;
+  document.getElementById('envCiudad').value = x.nombre;
+  if (document.getElementById('envPais').value !== 'RD' && x.estado) document.getElementById('envEstado').value = x.estado;
+  _envCiudadCoords = x.coords;
+  envOcultarCiudades();
 }
 
 // ─── VERIFICACIÓN DEL TELÉFONO POR WHATSAPP ─────────────────────────────
