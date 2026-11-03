@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261103-7';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261103-8';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <script>(function(){
 /* Autocomprobación de versión. El rompe-caché de arriba compara el parámetro ?v=
    contra la V del HTML que ya se está ejecutando: si el navegador sirvió una copia
@@ -1522,6 +1522,12 @@ location.replace(location.pathname+'?v='+m[1]);})
   .hist-fac-item .hist-item-qty { white-space:nowrap; }
   .hist-fac-nota { font-size:11px; color:var(--text-muted); margin:8px 0 0; line-height:1.5; }
   .hist-factura.anulada { opacity:.6; }
+  .hist-fac-debe { margin:0 0 8px; padding:8px 10px; border-radius:6px; background:rgba(240,160,32,.12); border:1px solid rgba(240,160,32,.45); color:#f5c26b; font-size:12px; }
+  .hist-fac-debe b { color:#ffd27d; }
+  .hist-fac-pdf { display:block; width:100%; margin-top:12px; padding:9px; border-radius:8px; cursor:pointer; background:transparent;
+    border:1px solid rgba(201,151,58,.45); color:#e8c56e; font-family:'Montserrat',sans-serif; font-size:11.5px; letter-spacing:.6px; }
+  .hist-fac-pdf:hover { background:rgba(201,151,58,.12); }
+  .hist-fac-pdf:disabled { opacity:.6; cursor:wait; }
   .hist-empty { text-align:center; padding:50px 0 30px; font-family:'Cormorant Garamond',serif; font-size:18px; color:var(--text-muted); font-style:italic; }
 
   .cart-close-btn {
@@ -7691,7 +7697,7 @@ async function _renderHistorialEnCarrito() {
   body.innerHTML = `<p class="hist-empty">${_t[_lang].historyLoading || 'Cargando...'}</p>`;
   try {
     // Pedidos de este dispositivo + los que están en Firebase a su nombre y teléfono
-    const [locales, remotos, facturas] = await Promise.all([_histDB.obtenerTodos(), pedidosPorNombreTelefono(quien), facturasPorTelefono(quien)]);
+    const [locales, remotos, facturas] = await Promise.all([_histDB.obtenerTodos(), pedidosPorNombreTelefono(quien), facturasPorTelefono(quien), cargarAbonosHist()]);
     const porNumero = new Map(locales.map(p => [p.numero, p]));
     (remotos || []).forEach(r => porNumero.set(r.numero, { ...(porNumero.get(r.numero) || {}), ...r }));
     (facturas || []).forEach(f => { if (!porNumero.has(f.numero)) porNumero.set(f.numero, f); });
@@ -7773,7 +7779,7 @@ async function facturasPorTelefono(q) {
   if (t10.length < 10 || !primerNombre) return [];
   try {
     const h = { apikey: PM_SB_KEY, Authorization: 'Bearer ' + PM_SB_KEY };
-    const r = await fetch(PM_SB_URL + '/rest/v1/facturas?select=invoice_num,invoice_date,created_at,status,client_name,client_phone,client_email,client_address,' +
+    const r = await fetch(PM_SB_URL + '/rest/v1/facturas?select=id,invoice_num,invoice_date,created_at,status,client_name,client_phone,client_email,client_address,' +
       'items,subtotal,shipping,discount_amount,total,payment_method,currency,notes,void_reason,void_at' +
       '&client_phone=ilike.*' + t10.slice(-4) + '*&order=created_at.desc&limit=100', { headers: h });
     if (!r.ok) return [];
@@ -7795,8 +7801,30 @@ async function facturasPorTelefono(q) {
 // Factura completa en el historial: número, fecha, estado, datos, artículos y totales
 const _PAGO_FACTURA = { transfer:['Transferencia','Bank transfer'], cash:['Efectivo','Cash'], card:['Tarjeta','Card'], zelle:['Zelle','Zelle'],
   paypal:['PayPal','PayPal'], cashapp:['Cash App','Cash App'], venmo:['Venmo','Venmo'], credito:['Crédito','Credit'], credit:['Crédito','Credit'] };
+// Abonos a facturas a crédito (los registra Facturas en Supabase config «abonos») y datos de la tienda para el PDF
+let _abonosHist = null, _tiendaPDF = null;
+const _facturasHist = {};
+async function cargarAbonosHist() {
+  if (_abonosHist) return _abonosHist;
+  try {
+    const h = { apikey: PM_SB_KEY, Authorization: 'Bearer ' + PM_SB_KEY };
+    const r = await fetch(PM_SB_URL + '/rest/v1/config?select=value&key=eq.abonos', { headers: h });
+    let v = r.ok ? ((await r.json())[0] || {}).value : null;
+    if (typeof v === 'string') v = JSON.parse(v);
+    _abonosHist = v && typeof v === 'object' ? v : {};
+  } catch(e) { _abonosHist = {}; }
+  return _abonosHist;
+}
+// Saldo pendiente: igual que en Facturas (no pagada, no entregada, no anulada; menos lo abonado)
+function saldoFacturaHist(f) {
+  if (/cancel|anul/.test(f.status || '') || ['pagado', 'entregado'].includes(f.status)) return 0;
+  const abonado = ((_abonosHist || {})[f.id] || []).reduce((s, a) => s + Number(a.monto || 0), 0);
+  return Math.max(0, Number(f.total || 0) - abonado);
+}
 function facturaDetalleHtml(p) {
   const f = p.detalle, en = _lang === 'en', loc = en ? 'en-US' : 'es-CO';
+  _facturasHist[f.invoice_num || p.numero] = p;
+  const saldo = saldoFacturaHist(f);
   const esc = t => String(t ?? '').replace(/[&<>"]/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[ch]));
   const mon = f.currency || 'USD';
   const m = n => (mon === 'DOP' ? 'RD$' : '$') + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -7819,6 +7847,7 @@ function facturaDetalleHtml(p) {
       <span class="hist-fecha">${fecha}</span>
     </div>
     ${estadoFacturaHtml(f.status || 'pendiente')}
+    ${saldo > 0 ? `<div class="hist-fac-debe">💲 ${en ? 'Pending payment' : 'Pendiente de pago'}: <b>${m(saldo)}</b></div>` : ''}
     <div class="hist-fac-datos">
       ${fila(en ? 'Date' : 'Fecha', fecha)}
       ${pago ? fila(en ? 'Payment' : 'Pago', esc(pago)) : ''}
@@ -7837,6 +7866,7 @@ function facturaDetalleHtml(p) {
     </div>
     ${f.notes ? `<p class="hist-fac-nota">📝 ${esc(f.notes)}</p>` : ''}
     ${anulada && (f.void_reason || f.void_at) ? `<p class="hist-fac-nota">${en ? 'Voided' : 'Anulada'}${f.void_at ? ' · ' + new Date(f.void_at).toLocaleDateString(loc) : ''}${f.void_reason ? ' · ' + esc(f.void_reason) : ''}</p>` : ''}
+    <button type="button" class="hist-fac-pdf" onclick="descargarFacturaPDF('${esc(f.invoice_num || p.numero)}', this)">📄 ${en ? 'Download PDF' : 'Descargar PDF'}</button>
   </div>`;
 }
 const _ESTADO_FACTURA = { pendiente:['Pendiente de pago','Pending payment'], pagado:['Pagada','Paid'], procesando:['En proceso','Processing'],
@@ -7844,6 +7874,100 @@ const _ESTADO_FACTURA = { pendiente:['Pendiente de pago','Pending payment'], pag
 function estadoFacturaHtml(st) {
   const en = _lang === 'en', par = _ESTADO_FACTURA[st] || [st, st];
   return `<div class="hist-estado"><div class="hist-estado-txt${/cancel|anul/.test(st) ? ' cancelado' : ''}">🧾 ${en ? 'Invoice' : 'Factura'} · ${par[en ? 1 : 0]}</div></div>`;
+}
+
+// ─── FACTURA EN PDF (la descarga la clienta desde su historial) ───────────────
+async function datosTiendaPDF() {
+  if (_tiendaPDF) return _tiendaPDF;
+  _tiendaPDF = { nombre: 'Pleaseme Accessories', email: '', whatsapp: '', logo: '' };
+  try {
+    const h = { apikey: PM_SB_KEY, Authorization: 'Bearer ' + PM_SB_KEY };
+    const r = await fetch(PM_SB_URL + '/rest/v1/company?select=name,email,whatsapp,logo_data&limit=1', { headers: h });
+    const c = r.ok ? (await r.json())[0] : null;
+    if (c) _tiendaPDF = { nombre: c.name || _tiendaPDF.nombre, email: c.email || '', whatsapp: c.whatsapp || '', logo: /^data:image\/(png|jpe?g)/.test(c.logo_data || '') ? c.logo_data : '' };
+  } catch(e) {}
+  return _tiendaPDF;
+}
+async function descargarFacturaPDF(numero, btn) {
+  const p = _facturasHist[numero];
+  if (!p || !window.jspdf) return;
+  const en = _lang === 'en', f = p.detalle;
+  if (btn) { btn.disabled = true; btn.textContent = en ? 'Preparing…' : 'Preparando…'; }
+  try {
+    const t = await datosTiendaPDF();
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'letter' });
+    const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 16;
+    const mon = f.currency || 'USD';
+    const m = n => (mon === 'DOP' ? 'RD$' : '$') + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const oro = [176, 128, 38], gris = [110, 110, 110], negro = [30, 30, 30];
+    const fecha = new Date(p.fecha).toLocaleDateString(en ? 'en-US' : 'es', { day: 'numeric', month: 'long', year: 'numeric' });
+    const EST = { pendiente: ['Pendiente', 'Pending'], procesando: ['En proceso', 'Processing'], enviado: ['Enviada', 'Shipped'], entregado: ['Entregada', 'Delivered'],
+                  pagado: ['Pagada', 'Paid'], cancelado: ['Anulada', 'Voided'], anulado: ['Anulada', 'Voided'] };
+    const estado = (EST[f.status] || [f.status, f.status])[en ? 1 : 0];
+    // Cabecera
+    doc.setFillColor(20, 16, 10); doc.rect(0, 0, W, 34, 'F');
+    let x = M;
+    if (t.logo) { try { doc.addImage(t.logo, t.logo.includes('png') ? 'PNG' : 'JPEG', M, 5, 24, 24); x = M + 28; } catch(e) {} }
+    doc.setTextColor(232, 197, 110); doc.setFont('helvetica', 'bold'); doc.setFontSize(17); doc.text(t.nombre, x, 15);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(220, 210, 190);
+    doc.text([t.whatsapp ? 'WhatsApp: ' + t.whatsapp : '', t.email].filter(Boolean).join('   ·   '), x, 22);
+    doc.setTextColor(232, 197, 110); doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
+    doc.text((en ? 'INVOICE ' : 'FACTURA ') + (f.invoice_num || ''), W - M, 15, { align: 'right' });
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(220, 210, 190);
+    doc.text(fecha, W - M, 22, { align: 'right' });
+    // Cliente y datos
+    let y = 46;
+    doc.setTextColor(...oro); doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
+    doc.text(en ? 'BILL TO' : 'CLIENTE', M, y); doc.text(en ? 'DETAILS' : 'DATOS', W / 2 + 6, y);
+    doc.setTextColor(...negro); doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+    const cli = [f.client_name, f.client_phone, f.client_email, ...(doc.splitTextToSize(f.client_address || '', W / 2 - M - 6))].filter(Boolean);
+    cli.forEach((l, i) => doc.text(String(l), M, y + 6 + i * 5));
+    const pago = f.payment_method ? ((_PAGO_FACTURA[f.payment_method] || [f.payment_method, f.payment_method])[en ? 1 : 0]) : '—';
+    [[en ? 'Status' : 'Estado', estado], [en ? 'Payment' : 'Pago', pago], [en ? 'Currency' : 'Moneda', mon]]
+      .forEach(([k, v], i) => { doc.setTextColor(...gris); doc.text(k + ':', W / 2 + 6, y + 6 + i * 5); doc.setTextColor(...negro); doc.text(String(v), W / 2 + 30, y + 6 + i * 5); });
+    y += 8 + Math.max(cli.length, 3) * 5 + 6;
+    // Artículos
+    const cols = [M, W - M - 82, W - M - 52, W - M];
+    doc.setFillColor(245, 239, 226); doc.rect(M, y - 5, W - 2 * M, 8, 'F');
+    doc.setTextColor(...oro); doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
+    doc.text(en ? 'ITEM' : 'ARTÍCULO', cols[0] + 2, y); doc.text(en ? 'QTY' : 'CANT.', cols[1], y, { align: 'right' });
+    doc.text(en ? 'PRICE' : 'PRECIO', cols[2] + 14, y, { align: 'right' }); doc.text(en ? 'AMOUNT' : 'IMPORTE', cols[3] - 2, y, { align: 'right' });
+    y += 8; doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...negro);
+    for (const it of (Array.isArray(f.items) ? f.items : [])) {
+      const extra = [it.size, it.color].filter(v => v && v !== '—').join(' · ');
+      const lineas = doc.splitTextToSize(String(it.name || '—') + (extra ? ' (' + extra + ')' : ''), cols[1] - cols[0] - 20);
+      if (y + lineas.length * 5 > H - 50) { doc.addPage(); y = 20; }
+      const q = Number(it.qty) || 1, pu = Number(it.price) || 0;
+      doc.text(lineas, cols[0] + 2, y);
+      doc.text(String(q), cols[1], y, { align: 'right' });
+      doc.text(m(pu), cols[2] + 14, y, { align: 'right' });
+      doc.text(m(q * pu), cols[3] - 2, y, { align: 'right' });
+      y += lineas.length * 5 + 2;
+      doc.setDrawColor(235, 230, 220); doc.line(M, y - 3, W - M, y - 3);
+    }
+    // Totales
+    y += 4;
+    const fila = (k, v, fuerte) => { doc.setFont('helvetica', fuerte ? 'bold' : 'normal'); doc.setFontSize(fuerte ? 12 : 10);
+      doc.setTextColor(...(fuerte ? negro : gris)); doc.text(k, W - M - 52, y); doc.setTextColor(...negro); doc.text(v, W - M - 2, y, { align: 'right' }); y += fuerte ? 8 : 6; };
+    fila('Subtotal', m(f.subtotal));
+    if (Number(f.shipping)) fila(en ? 'Shipping' : 'Envío', m(f.shipping));
+    if (Number(f.discount_amount)) fila(en ? 'Discount' : 'Descuento', '-' + m(f.discount_amount));
+    doc.setDrawColor(...oro); doc.line(W - M - 54, y - 4, W - M, y - 4); y += 2;
+    fila('TOTAL', m(f.total), true);
+    const saldo = saldoFacturaHist(f);
+    if (saldo > 0) { doc.setTextColor(183, 116, 0); doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+      doc.text((en ? 'Pending payment: ' : 'Pendiente de pago: ') + m(saldo), W - M - 2, y, { align: 'right' }); y += 8; }
+    if (/cancel|anul/.test(f.status || '')) { doc.setTextColor(192, 57, 43); doc.setFontSize(28); doc.setFont('helvetica', 'bold');
+      doc.text(en ? 'VOIDED' : 'ANULADA', W / 2, H / 2, { align: 'center', angle: 20 }); }
+    if (f.notes) { y += 4; doc.setTextColor(...gris); doc.setFont('helvetica', 'italic'); doc.setFontSize(9);
+      doc.text(doc.splitTextToSize((en ? 'Notes: ' : 'Notas: ') + f.notes, W - 2 * M), M, y); }
+    // Pie
+    doc.setTextColor(...oro); doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+    doc.text(en ? 'Thank you for your purchase!' : '¡Gracias por tu compra!', W / 2, H - 14, { align: 'center' });
+    doc.save((en ? 'Invoice-' : 'Factura-') + (f.invoice_num || 'Pleaseme') + '.pdf');
+  } catch(e) { console.error('PDF factura:', e); alert(en ? 'Could not create the PDF.' : 'No se pudo crear el PDF.'); }
+  if (btn) { btn.disabled = false; btn.textContent = '📄 ' + (en ? 'Download PDF' : 'Descargar PDF'); }
 }
 
 function consultaHistorialHtml(q) {

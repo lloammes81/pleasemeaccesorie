@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261103-9';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261103-10';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -1922,6 +1922,12 @@ body.admin-dentro #adminWhatsApp { display:flex; }
 .cli-acciones .cli-bloquear { margin-left:auto; }
 .cli-acciones .cli-borrar { border-color:#c0392b; color:#c0392b; }
 .cli-chip.bloq { background:#c0392b; color:#fff; border:1px solid #c0392b; }
+/* Pendiente de pago */
+.cli-chip.debe { background:#fff4d6; color:#9a6400; border:1px solid #f0c040; }
+.cli-card.debe { border-left:4px solid #f0a020; }
+.cli-pedido.debe { border-left:3px solid #f0a020; }
+.cli-kpi-debe { cursor:pointer; border-color:#f0c040; background:#fffaf0; }
+.cli-kpi-debe b { color:#b77400; }
 /* Bloqueada: círculo rojo */
 .cli-avatar--bloq { background:linear-gradient(135deg,#8e1d12,#e0533f); color:#fff; border:2px solid #ffd6d0; font-weight:700;
   box-shadow:0 0 0 3px rgba(192,57,43,.4), 0 0 14px rgba(224,83,63,.5); }
@@ -2852,6 +2858,7 @@ body.is-mobile #facturasFrame { height: calc(100dvh - 58px - 68px); }
           <option value="reciente">Registro más reciente</option>
           <option value="compras">Más comprado</option>
           <option value="nombre">Nombre (A–Z)</option>
+          <option value="deben">💲 Con pagos pendientes</option>
         </select>
         <button class="btn" onclick="loadClientesCat()" style="white-space:nowrap">↺ Actualizar</button>
       </div>
@@ -3945,12 +3952,15 @@ async function loadClientesCat() {
   if (!lista) return;
   lista.innerHTML = '<p class="pedidos-empty">Cargando clientes…</p>';
   try {
-    const [snapC, snapP, sbClientes, sbFacturas] = await Promise.all([
+    const [snapC, snapP, sbClientes, sbFacturas, sbAbonos] = await Promise.all([
       _db.collection('clientes_catalogo').get(),
       _db.collection('pedidos').orderBy('fecha', 'desc').limit(1000).get(),
       pmSB('clientes?select=id,name,email,phone,shipping_address,created_at&order=name'),
-      pmSB('facturas?select=id,invoice_num,invoice_date,created_at,client_id,client_name,client_phone,client_email,client_address,items,subtotal,shipping,discount_amount,total,payment_method,currency,notes,status,void_reason,void_at&order=created_at.desc')
+      pmSB('facturas?select=id,invoice_num,invoice_date,created_at,client_id,client_name,client_phone,client_email,client_address,items,subtotal,shipping,discount_amount,total,payment_method,currency,notes,status,void_reason,void_at&order=created_at.desc'),
+      pmSB('config?select=value&key=eq.abonos').catch(() => [])
     ]);
+    // Abonos a facturas a crédito (los registra Facturas): { factura_id: [{ monto, … }] }
+    try { let v = sbAbonos && sbAbonos[0] ? sbAbonos[0].value : null; if (typeof v === 'string') v = JSON.parse(v); _abonosFac = v && typeof v === 'object' ? v : {}; } catch (e) { _abonosFac = {}; }
     const catalogo = snapC.docs.map(d => ({ _docId: d.id, ...d.data() }));
     // Registros antiguos: guardar correo y nombre normalizados para que el catálogo detecte cuentas repetidas
     const normN = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/\s+/g, ' ');
@@ -4006,13 +4016,22 @@ const _tsMs = t => t && t.seconds ? t.seconds * 1000 : (typeof t === 'number' ? 
 const _fechaCorta = ms => ms ? new Date(ms).toLocaleDateString('es', { day:'numeric', month:'short', year:'numeric' }) : '—';
 const _dinero = n => '$' + Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
 const _facturaValida = f => !/cancel|anulad/i.test(f.status || '');
+let _abonosFac = {};
+// Pendiente de pago, igual que en Facturas: no pagada, no entregada y no anulada; menos lo abonado
+function _saldoFactura(f) {
+  if (!_facturaValida(f) || ['pagado', 'entregado'].includes(f.status)) return 0;
+  const abonado = (_abonosFac[f.id] || []).reduce((s, a) => s + Number(a.monto || 0), 0);
+  return Math.max(0, Number(f.total || 0) - abonado);
+}
 function _resumenCliente(e) {
   const pedidos = e.cat ? (_pedidosPorCliente[e.cat._docId] || []) : [];
   const pedOk = pedidos.filter(p => p.estado !== 'cancelado');
   const totalPed = pedOk.reduce((s, p) => s + Number(p.total_final ?? p.total ?? 0), 0);
   const facOk = e.facturas.filter(_facturaValida);
   const totalFac = facOk.reduce((s, f) => s + Number(f.total || 0), 0);
-  return { pedidos, totalPed, facturas: e.facturas, nFac: facOk.length, totalFac,
+  const pendientes = facOk.filter(f => _saldoFactura(f) > 0);
+  const debe = pendientes.reduce((s, f) => s + _saldoFactura(f), 0);
+  return { pedidos, totalPed, facturas: e.facturas, nFac: facOk.length, totalFac, pendientes, debe,
            estrellas: ESTRELLAS_MIN.filter(m => totalPed >= m).length };
 }
 const _nombreCli = e => (e.cat && e.cat.nombre) || (e.sb && e.sb.name) || 'Sin nombre';
@@ -4028,7 +4047,9 @@ function renderClientesCat() {
   if (q) lista = lista.filter(({ e }) => [_nombreCli(e), e.cat && e.cat.telefono, e.sb && e.sb.phone, e.cat && e.cat.email, e.sb && e.sb.email,
       e.cat && e.cat.ciudad, e.sb && e.sb.shipping_address].some(v => String(v || '').toLowerCase().includes(q)));
   const fechaReg = e => Math.max(_tsMs(e.cat && (e.cat.registrado || e.cat.actualizado)), _tsMs(e.sb && e.sb.created_at));
-  lista.sort((a, b) => orden === 'compras' ? (b.r.totalFac + b.r.totalPed) - (a.r.totalFac + a.r.totalPed)
+  if (orden === 'deben') lista = lista.filter(x => x.r.debe > 0);
+  lista.sort((a, b) => orden === 'deben' ? b.r.debe - a.r.debe
+    : orden === 'compras' ? (b.r.totalFac + b.r.totalPed) - (a.r.totalFac + a.r.totalPed)
     : orden === 'nombre' ? _nombreCli(a.e).localeCompare(_nombreCli(b.e), 'es')
     : fechaReg(b.e) - fechaReg(a.e));
 
@@ -4036,7 +4057,9 @@ function renderClientesCat() {
   document.getElementById('clientesResumen').innerHTML = `
     <div class="cli-kpi"><b>${_clientesCat.length}</b><span>Clientes</span></div>
     <div class="cli-kpi"><b>${_clientesCat.filter(_registrada).length}</b><span>Registradas en el catálogo</span></div>
-    <div class="cli-kpi"><b>${_dinero(todas.reduce((s, r) => s + r.totalFac, 0))}</b><span>Total facturado</span></div>`;
+    <div class="cli-kpi"><b>${_dinero(todas.reduce((s, r) => s + r.totalFac, 0))}</b><span>Total facturado</span></div>
+    <div class="cli-kpi cli-kpi-debe" onclick="document.getElementById('clientesOrden').value='deben'; renderClientesCat()" title="Ver solo quienes deben">
+      <b>${_dinero(todas.reduce((s, r) => s + r.debe, 0))}</b><span>Por cobrar · ${todas.filter(r => r.debe > 0).length} clientes</span></div>`;
 
   if (!lista.length) {
     el.innerHTML = `<p class="pedidos-empty">${_clientesCat.length ? 'Ningún cliente coincide con la búsqueda.' : 'Todavía no hay clientes.'}</p>`;
@@ -4053,7 +4076,8 @@ function renderClientesCat() {
     const dir = (e.cat && _dirCatalogo(c)) || sb.shipping_address || '';
     const otrosNombres = [...new Set(e.otros.map(o => (o.name || '').trim()).filter(n => n && n.toLowerCase() !== _nombreCli(e).trim().toLowerCase()))].join(', ');
     const reg = _registrada(e);
-    const chips = (e.cat && c.bloqueado === true ? '<span class="cli-chip bloq" title="Acceso al catálogo bloqueado">⛔ Bloqueada</span>' : '')
+    const chips = (r.debe > 0 ? `<span class="cli-chip debe" title="${r.pendientes.length} factura(s) pendiente(s) de pago">💲 Debe ${_dinero(r.debe)}</span>` : '')
+      + (e.cat && c.bloqueado === true ? '<span class="cli-chip bloq" title="Acceso al catálogo bloqueado">⛔ Bloqueada</span>' : '')
       + (reg ? (c.verificado === true ? '<span class="cli-chip ok" title="Confirmó su número por WhatsApp">✔ Verificada</span>'
                                                : '<span class="cli-chip pend" title="Aún no confirma su número por WhatsApp">⏳ Sin verificar</span>') : '')
       + (reg && c.dir_verificada ? '<span class="cli-chip ok" title="La dirección se eligió del mapa">📍 Dirección verificada</span>' : '')
@@ -4073,7 +4097,7 @@ function renderClientesCat() {
     }).join('') : '<p class="cli-vacio">Sin pedidos desde el catálogo.</p>';
     const histFac = r.facturas.length ? r.facturas.map(facturaClienteHtml).join('') : '<p class="cli-vacio">Sin facturas.</p>';
     return `
-      <div class="cli-card${_cliAbiertas.has(e.key) ? ' abierta' : ''}" id="cli-${id}">
+      <div class="cli-card${_cliAbiertas.has(e.key) ? ' abierta' : ''}${r.debe > 0 ? ' debe' : ''}" id="cli-${id}">
         <div class="cli-head" onclick="toggleClienteCat('${id}')">
           <span class="cli-avatar${c.bloqueado === true ? ' cli-avatar--bloq' : (reg ? ' cli-avatar--cat' : '')}" title="${c.bloqueado === true ? 'Bloqueada: ' + escHtml(c.bloqueo_motivo || 'sin motivo') : (reg ? 'Registrada en el catálogo' : 'Cliente de Facturas')}">${foto}</span>
           <span class="cli-datos">
@@ -4137,10 +4161,11 @@ function facturaClienteHtml(f) {
       <td style="text-align:center">${q} × ${m(pu)}</td><td style="text-align:right">${m(q * pu)}</td></tr>`;
   }).join('');
   const tot = (l, v) => `<tr class="cli-tot"><td colspan="2">${l}</td><td style="text-align:right">${v}</td></tr>`;
-  return `<div class="cli-pedido${_facturaValida(f) ? '' : ' anulada'}">
+  return `<div class="cli-pedido${_facturaValida(f) ? '' : ' anulada'}${_saldoFactura(f) > 0 ? ' debe' : ''}">
     <div class="cli-pedido-head">
       <span class="pedido-numero">${escHtml(f.invoice_num || '—')}</span>
       <span class="cli-chip fac">${escHtml(f.status || '—')}</span>
+      ${_saldoFactura(f) > 0 ? `<span class="cli-chip debe">💲 Pendiente de pago · ${m(_saldoFactura(f))}</span>` : ''}
       <span class="pedido-fecha">${fecha}</span>
       <span class="pedido-total-head">${m(f.total)}</span>
     </div>
