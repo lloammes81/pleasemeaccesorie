@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261102-7';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261103-1';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -1841,6 +1841,8 @@ textarea { resize: vertical; min-height: 80px; }
 .cli-chip.fac { background:var(--bg2); color:var(--text-mid); border:1px solid var(--border); }
 .cli-pedido.anulada { opacity:.55; }
 .cli-alias { font-style:italic; color:var(--text-muted); }
+.cli-chip.ok { background:rgba(26,122,58,.12); color:var(--green); border:1px solid rgba(26,122,58,.35); }
+.cli-chip.pend { background:rgba(192,57,43,.08); color:#b5651d; border:1px solid rgba(181,101,29,.35); }
 .cli-acciones { margin:0 0 12px; }
 .cli-form { display:grid; grid-template-columns:1fr 1fr; gap:10px 14px; margin:0 0 14px; padding:14px; background:var(--surface); border:1px solid var(--border-strong); }
 .cli-form .cli-full { grid-column:1 / -1; }
@@ -2818,6 +2820,25 @@ body.is-mobile #facturasFrame { height: calc(100dvh - 58px - 68px); }
           </div>
         </div>
 
+        <!-- ── Verificación por WhatsApp ── -->
+        <div class="section-card" style="margin-top:24px;">
+          <div class="section-title">Verificación del teléfono por WhatsApp</div>
+          <div class="contact-form" style="max-width:480px">
+            <div class="field">
+              <label>Número de WhatsApp de verificación (con código de país)</label>
+              <input type="text" id="c_wa_verif" inputmode="tel" placeholder="ej: 18095551234">
+              <div style="font-size:9.5px;color:var(--text-muted);margin-top:4px;line-height:1.6;">
+                Las clientes envían su código a este número y el programa del servidor las marca como verificadas.
+                Primero publica la función (instrucciones en <b>functions/LEEME.md</b> del repositorio).
+                Déjalo vacío para apagar la verificación.
+              </div>
+            </div>
+            <div class="save-row">
+              <button class="btn btn-primary" onclick="guardarVerificacionWA()">Guardar</button>
+            </div>
+          </div>
+        </div>
+
         <!-- ── Firebase Connection ── -->
         <div class="section-card" style="margin-top:24px;">
           <div class="section-title">Base de datos · Firebase</div>
@@ -3370,6 +3391,18 @@ async function saveCloudinaryConfig() {
   checkCloudinaryConfig();
 }
 
+async function guardarVerificacionWA() {
+  const numero = (document.getElementById('c_wa_verif').value || '').replace(/\D/g, '');
+  if (numero && numero.length < 11) return showToast('Escribe el número con código de país, por ejemplo 18095551234');
+  const err = await _saveConfig('pm_whatsapp_verif', { numero });
+  showToast(err ? 'No se pudo guardar: ' + err.message : (numero ? '✅ Verificación por WhatsApp activada' : 'Verificación por WhatsApp apagada'));
+}
+async function llenarVerificacionWA() {
+  const el = document.getElementById('c_wa_verif');
+  if (!el || !_db) return;
+  try { const d = await _db.collection('config').doc('pm_whatsapp_verif').get(); el.value = d.exists && d.data().value ? (d.data().value.numero || '') : ''; } catch(e) {}
+}
+
 function fillCloudinaryForm() {
   const cfg = _cfgCache['pm_cloudinary'] || {};
   const elCN = document.getElementById('c_cloud_name');
@@ -3423,7 +3456,7 @@ function goTo(page) {
   if (page === 'banner') { loadBanner(); loadDiscount(); }
   if (page === 'visitas') loadVisitas();
   if (page === 'info') { loadCatalogInfo(); renderInfoTable(); loadWatermarkConfig(); }
-  if (page === 'config') fillCloudinaryForm();
+  if (page === 'config') { fillCloudinaryForm(); llenarVerificacionWA(); }
   if (page === 'pedidos') loadPedidos();
   if (page === 'clientes') loadClientesCat();
   if (page === 'ofertas') loadOfertas();
@@ -3678,7 +3711,10 @@ function renderClientesCat() {
     const email = c.email || sb.email || '';
     const dir = (e.cat && _dirCatalogo(c)) || sb.shipping_address || '';
     const otrosNombres = [...new Set(e.otros.map(o => (o.name || '').trim()).filter(n => n && n.toLowerCase() !== _nombreCli(e).trim().toLowerCase()))].join(', ');
-    const chips = (e.cat ? '<span class="cli-chip cat">Catálogo</span>' : '') + (e.sb ? '<span class="cli-chip fac">Facturas</span>' : '');
+    const chips = (e.cat ? (c.verificado === true ? '<span class="cli-chip ok" title="Confirmó su número por WhatsApp">✔ Verificada</span>'
+                                               : '<span class="cli-chip pend" title="Aún no confirma su número por WhatsApp">⏳ Sin verificar</span>') : '')
+      + (e.cat && c.dir_verificada ? '<span class="cli-chip ok" title="La dirección se eligió del mapa">📍 Dirección verificada</span>' : '')
+      + (e.cat ? '<span class="cli-chip cat">Catálogo</span>' : '') + (e.sb ? '<span class="cli-chip fac">Facturas</span>' : '');
     const histPed = r.pedidos.length ? r.pedidos.map(p => {
       const est = estadoInfo(estadoPedido(p));
       const filas = (p.items || []).map(it => `<tr><td>${escHtml(it.name || '—')}</td><td style="text-align:center">×${Number(it.qty) || 1}</td><td style="text-align:right">${it.price != null ? '$' + escHtml(it.price) : '—'}</td></tr>`).join('');
@@ -3714,6 +3750,8 @@ function renderClientesCat() {
             <div><span>Cliente desde</span>${_fechaCorta(fechaReg(e))}</div>
             <div><span>Pedidos del catálogo</span>${r.pedidos.length} · ${_dinero(r.totalPed)}</div>
             <div><span>Facturado</span>${r.nFac} · ${_dinero(r.totalFac)}</div>
+            ${e.cat ? `<div><span>Teléfono verificado</span>${c.verificado === true ? '✔ Sí' + (c.verificado_at ? ' · ' + _fechaHora(_tsMs(c.verificado_at)) : '') : '⏳ No'}</div>
+            <div><span>Dirección</span>${c.dir_verificada ? '📍 Verificada en el mapa' : (c.direccion ? 'Sin verificar' : '—')}</div>` : ''}
             ${e.cat ? `<div><span>Visitas al catálogo</span>${Number(c.visitas) || 0}${c.ultima_visita ? ' · última ' + _fechaHora(_tsMs(c.ultima_visita)) : ''}</div>` : ''}
           </div>
           ${e.cat ? `<div class="cli-acciones"><button class="btn" onclick="event.stopPropagation(); editarClienteCat('${id}')">✏️ Editar datos</button></div>
@@ -3815,6 +3853,8 @@ async function guardarClienteCat(key, btn) {
   if (!datos.nombre) return showToast('El nombre no puede quedar vacío');
   if (datos.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(datos.email)) return showToast('Revisa el correo');
   if (datos.pais === 'RD') { datos.estado = ''; datos.zip = ''; }
+  // Si cambió la dirección ya no es la que se verificó en el mapa
+  if (['direccion', 'ciudad', 'estado', 'zip', 'pais'].some(k => (datos[k] || '') !== (e.cat[k] || ''))) { datos.dir_verificada = false; datos.dir_coords = null; }
   btn.disabled = true; btn.textContent = 'Guardando…';
   try {
     await _db.collection('clientes_catalogo').doc(e.cat._docId).set({ ...datos, actualizado: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
