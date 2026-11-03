@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261103-4';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261103-5';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <script>(function(){
 /* Autocomprobación de versión. El rompe-caché de arriba compara el parámetro ?v=
    contra la V del HTML que ya se está ejecutando: si el navegador sirvió una copia
@@ -5683,17 +5683,32 @@ async function guardarRegistro() {
   if (tel10Reg.length !== 10 || (paisDeTel(tel10Reg) === 'USA' && !/^[2-9]\d{2}[2-9]/.test(tel10Reg))) { msg.className = 'reg-msg err'; msg.textContent = es ? 'Escribe un teléfono válido (con código de área).' : 'Enter a valid phone number (with area code).'; return document.getElementById('envTel').focus(); }
   if (d.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email)) { msg.className = 'reg-msg err'; msg.textContent = es ? 'Revisa el correo electrónico.' : 'Check the email address.'; return document.getElementById('envEmail').focus(); }
   if (d.pais === 'RD') { d.estado = ''; d.zip = ''; }
-  if (d.direccion && !_envDirVerif && !_envDirManual) {
-    msg.className = 'reg-msg err';
-    msg.textContent = es ? 'Elige tu dirección de la lista para comprobar que existe (o toca «No encuentro mi dirección»).'
-                         : 'Pick your address from the list so we can confirm it exists (or tap "I can\'t find my address").';
-    return document.getElementById('envDir').focus();
-  }
+  // La dirección puede no estar en el mapa: se guarda igual y el administrador la confirma
   d.dir_verificada = !!(d.direccion && _envDirVerif);
   d.dir_coords = d.dir_verificada && _envDirVerif.coords ? _envDirVerif.coords : null;
 
   const anterior = clienteRegistrado();
-  d.id = 'tel-' + tel;
+  d.id = 'tel-' + tel10Reg;
+  if (!anterior || anterior.id !== d.id) {
+    // Número nuevo en este dispositivo: no puede estar ya registrado por otra cuenta
+    const btnG = document.getElementById('regGuardar');
+    btnG.disabled = true;
+    msg.className = 'reg-msg'; msg.textContent = es ? 'Comprobando el número…' : 'Checking the number…';
+    const yaExiste = await telefonoYaRegistrado(tel10Reg);
+    btnG.disabled = false;
+    if (yaExiste === null) {
+      msg.className = 'reg-msg err';
+      msg.textContent = es ? 'No se pudo comprobar el número ahora mismo. Inténtalo de nuevo en un momento.' : 'Could not check the number right now. Please try again shortly.';
+      return;
+    }
+    if (yaExiste) {
+      msg.className = 'reg-msg err';
+      msg.innerHTML = (es ? 'Este número ya está registrado. Si es tuyo y cambiaste de teléfono, ' : 'This number is already registered. If it is yours and you changed phones, ')
+        + `<a href="${_escD(enlaceWhatsAppTienda(es ? 'Hola, mi número ya está registrado en el catálogo y quiero recuperar mi cuenta.' : 'Hi, my number is already registered in the catalog and I want to recover my account.'))}" target="_blank" rel="noopener">`
+        + (es ? 'escríbenos por WhatsApp' : 'message us on WhatsApp') + '</a>.';
+      return document.getElementById('envTel').focus();
+    }
+  }
   // Conservar foto y compras del mismo cliente
   if (anterior && anterior.id === d.id) ['foto', 'compras', 'total_comprado', 'verificado', 'codigo_verif'].forEach(k => { if (anterior[k] != null) d[k] = anterior[k]; });
   // Número nuevo (o aún sin verificar): código para confirmar por WhatsApp que el teléfono es suyo
@@ -5739,6 +5754,19 @@ async function guardarRegistro() {
     return;
   }
   setTimeout(() => { cerrarRegistro(); if (fn) fn(); }, fn ? 400 : 900);
+}
+
+// ¿Ya hay una cuenta con este teléfono? true / false, o null si no se pudo comprobar.
+// Se miran el documento «tel-<10 dígitos>» y el antiguo con el 1 delante.
+async function telefonoYaRegistrado(tel10) {
+  if (!_db) return null;
+  try {
+    const docs = await Promise.all(['tel-' + tel10, 'tel-1' + tel10].map(id => _db.collection('clientes_catalogo').doc(id).get()));
+    return docs.some(x => x.exists && (x.data().nombre || x.data().telefono));
+  } catch(e) { console.warn('No se pudo comprobar el teléfono:', e.message); return null; }
+}
+function enlaceWhatsAppTienda(texto) {
+  return 'https://wa.me/' + getWhatsAppNumber() + '?text=' + encodeURIComponent(texto);
 }
 
 // ─── DIRECCIÓN: búsqueda en el directorio de mapas (Photon / OpenStreetMap) ─────
@@ -5913,13 +5941,10 @@ function pintarEstadoDireccion(avisoExtra) {
   if (_envDirVerif) {
     el.className = 'reg-dir-estado ok';
     el.textContent = '✔ ' + (en ? 'Address found on the map' : 'Dirección encontrada en el mapa') + (avisoExtra ? ' · ' + avisoExtra : '');
-  } else if (_envDirManual && dir) {
-    el.className = 'reg-dir-estado aviso';
-    el.textContent = '⚠ ' + (en ? 'Saved without map verification' : 'Se guardará sin verificar en el mapa');
   } else if (dir) {
     el.className = 'reg-dir-estado';
-    el.innerHTML = (en ? 'Choose your address from the list. ' : 'Elige tu dirección de la lista. ')
-      + `<button type="button" onclick="envDirManual()">${en ? "I can't find my address" : 'No encuentro mi dirección'}</button>`;
+    el.textContent = en ? 'Pick it from the list if it appears. If not, you can save it as is and we will confirm it.'
+                        : 'Elígela de la lista si aparece. Si no aparece, puedes guardarla así y nosotros la confirmamos.';
   } else {
     el.className = 'reg-dir-estado';
     const usa = document.getElementById('envPais').value !== 'RD';

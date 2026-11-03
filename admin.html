@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261103-1';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261103-2';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -1843,7 +1843,8 @@ textarea { resize: vertical; min-height: 80px; }
 .cli-alias { font-style:italic; color:var(--text-muted); }
 .cli-chip.ok { background:rgba(26,122,58,.12); color:var(--green); border:1px solid rgba(26,122,58,.35); }
 .cli-chip.pend { background:rgba(192,57,43,.08); color:#b5651d; border:1px solid rgba(181,101,29,.35); }
-.cli-acciones { margin:0 0 12px; }
+.cli-acciones { margin:0 0 12px; display:flex; flex-wrap:wrap; gap:8px; }
+.cli-acciones a.btn { text-decoration:none; display:inline-flex; align-items:center; }
 .cli-form { display:grid; grid-template-columns:1fr 1fr; gap:10px 14px; margin:0 0 14px; padding:14px; background:var(--surface); border:1px solid var(--border-strong); }
 .cli-form .cli-full { grid-column:1 / -1; }
 .cli-form label { display:flex; flex-direction:column; gap:4px; font-size:10.5px; letter-spacing:.6px; text-transform:uppercase; color:var(--text-muted); }
@@ -3754,7 +3755,12 @@ function renderClientesCat() {
             <div><span>Dirección</span>${c.dir_verificada ? '📍 Verificada en el mapa' : (c.direccion ? 'Sin verificar' : '—')}</div>` : ''}
             ${e.cat ? `<div><span>Visitas al catálogo</span>${Number(c.visitas) || 0}${c.ultima_visita ? ' · última ' + _fechaHora(_tsMs(c.ultima_visita)) : ''}</div>` : ''}
           </div>
-          ${e.cat ? `<div class="cli-acciones"><button class="btn" onclick="event.stopPropagation(); editarClienteCat('${id}')">✏️ Editar datos</button></div>
+          ${e.cat ? `<div class="cli-acciones">
+            <button class="btn" onclick="event.stopPropagation(); editarClienteCat('${id}')">✏️ Editar datos</button>
+            ${c.direccion ? `<a class="btn" href="https://www.openstreetmap.org/search?query=${encodeURIComponent(_dirCatalogo(c))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🗺️ Buscar en el mapa</a>
+            <a class="btn" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(_dirCatalogo(c))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">📍 Google Maps</a>
+            <button class="btn${c.dir_verificada ? '' : ' btn-primary'}" onclick="event.stopPropagation(); confirmarDireccionCat('${id}', ${c.dir_verificada ? 'false' : 'true'})">${c.dir_verificada ? '↩ Quitar verificación de la dirección' : '✔ Confirmar dirección'}</button>` : ''}
+          </div>
           <div id="cli-edit-${id}"></div>` : ''}
           ${e.cat ? visitasHtml(c) : ''}
           <div class="cli-hist-titulo">Facturas (${r.facturas.length})</div>
@@ -3827,6 +3833,18 @@ const _CAMPOS_EDIT = [
   ['nombre', 'Nombre', 'text'], ['email', 'Correo', 'email'], ['pais', 'País', 'pais'],
   ['direccion', 'Dirección', 'text'], ['ciudad', 'Ciudad', 'text'], ['estado', 'Estado', 'text'], ['zip', 'Código postal', 'text'],
 ];
+// El administrador confirma (o quita) la verificación de la dirección después de mirarla en el mapa
+async function confirmarDireccionCat(key, valor) {
+  const e = _clientesCat.find(x => x.key === key);
+  if (!e || !e.cat) return;
+  try {
+    await _db.collection('clientes_catalogo').doc(e.cat._docId).set({ dir_verificada: valor, dir_verificada_por: valor ? 'admin' : null }, { merge: true });
+    e.cat.dir_verificada = valor;
+    showToast(valor ? '📍 Dirección confirmada' : 'Verificación de la dirección quitada');
+    renderClientesCat();
+  } catch (err) { showToast('No se pudo guardar: ' + err.message); }
+}
+
 function editarClienteCat(key) {
   const e = _clientesCat.find(x => x.key === key);
   const box = document.getElementById('cli-edit-' + key);
