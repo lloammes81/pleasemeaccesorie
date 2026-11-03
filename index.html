@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261103-2';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261103-3';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <script>(function(){
 /* Autocomprobación de versión. El rompe-caché de arriba compara el parámetro ?v=
    contra la V del HTML que ya se está ejecutando: si el navegador sirvió una copia
@@ -2103,7 +2103,14 @@ location.replace(location.pathname+'?v='+m[1]);})
   .reg-sug-ico { color: #c9973a; margin-top: 2px; flex-shrink: 0; }
   .reg-sugs-pie { padding: 7px 12px; font-size: 9.5px; opacity: .5; text-align: right; }
   .reg-sug-buscando { padding: 12px; font-size: 12px; opacity: .7; }
-  .reg-dir-estado { min-height: 16px; font-size: 11px; text-transform: none; letter-spacing: 0; line-height: 1.45; }
+  .reg-dir-estado { min-height: 16px; font-size: 11px; text-transform: none; letter-spacing: 0; line-height: 1.45; color: rgba(240,230,208,.5); }
+  .reg-loc { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, .8fr) minmax(0, 1.1fr); gap: 12px 14px; }
+  .reg-loc > * { min-width: 0; }
+  #regModal.env-rd .reg-loc { grid-template-columns: 1fr; }
+  @media (max-width: 480px) {
+    .reg-loc { grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); }
+    .reg-loc .reg-loc-ciudad { grid-column: 1 / -1; }
+  }
   .reg-dir-estado.ok { color: #8cf0d3; }
   .reg-dir-estado.aviso { color: #f0c46e; }
   .reg-dir-estado button { background: none; border: none; padding: 0; color: inherit; text-decoration: underline; cursor: pointer; font: inherit; }
@@ -3936,7 +3943,7 @@ location.replace(location.pathname+'?v='+m[1]);})
       <h3 class="reg-seccion-tit"><span class="reg-paso">1</span><span data-i18n="regDatos">Tus datos</span></h3>
       <div class="reg-grid">
         <label class="reg-full"><span><span data-i18n="envNombre">Nombre completo</span> <b class="reg-req">*</b></span><input id="envNombre" autocomplete="name" placeholder="María Pérez"></label>
-        <label><span><span data-i18n="envTel">Teléfono / WhatsApp</span> <b class="reg-req">*</b></span><input id="envTel" type="tel" inputmode="tel" autocomplete="tel" placeholder="(561) 555-1234 · 809-555-1234" maxlength="16" onfocus="_telDigitosAntes = this.value.replace(/\D/g, '')" oninput="envTelEscribir(this, event)"><small class="reg-tel-pais" id="envTelPais" aria-live="polite"></small></label>
+        <label><span><span data-i18n="envTel">Teléfono / WhatsApp</span> <b class="reg-req">*</b></span><input id="envTel" type="tel" inputmode="tel" autocomplete="tel" placeholder="(561) 555-1234" maxlength="16" onfocus="_telDigitosAntes = this.value.replace(/\D/g, '')" oninput="envTelEscribir(this, event)"><small class="reg-tel-pais" id="envTelPais" aria-live="polite"></small></label>
         <label><span data-i18n="envEmail">Correo electrónico</span><input id="envEmail" type="email" autocomplete="email" placeholder="tu@correo.com"></label>
       </div>
       <div class="reg-verif" id="regVerif" hidden></div>
@@ -3946,7 +3953,6 @@ location.replace(location.pathname+'?v='+m[1]);})
       <h3 class="reg-seccion-tit"><span class="reg-paso">2</span><span data-i18n="regEnvio">Dirección de envío</span></h3>
       <div class="reg-grid">
         <label class="reg-full"><span data-i18n="envPais">País</span><select id="envPais" onchange="envAplicarPais(); envDirInvalidar()"><option value="USA">Estados Unidos</option><option value="RD">República Dominicana</option></select></label>
-        <label class="env-usa reg-full"><span data-i18n="envZip">Código postal</span><input id="envZip" inputmode="numeric" maxlength="10" autocomplete="postal-code" placeholder="33417" oninput="envZipLookup(this.value); envDirInvalidar()"></label>
         <div class="reg-full reg-dir">
           <label for="envDir"><span data-i18n="envDir">Dirección (calle y número)</span></label>
           <div class="reg-dir-campo">
@@ -3956,8 +3962,11 @@ location.replace(location.pathname+'?v='+m[1]);})
           <div class="reg-sugs" id="envSugs" role="listbox" hidden></div>
           <div class="reg-dir-estado" id="envDirEstado"></div>
         </div>
-        <label><span data-i18n="envCiudad">Ciudad</span><input id="envCiudad" autocomplete="address-level2" oninput="envDirInvalidar()"></label>
-        <label class="env-usa"><span data-i18n="envEstado">Estado</span><input id="envEstado" maxlength="40" autocomplete="address-level1" oninput="envDirInvalidar()"></label>
+        <div class="reg-full reg-loc">
+          <label class="reg-loc-ciudad"><span data-i18n="envCiudad">Ciudad</span><input id="envCiudad" autocomplete="address-level2" oninput="envDirInvalidar()"></label>
+          <label class="env-usa"><span data-i18n="envEstado">Estado</span><input id="envEstado" maxlength="2" autocomplete="address-level1" placeholder="FL" oninput="this.value = this.value.toUpperCase(); envDirInvalidar()"></label>
+          <label class="env-usa"><span data-i18n="envZip">Código postal</span><input id="envZip" inputmode="numeric" maxlength="5" autocomplete="postal-code" oninput="this.value = this.value.replace(/\D/g, ''); envZipLookup(this.value); envDirInvalidar()"></label>
+        </div>
       </div>
     </section>
 
@@ -5757,9 +5766,6 @@ async function envConsultarDirecciones(q) {
     let url = 'https://photon.komoot.io/api/?limit=25&lang=' + (rd ? 'default' : 'en')
       + '&bbox=' + (rd ? '-72.1,17.4,-68.2,20.1' : '-171,18,-66,72') + '&q=' + encodeURIComponent(q);
     if (!rd && _envZipCoords && _envZipCoords.zip === zip) url += '&lat=' + _envZipCoords.lat + '&lon=' + _envZipCoords.lon + '&zoom=12';
-    const r = await fetch(url);
-    if (pedido !== _envDirReq) return;
-    const d = await r.json();
     const pais = rd ? 'DO' : 'US';
     // Palabras del nombre de la calle que escribió (sin el número ni «Dr», «St», «Calle»…)
     const comunes = new Set(['dr','drive','st','street','ave','avenue','av','rd','road','blvd','ln','lane','ct','court','way','pl','place','cir','ter','pkwy','hwy',
@@ -5767,6 +5773,33 @@ async function envConsultarDirecciones(q) {
     const palabras = String(q).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').split(/[^a-z0-9ñ]+/)
       .filter(w => w.length >= 3 && !/^\d/.test(w) && !comunes.has(w));
     const sinTildes = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    // Si no aparece la calle (p. ej. la ciudad escrita a medias: «… West Palm»), se reintenta sin las últimas palabras
+    let d = { features: [] };
+    const palabrasQ = q.split(/\s+/);
+    const puntosCalle = f => { const c = sinTildes(f.properties.street || f.properties.name).split(/[^a-z0-9ñ]+/);
+      return palabras.filter(w => c.some(t => t === w || t.startsWith(w))).length; };
+    const buscado = Math.min(2, palabras.length);
+    for (let quitar = 0; quitar <= 2 && palabrasQ.length - quitar >= 2; quitar++) {
+      const qq = palabrasQ.slice(0, palabrasQ.length - quitar).join(' ');
+      let urlQ = quitar ? url.replace('&q=' + encodeURIComponent(q), '&q=' + encodeURIComponent(qq)) : url;
+      // Las palabras quitadas suelen ser la ciudad: se busca ese lugar y se usa para ubicar la calle
+      if (quitar && !urlQ.includes('&lat=')) {
+        try {
+          const lugarQ = palabrasQ.slice(palabrasQ.length - quitar).join(' ');
+          const rl = await fetch('https://photon.komoot.io/api/?limit=1&osm_tag=place&lang=' + (rd ? 'default' : 'en')
+            + '&bbox=' + (rd ? '-72.1,17.4,-68.2,20.1' : '-171,18,-66,72') + '&q=' + encodeURIComponent(lugarQ));
+          const lf = ((await rl.json()).features || [])[0];
+          if (lf && lf.geometry) urlQ += '&lat=' + lf.geometry.coordinates[1] + '&lon=' + lf.geometry.coordinates[0] + '&zoom=11';
+        } catch(e) {}
+        if (pedido !== _envDirReq) return;
+      }
+      const r = await fetch(urlQ);
+      if (pedido !== _envDirReq) return;
+      const res = await r.json();
+      if (!quitar) d = res;
+      const buenos = (res.features || []).filter(f => f.properties && f.properties.countrycode === pais && f.properties.osm_key === 'highway' && puntosCalle(f) >= buscado);
+      if (buenos.length) { d = res; break; }
+    }
     _envSugs = (d.features || []).filter(f => {
         const p = f.properties || {};
         if (p.countrycode !== pais) return false;
@@ -5777,9 +5810,16 @@ async function envConsultarDirecciones(q) {
         const calle = sinTildes(p.street || p.name);
         return !palabras.length || palabras.some(w => calle.includes(w));
       })
-      .map(f => envSugerencia(f, q)).filter(Boolean)
+      .map(f => { const x = envSugerencia(f, q); if (x) { const calle = sinTildes(f.properties.street || f.properties.name);
+        x.puntos = palabras.filter(w => calle.split(/[^a-z0-9ñ]+/).some(t => t === w || t.startsWith(w))).length;
+        // Palabras de la ciudad o zona que escribió (p. ej. «West Palm») que coinciden con el lugar
+        const lugarTxt = sinTildes([f.properties.city, f.properties.county, f.properties.district, f.properties.locality, f.properties.state].join(' '));
+        x.cerca = palabras.filter(w => !calle.includes(w) && lugarTxt.includes(w)).length; } return x; })
+      .filter(Boolean)
       .filter((x, i, a) => a.findIndex(y => y.titulo === x.titulo && y.lugar === x.lugar) === i)
-      .sort((a, b) => (b.zip === zip) - (a.zip === zip) || b.exacta - a.exacta)   // primero las de su código postal
+      // primero las que más palabras de la calle comparten; luego las de su código postal
+      .sort((a, b) => b.puntos - a.puntos || (b.zip === zip) - (a.zip === zip) || b.cerca - a.cerca || b.exacta - a.exacta)
+      .filter((x, i, a) => x.puntos >= Math.min(2, a[0] ? a[0].puntos : 0))
       .slice(0, 6);
     _envSugActiva = -1;
     pintarSugerencias();
@@ -5871,9 +5911,9 @@ function pintarEstadoDireccion(avisoExtra) {
   } else {
     el.className = 'reg-dir-estado';
     const usa = document.getElementById('envPais').value !== 'RD';
-    el.textContent = usa ? (en ? 'Enter your ZIP code first, then type your street and number and pick it from the list.'
-                               : 'Escribe primero tu código postal; luego tu calle y número, y elígela de la lista.')
-                         : (en ? 'Type your street and number (and sector), then pick it from the list.' : 'Escribe tu calle y número (y el sector) y elígela de la lista.');
+    el.textContent = usa ? (en ? 'Type your street and number and pick it from the list. City, state and ZIP fill in automatically.'
+                               : 'Escribe tu calle y número y elígela de la lista. Ciudad, estado y código postal se llenan solos.')
+                         : (en ? 'Type your street, number and sector, then pick it from the list.' : 'Escribe tu calle, número y sector, y elígela de la lista.');
   }
 }
 
