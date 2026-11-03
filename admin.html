@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261103-10';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261103-11';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -1917,6 +1917,12 @@ body.admin-dentro #adminWhatsApp { display:flex; }
   body.wa-abierto #adminWhatsApp { display:none; }
 }
 @media (max-width:768px) { #adminWhatsApp { right:16px; bottom:calc(84px + env(safe-area-inset-bottom, 0px)); width:52px; height:52px; } }
+.cat-agregar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin:0 0 14px; padding:12px 16px;
+  background:var(--surface); border:1px solid var(--border-strong); border-left:4px solid var(--gold); }
+.cat-agregar span { font-size:12.5px; color:var(--text-mid); }
+.cat-agregar b { color:var(--gold-deep); }
+.badge-nuevo { display:inline-block; margin-left:6px; padding:1px 7px; border-radius:999px; background:var(--gold); color:#fff; font-size:9px; font-weight:700;
+  letter-spacing:.8px; text-transform:uppercase; vertical-align:middle; }
 .cli-acciones { margin:0 0 12px; display:flex; flex-wrap:wrap; gap:8px; }
 .cli-acciones a.btn { text-decoration:none; display:inline-flex; align-items:center; }
 .cli-acciones .cli-bloquear { margin-left:auto; }
@@ -2196,7 +2202,7 @@ body.is-mobile #facturasFrame { height: calc(100dvh - 58px - 68px); }
         <button class="icon-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Cambiar tema">
           <svg id="themeIcon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
         </button>
-        <button class="btn btn-primary" id="topbarAction" onclick="openDrawer()">
+        <button class="btn btn-primary" id="topbarAction" onclick="openDrawer(null, filtroCategoria)">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Nuevo producto
         </button>
@@ -2231,6 +2237,8 @@ body.is-mobile #facturasFrame { height: calc(100dvh - 58px - 68px); }
           </button>
         </div>
       </div>
+
+      <div id="catAgregarBar"></div>
 
       <div id="optimizarProgress" style="display:none;margin:12px 0;padding:12px 16px;background:rgba(201,151,58,0.08);border:1px solid rgba(201,151,58,0.2);font-family:'Cinzel',serif;font-size:10px;letter-spacing:1.5px;color:var(--gold);">
         <div id="optimizarText">Optimizando...</div>
@@ -3040,6 +3048,7 @@ body.is-mobile #facturasFrame { height: calc(100dvh - 58px - 68px); }
           <option value="pulseras">Pulseras</option>
           <option value="tobilleras">Tobilleras</option>
           <option value="dijes">Dijes</option>
+          <option value="sets">Sets</option>
           <option value="temporada">⭐ Temporada</option>
           <option value="lentes">Lentes</option>
         </select>
@@ -3312,7 +3321,7 @@ let photoChanged = false; // true solo cuando el usuario seleccionó una foto nu
 const CAT_LABELS = {
   anillos: 'Anillos', aretes: 'Aretes', collares: 'Collares',
   pulseras: 'Pulseras', tobilleras: 'Tobilleras', dijes: 'Dijes',
-  temporada: 'Temporada', lentes: 'Lentes'
+  temporada: 'Temporada', lentes: 'Lentes', sets: 'Sets'
 };
 
 async function recargarProductos() {
@@ -3360,11 +3369,11 @@ async function loadProducts() {
       };
     });
 
-    // Ordenar por fecha de registro (más antiguos primero → nuevos al final)
+    // Ordenar por fecha de registro: los más nuevos primero
     products.sort((a, b) => {
       const ta = a.createdAt ? a.createdAt.toMillis() : 0;
       const tb = b.createdAt ? b.createdAt.toMillis() : 0;
-      return ta - tb;
+      return tb - ta;
     });
 
     console.log('Productos cargados:', products.length);
@@ -4686,6 +4695,13 @@ function renderTable() {
     ${temporadaCard}
   `;
 
+  // Con una categoría elegida en las esferas: botón para agregar directamente en ella
+  const bar = document.getElementById('catAgregarBar');
+  if (bar) bar.innerHTML = filtroCategoria ? `<div class="cat-agregar">
+      <span>Mostrando <b>${CAT_LABELS[filtroCategoria] || filtroCategoria}</b> · los más nuevos primero</span>
+      <button type="button" class="btn btn-primary" onclick="openDrawer(null, '${filtroCategoria}')">＋ Agregar nuevo en ${CAT_LABELS[filtroCategoria] || filtroCategoria}</button>
+    </div>` : '';
+
   if (displayed.length === 0) {
     tbody.innerHTML = '';
     empty.style.display = '';
@@ -4703,7 +4719,7 @@ function renderTable() {
         </div>
       </td>
       <td>
-        <div class="td-name">${p.name}</div>
+        <div class="td-name">${p.name}${p.createdAt && Date.now() - p.createdAt.toMillis() < 7 * 864e5 ? ' <span class="badge-nuevo">Nuevo</span>' : ''}</div>
         <div class="td-sub">${p.subtitle || ''}</div>
       </td>
       <td><span class="badge badge-cat">${CAT_LABELS[p.category] || p.category}</span></td>
@@ -4779,7 +4795,7 @@ function mobFilterCat(cat) {
 }
 
 // ─── DRAWER ──────────────────────────────────────────────────────────
-function openDrawer(id) {
+function openDrawer(id, categoria) {
   editingId = id || null;
   photoData    = null;
   rawPhotoData = null;
@@ -4817,11 +4833,11 @@ function openDrawer(id) {
       document.getElementById('photoPreview').style.display      = 'block';
     }
   } else {
-    document.getElementById('drawerTitle').textContent = 'Nueva prenda';
+    document.getElementById('drawerTitle').textContent = categoria ? 'Nueva prenda · ' + (CAT_LABELS[categoria] || categoria) : 'Nueva prenda';
     ['f_name','f_subtitle','f_price','f_desc','f_medida','f_peso'].forEach(id => {
       document.getElementById(id).value = '';
     });
-    document.getElementById('f_category').value = '';
+    document.getElementById('f_category').value = categoria || '';
     document.getElementById('f_badge').value = '';
     document.getElementById('f_material').value = 'Oro laminado 14k';
   }
@@ -6169,7 +6185,7 @@ document.addEventListener('keydown', e => {
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
     Productos
   </button>
-  <button class="mob-nav-btn mob-center" onclick="openDrawer()" title="Agregar artículo">
+  <button class="mob-nav-btn mob-center" onclick="openDrawer(null, filtroCategoria)" title="Agregar artículo">
     <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
   </button>
   <button class="mob-nav-btn" id="mob-nav-contacto" onclick="mobGoTo('contacto')">
