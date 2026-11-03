@@ -81,12 +81,12 @@ momento:
 
 Si dejas el número vacío, la verificación queda apagada y el catálogo funciona como antes.
 
-## Recomendado: que nadie pueda marcarse «verificada» a mano
+## Recomendado: que nadie pueda marcarse «verificada» ni quitarse un bloqueo a mano
 
 En Firebase → Firestore → **Reglas**, dentro de la regla de `clientes_catalogo`, añade
 esta condición a las escrituras para que solo la función pueda cambiar esos campos:
 
 ```
 !request.resource.data.diff(resource == null ? {} : resource.data).affectedKeys()
-  .hasAny(['verificado', 'verificado_at', 'verificado_whatsapp'])
+  .hasAny(['verificado', 'verificado_at', 'verificado_whatsapp', 'bloqueado', 'bloqueado_at'])
 ```
