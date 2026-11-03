@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261103-7';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261103-8';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -1828,6 +1828,7 @@ textarea { resize: vertical; min-height: 80px; }
 .cli-ico:hover { border-color:var(--gold); color:var(--text); }
 .cli-ico.activo { border-color:#c0392b; background:rgba(192,57,43,.08); color:#c0392b; }
 .cli-ico.borrar:hover { border-color:#c0392b; background:#c0392b; color:#fff; }
+.cli-ico:disabled { opacity:.55; cursor:not-allowed; background:var(--bg2); }
 @media (max-width:640px) { .cli-ico span { display:none; } .cli-ico { padding:6px 7px; } }
 .cli-cifras b { display:block; font-size:14px; color:var(--text); }
 .cli-cifras span { font-size:11px; color:var(--text-muted); }
@@ -3805,7 +3806,8 @@ function renderClientesCat() {
           <span class="cli-fila-acciones" onclick="event.stopPropagation()">
             <button type="button" class="cli-ico${c.bloqueado === true ? ' activo' : ''}" title="${c.bloqueado === true ? 'Desbloquear acceso al catálogo' : 'Bloquear acceso al catálogo'}"
               onclick="bloquearClienteCat('${id}', ${c.bloqueado === true ? 'false' : 'true'})">${c.bloqueado === true ? '✅' : '⛔'}<span>${c.bloqueado === true ? 'Desbloquear' : 'Bloquear'}</span></button>
-            <button type="button" class="cli-ico borrar" title="Eliminar cliente" onclick="eliminarClienteCat('${id}')">🗑<span>Eliminar</span></button>
+            ${(r.pedidos.length + r.facturas.length) ? `<button type="button" class="cli-ico" disabled title="Tiene ${r.pedidos.length + r.facturas.length} orden(es): no se puede eliminar, solo bloquear">🔒<span>Con órdenes</span></button>`
+              : `<button type="button" class="cli-ico borrar" title="Eliminar cliente" onclick="eliminarClienteCat('${id}')">🗑<span>Eliminar</span></button>`}
           </span>
           <span class="cli-cifras"><b>${_dinero(r.totalFac)}</b><span>${r.nFac} factura${r.nFac === 1 ? '' : 's'}${r.pedidos.length ? ' · ' + r.pedidos.length + ' pedido' + (r.pedidos.length === 1 ? '' : 's') : ''}</span></span>
           <svg class="pedido-arrow" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
@@ -3935,6 +3937,9 @@ async function bloquearClienteCat(key, bloquear) {
 async function eliminarClienteCat(key) {
   const e = _clientesCat.find(x => x.key === key);
   if (!e) return;
+  // Quien ya hizo pedidos o tiene facturas no se elimina (se perdería el historial): solo se puede bloquear
+  const ordenes = (e.cat ? (_pedidosPorCliente[e.cat._docId] || []).length : 0) + e.facturas.length;
+  if (ordenes) return showToast(`No se puede eliminar: tiene ${ordenes} orden${ordenes === 1 ? '' : 'es'}. Puedes bloquearla.`);
   const nombre = _nombreCli(e);
   const fichasSb = [e.sb, ...(e.otros || [])].filter(Boolean);
   const donde = [e.cat ? 'su cuenta del catálogo' : '', fichasSb.length ? 'su ficha de cliente en Facturas' : ''].filter(Boolean).join(' y ');
