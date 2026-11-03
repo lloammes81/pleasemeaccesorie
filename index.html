@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261103-6';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261103-7';window.APP_VERSION=V;var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <script>(function(){
 /* Autocomprobación de versión. El rompe-caché de arriba compara el parámetro ?v=
    contra la V del HTML que ya se está ejecutando: si el navegador sirvió una copia
@@ -2024,6 +2024,8 @@ location.replace(location.pathname+'?v='+m[1]);})
   .cart-envio .env-menu button { text-align: left; background: rgba(201,151,58,0.08); border: 1px solid rgba(201,151,58,0.35); color: #e8c56e; cursor: pointer;
     font-family: 'Montserrat', sans-serif; font-size: 11px; letter-spacing: .8px; text-transform: uppercase; padding: 9px 10px; transition: background .2s; }
   .cart-envio .env-menu button:hover { background: rgba(201,151,58,0.18); }
+  .cart-envio .env-menu button.env-salir { border-color: rgba(255,120,120,0.35); color: #ff9a9a; background: rgba(255,80,80,0.06); }
+  .cart-envio .env-menu button.env-salir:hover { background: rgba(255,80,80,0.15); }
   #regModal { display: none; position: fixed; inset: 0; z-index: 10050; background: rgba(5,4,2,0.78); backdrop-filter: blur(4px);
     align-items: center; justify-content: center; padding: 16px; }
   #regModal.abierto { display: flex; }
@@ -5676,10 +5678,15 @@ function continuarSinRegistro() {
   if (fn) fn();
 }
 function salirRegistro() {
-  if (!confirm(_lang === 'en' ? 'Sign out on this device?' : '¿Cerrar sesión en este dispositivo?')) return;
+  const en = _lang === 'en';
+  if (!confirm(en ? 'Sign out on this device?\n\nYour account is kept: to come back in, enter the same name and number in "Sign up".'
+                  : '¿Cerrar sesión en este dispositivo?\n\nTu cuenta se conserva: para volver a entrar, escribe tu mismo nombre y tu mismo número en «Regístrate».')) return;
   try { localStorage.removeItem('pm_cliente'); } catch(e) {}
   cerrarRegistro();
   pintarRegistro();
+  if (typeof showCartView === 'function') try { showCartView('cart'); } catch(e) {}
+  const t = document.getElementById('toastOfertaNuevo');
+  if (t) { t.textContent = en ? '👋 You signed out' : '👋 Cerraste sesión'; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500); }
 }
 
 async function guardarRegistro() {
@@ -5709,8 +5716,14 @@ async function guardarRegistro() {
     let yaExiste;
     if (propia) yaExiste = await clienteDuplicado(d, propia);
     else {
-      const porTel = await telefonoYaRegistrado(tel10Reg);
-      yaExiste = porTel === null ? null : (porTel ? 'telefono' : await clienteDuplicado(d, null));
+      const cuenta = await cuentaPorTelefono(tel10Reg);
+      if (cuenta && cuenta.data.bloqueado === true) { btnG.disabled = false; cerrarRegistro(); mostrarBloqueo(); return; }
+      // Su mismo número y su mismo nombre: vuelve a entrar a su cuenta (p. ej. después de cerrar sesión)
+      if (cuenta && _normNombre(cuenta.data.nombre).split(' ')[0] === _normNombre(d.nombre).split(' ')[0]) {
+        btnG.disabled = false;
+        return entrarACuenta(cuenta);
+      }
+      yaExiste = cuenta === null ? null : (cuenta ? 'telefono' : await clienteDuplicado(d, null));
     }
     btnG.disabled = false;
     if (yaExiste === null) {
@@ -5794,6 +5807,31 @@ async function clienteDuplicado(d, idPropio) {
     if (otro(porNombre)) return 'nombre';
     return false;
   } catch(e) { console.warn('No se pudo comprobar el registro:', e.message); return null; }
+}
+// La cuenta de ese teléfono: { id, data } | false (no hay) | null (no se pudo comprobar)
+async function cuentaPorTelefono(tel10) {
+  if (!_db) return null;
+  try {
+    const docs = await Promise.all(['tel-' + tel10, 'tel-1' + tel10].map(id => _db.collection('clientes_catalogo').doc(id).get()));
+    const x = docs.find(x => x.exists && (x.data().nombre || x.data().telefono));
+    return x ? { id: x.id, data: x.data() } : false;
+  } catch(e) { console.warn('No se pudo comprobar el teléfono:', e.message); return null; }
+}
+// Volver a entrar a una cuenta existente en este dispositivo (sus datos vienen de Firebase)
+function entrarACuenta(cuenta) {
+  const es = _lang !== 'en', r = cuenta.data;
+  const c = { id: cuenta.id };
+  Object.keys(ENVIO_CAMPOS).forEach(k => { c[k] = r[k] || (k === 'pais' ? 'USA' : ''); });
+  ['foto', 'compras', 'total_comprado', 'dir_verificada', 'dir_coords'].forEach(k => { if (r[k] != null) c[k] = r[k]; });
+  if (r.verificado === true) c.verificado = true;
+  else if (r.verificacion && r.verificacion.codigo) c.codigo_verif = r.verificacion.codigo;
+  try { localStorage.setItem('pm_cliente', JSON.stringify(c)); } catch(e) {}
+  pintarRegistro();
+  const msg = document.getElementById('regMsg');
+  msg.className = 'reg-msg ok';
+  msg.textContent = (es ? '✓ ¡Bienvenida de nuevo, ' : '✓ Welcome back, ') + String(c.nombre || '').split(' ')[0] + '!';
+  const fn = _regDespues;
+  setTimeout(() => { cerrarRegistro(); if (fn) fn(); }, 1000);
 }
 async function telefonoYaRegistrado(tel10) {
   if (!_db) return null;
@@ -6197,6 +6235,7 @@ function pintarRegistro() {
       <div class="env-menu"><div class="env-menu-in">
         <button type="button" onclick="event.stopPropagation(); showCartView('history')">🧾 ${es ? 'Historial de compras' : 'Purchase history'}</button>
         <button type="button" onclick="event.stopPropagation(); abrirRegistro()">✏️ ${es ? 'Editar mis datos' : 'Edit my details'}</button>
+        <button type="button" class="env-salir" onclick="event.stopPropagation(); salirRegistro()">🚪 ${es ? 'Cerrar sesión' : 'Sign out'}</button>
       </div></div>`;
   } else {
     box.innerHTML = `
