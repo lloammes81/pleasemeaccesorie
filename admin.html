@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>(function(){var V='20261103-3';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
+<script>(function(){var V='20261103-5';var u=new URL(location.href);if(u.searchParams.get('v')!==V){u.searchParams.set('v',V);location.replace(u.toString());}})();</script>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -1822,6 +1822,13 @@ textarea { resize: vertical; min-height: 80px; }
 .cli-estrellas { color:var(--gold); letter-spacing:1px; font-size:12px; margin-left:6px; }
 .cli-linea { font-size:12px; color:var(--text-mid); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .cli-cifras { text-align:right; flex-shrink:0; }
+.cli-fila-acciones { display:flex; gap:6px; flex-shrink:0; }
+.cli-ico { display:inline-flex; align-items:center; gap:5px; padding:6px 9px; border:1px solid var(--border); background:var(--surface); color:var(--text-mid);
+  font-family:'Montserrat',sans-serif; font-size:11px; cursor:pointer; border-radius:6px; transition:all .15s; }
+.cli-ico:hover { border-color:var(--gold); color:var(--text); }
+.cli-ico.activo { border-color:#c0392b; background:rgba(192,57,43,.08); color:#c0392b; }
+.cli-ico.borrar:hover { border-color:#c0392b; background:#c0392b; color:#fff; }
+@media (max-width:640px) { .cli-ico span { display:none; } .cli-ico { padding:6px 7px; } }
 .cli-cifras b { display:block; font-size:14px; color:var(--text); }
 .cli-cifras span { font-size:11px; color:var(--text-muted); }
 .cli-body { display:none; border-top:1px solid var(--border); padding:14px 16px; background:var(--bg); }
@@ -1843,6 +1850,14 @@ textarea { resize: vertical; min-height: 80px; }
 .cli-alias { font-style:italic; color:var(--text-muted); }
 .cli-chip.ok { background:rgba(26,122,58,.12); color:var(--green); border:1px solid rgba(26,122,58,.35); }
 .cli-chip.pend { background:rgba(192,57,43,.08); color:#b5651d; border:1px solid rgba(181,101,29,.35); }
+/* ─── Botón flotante de WhatsApp (solo admin, solo con la sesión abierta) ─── */
+#adminWhatsApp { position:fixed; right:22px; bottom:22px; z-index:900; width:58px; height:58px; border-radius:50%; display:none;
+  align-items:center; justify-content:center; color:#fff; background:linear-gradient(135deg,#1a8a3d,#25d366); text-decoration:none;
+  box-shadow:0 10px 26px rgba(18,140,60,.45), 0 0 0 4px rgba(37,211,102,.15); transition:transform .18s, box-shadow .18s; }
+#adminWhatsApp svg { width:30px; height:30px; }
+#adminWhatsApp:hover { transform:translateY(-2px) scale(1.04); box-shadow:0 14px 32px rgba(18,140,60,.55), 0 0 0 6px rgba(37,211,102,.18); }
+body.admin-dentro #adminWhatsApp { display:flex; }
+@media (max-width:768px) { #adminWhatsApp { right:16px; bottom:calc(84px + env(safe-area-inset-bottom, 0px)); width:52px; height:52px; } }
 .cli-acciones { margin:0 0 12px; display:flex; flex-wrap:wrap; gap:8px; }
 .cli-acciones a.btn { text-decoration:none; display:inline-flex; align-items:center; }
 .cli-acciones .cli-bloquear { margin-left:auto; }
@@ -3448,6 +3463,22 @@ function sendCatalogToNumber() {
 }
 
 // ─── NAVIGATION ──────────────────────────────────────────────────────
+// WhatsApp: en el teléfono abre la app; en la computadora, WhatsApp Web
+function abrirWhatsAppAdmin(ev) {
+  if (esMobile()) { ev.preventDefault(); location.href = 'whatsapp://send'; setTimeout(() => window.open('https://wa.me/', '_blank'), 900); return false; }
+  return true;
+}
+// El botón solo se ve con el admin abierto (sesión iniciada, fuera de la pantalla de acceso)
+function actualizarBotonWhatsApp() {
+  const login = document.getElementById('loginScreen');
+  document.body.classList.toggle('admin-dentro', !!login && login.classList.contains('hidden'));
+}
+document.addEventListener('DOMContentLoaded', () => {
+  actualizarBotonWhatsApp();
+  const login = document.getElementById('loginScreen');
+  if (login) new MutationObserver(actualizarBotonWhatsApp).observe(login, { attributes: true, attributeFilter: ['class'] });
+});
+
 function goTo(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -3689,6 +3720,8 @@ function _resumenCliente(e) {
            estrellas: ESTRELLAS_MIN.filter(m => totalPed >= m).length };
 }
 const _nombreCli = e => (e.cat && e.cat.nombre) || (e.sb && e.sb.name) || 'Sin nombre';
+// ¿Se registró ella en el catálogo? (los bloqueos que pone el admin a clientes de Facturas no cuentan)
+const _registrada = e => !!(e.cat && !e.cat.creado_por_admin);
 
 function renderClientesCat() {
   const el = document.getElementById('clientesLista');
@@ -3706,7 +3739,7 @@ function renderClientesCat() {
   const todas = _clientesCat.map(_resumenCliente);
   document.getElementById('clientesResumen').innerHTML = `
     <div class="cli-kpi"><b>${_clientesCat.length}</b><span>Clientes</span></div>
-    <div class="cli-kpi"><b>${_clientesCat.filter(e => e.cat).length}</b><span>Registradas en el catálogo</span></div>
+    <div class="cli-kpi"><b>${_clientesCat.filter(_registrada).length}</b><span>Registradas en el catálogo</span></div>
     <div class="cli-kpi"><b>${_dinero(todas.reduce((s, r) => s + r.totalFac, 0))}</b><span>Total facturado</span></div>`;
 
   if (!lista.length) {
@@ -3723,11 +3756,12 @@ function renderClientesCat() {
     const email = c.email || sb.email || '';
     const dir = (e.cat && _dirCatalogo(c)) || sb.shipping_address || '';
     const otrosNombres = [...new Set(e.otros.map(o => (o.name || '').trim()).filter(n => n && n.toLowerCase() !== _nombreCli(e).trim().toLowerCase()))].join(', ');
+    const reg = _registrada(e);
     const chips = (e.cat && c.bloqueado === true ? '<span class="cli-chip bloq" title="Acceso al catálogo bloqueado">⛔ Bloqueada</span>' : '')
-      + (e.cat ? (c.verificado === true ? '<span class="cli-chip ok" title="Confirmó su número por WhatsApp">✔ Verificada</span>'
+      + (reg ? (c.verificado === true ? '<span class="cli-chip ok" title="Confirmó su número por WhatsApp">✔ Verificada</span>'
                                                : '<span class="cli-chip pend" title="Aún no confirma su número por WhatsApp">⏳ Sin verificar</span>') : '')
-      + (e.cat && c.dir_verificada ? '<span class="cli-chip ok" title="La dirección se eligió del mapa">📍 Dirección verificada</span>' : '')
-      + (e.cat ? '<span class="cli-chip cat">Catálogo</span>' : '') + (e.sb ? '<span class="cli-chip fac">Facturas</span>' : '');
+      + (reg && c.dir_verificada ? '<span class="cli-chip ok" title="La dirección se eligió del mapa">📍 Dirección verificada</span>' : '')
+      + (reg ? '<span class="cli-chip cat">Catálogo</span>' : '') + (e.sb ? '<span class="cli-chip fac">Facturas</span>' : '');
     const histPed = r.pedidos.length ? r.pedidos.map(p => {
       const est = estadoInfo(estadoPedido(p));
       const filas = (p.items || []).map(it => `<tr><td>${escHtml(it.name || '—')}</td><td style="text-align:center">×${Number(it.qty) || 1}</td><td style="text-align:right">${it.price != null ? '$' + escHtml(it.price) : '—'}</td></tr>`).join('');
@@ -3745,12 +3779,17 @@ function renderClientesCat() {
     return `
       <div class="cli-card${_cliAbiertas.has(e.key) ? ' abierta' : ''}" id="cli-${id}">
         <div class="cli-head" onclick="toggleClienteCat('${id}')">
-          <span class="cli-avatar${e.cat ? ' cli-avatar--cat' : ''}" title="${e.cat ? 'Registrada en el catálogo' : 'Cliente de Facturas'}">${foto}</span>
+          <span class="cli-avatar${reg ? ' cli-avatar--cat' : ''}" title="${reg ? 'Registrada en el catálogo' : 'Cliente de Facturas'}">${foto}</span>
           <span class="cli-datos">
             <span class="cli-nombre">${nombre}${r.estrellas ? `<span class="cli-estrellas">${'★'.repeat(r.estrellas)}</span>` : ''}${chips}</span>
-            <span class="cli-linea">${escHtml(telTxt)}${email ? ' · ' + escHtml(email) : ''}${e.cat ? ` · 👁 ${Number(c.visitas) || 0} visita${Number(c.visitas) === 1 ? '' : 's'}` : ''}</span>
+            <span class="cli-linea">${escHtml(telTxt)}${email ? ' · ' + escHtml(email) : ''}${reg ? ` · 👁 ${Number(c.visitas) || 0} visita${Number(c.visitas) === 1 ? '' : 's'}` : ''}</span>
             <span class="cli-linea">${escHtml(dir)}</span>
             ${otrosNombres ? `<span class="cli-linea cli-alias">También como: ${escHtml(otrosNombres)}</span>` : ''}
+          </span>
+          <span class="cli-fila-acciones" onclick="event.stopPropagation()">
+            <button type="button" class="cli-ico${c.bloqueado === true ? ' activo' : ''}" title="${c.bloqueado === true ? 'Desbloquear acceso al catálogo' : 'Bloquear acceso al catálogo'}"
+              onclick="bloquearClienteCat('${id}', ${c.bloqueado === true ? 'false' : 'true'})">${c.bloqueado === true ? '✅' : '⛔'}<span>${c.bloqueado === true ? 'Desbloquear' : 'Bloquear'}</span></button>
+            <button type="button" class="cli-ico borrar" title="Eliminar cliente" onclick="eliminarClienteCat('${id}')">🗑<span>Eliminar</span></button>
           </span>
           <span class="cli-cifras"><b>${_dinero(r.totalFac)}</b><span>${r.nFac} factura${r.nFac === 1 ? '' : 's'}${r.pedidos.length ? ' · ' + r.pedidos.length + ' pedido' + (r.pedidos.length === 1 ? '' : 's') : ''}</span></span>
           <svg class="pedido-arrow" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
@@ -3763,20 +3802,18 @@ function renderClientesCat() {
             <div><span>Cliente desde</span>${_fechaCorta(fechaReg(e))}</div>
             <div><span>Pedidos del catálogo</span>${r.pedidos.length} · ${_dinero(r.totalPed)}</div>
             <div><span>Facturado</span>${r.nFac} · ${_dinero(r.totalFac)}</div>
-            ${e.cat ? `<div><span>Teléfono verificado</span>${c.verificado === true ? '✔ Sí' + (c.verificado_at ? ' · ' + _fechaHora(_tsMs(c.verificado_at)) : '') : '⏳ No'}</div>
+            ${reg ? `<div><span>Teléfono verificado</span>${c.verificado === true ? '✔ Sí' + (c.verificado_at ? ' · ' + _fechaHora(_tsMs(c.verificado_at)) : '') : '⏳ No'}</div>
             <div><span>Dirección</span>${c.dir_verificada ? '📍 Verificada en el mapa' : (c.direccion ? 'Sin verificar' : '—')}</div>` : ''}
-            ${e.cat ? `<div><span>Visitas al catálogo</span>${Number(c.visitas) || 0}${c.ultima_visita ? ' · última ' + _fechaHora(_tsMs(c.ultima_visita)) : ''}</div>` : ''}
+            ${reg ? `<div><span>Visitas al catálogo</span>${Number(c.visitas) || 0}${c.ultima_visita ? ' · última ' + _fechaHora(_tsMs(c.ultima_visita)) : ''}</div>` : ''}
           </div>
-          ${e.cat ? `<div class="cli-acciones">
+          ${reg ? `<div class="cli-acciones">
             <button class="btn" onclick="event.stopPropagation(); editarClienteCat('${id}')">✏️ Editar datos</button>
             ${c.direccion ? `<a class="btn" href="https://www.openstreetmap.org/search?query=${encodeURIComponent(_dirCatalogo(c))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🗺️ Buscar en el mapa</a>
             <a class="btn" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(_dirCatalogo(c))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">📍 Google Maps</a>
             <button class="btn${c.dir_verificada ? '' : ' btn-primary'}" onclick="event.stopPropagation(); confirmarDireccionCat('${id}', ${c.dir_verificada ? 'false' : 'true'})">${c.dir_verificada ? '↩ Quitar verificación de la dirección' : '✔ Confirmar dirección'}</button>` : ''}
-            <button class="btn cli-bloquear" onclick="event.stopPropagation(); bloquearClienteCat('${id}', ${c.bloqueado === true ? 'false' : 'true'})">${c.bloqueado === true ? '✅ Desbloquear acceso' : '⛔ Bloquear acceso'}</button>
-            <button class="btn cli-borrar" onclick="event.stopPropagation(); eliminarClienteCat('${id}')">🗑 Eliminar registro</button>
           </div>
           <div id="cli-edit-${id}"></div>` : ''}
-          ${e.cat ? visitasHtml(c) : ''}
+          ${reg ? visitasHtml(c) : ''}
           <div class="cli-hist-titulo">Facturas (${r.facturas.length})</div>
           ${histFac}
           <div class="cli-hist-titulo" style="margin-top:14px">Pedidos del catálogo (${r.pedidos.length})</div>
@@ -3851,10 +3888,19 @@ const _CAMPOS_EDIT = [
 // así que con ese teléfono, correo o nombre no puede volver a registrarse.
 async function bloquearClienteCat(key, bloquear) {
   const e = _clientesCat.find(x => x.key === key);
-  if (!e || !e.cat) return;
-  if (bloquear && !confirm(`¿Bloquear el acceso al catálogo de ${e.cat.nombre || 'esta clienta'}?\n\nAl abrir el catálogo en su teléfono verá «Acceso restringido» y no podrá volver a registrarse con ese número, correo ni nombre.`)) return;
+  if (!e) return;
+  const nombre = _nombreCli(e);
+  // Sin cuenta en el catálogo: se bloquea su teléfono para que no pueda registrarse
+  const tel = tel10((e.cat && e.cat.telefono) || (e.sb && e.sb.phone));
+  if (!e.cat && tel.length !== 10) return showToast('Esta clienta no tiene teléfono: no se puede bloquear');
+  if (bloquear && !confirm(`¿Bloquear el acceso al catálogo de ${nombre}?\n\nAl abrir el catálogo en su teléfono verá «Acceso restringido» y no podrá registrarse con ese número, correo ni nombre.`)) return;
+  const docId = e.cat ? e.cat._docId : 'tel-' + tel;
+  const normN = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/\s+/g, ' ');
+  const extra = e.cat ? {} : { nombre, telefono: e.sb.phone || '', email: e.sb.email || '', tel10: tel,
+    nombre_norm: normN(nombre), email_norm: String(e.sb.email || '').trim().toLowerCase(), creado_por_admin: true };
   try {
-    await _db.collection('clientes_catalogo').doc(e.cat._docId).set({ bloqueado: bloquear, bloqueado_at: bloquear ? firebase.firestore.FieldValue.serverTimestamp() : null }, { merge: true });
+    await _db.collection('clientes_catalogo').doc(docId).set({ ...extra, bloqueado: bloquear, bloqueado_at: bloquear ? firebase.firestore.FieldValue.serverTimestamp() : null }, { merge: true });
+    if (!e.cat) e.cat = { _docId: docId, ...extra };
     e.cat.bloqueado = bloquear;
     showToast(bloquear ? '⛔ Acceso bloqueado' : '✅ Acceso desbloqueado');
     renderClientesCat();
@@ -3864,12 +3910,17 @@ async function bloquearClienteCat(key, bloquear) {
 // Eliminar una cuenta del catálogo (p. ej. un registro repetido). No borra sus pedidos ni su ficha de Facturas.
 async function eliminarClienteCat(key) {
   const e = _clientesCat.find(x => x.key === key);
-  if (!e || !e.cat) return;
-  if (!confirm(`¿Eliminar el registro del catálogo de ${e.cat.nombre || 'esta clienta'} (${e.cat.telefono || ''})?\n\nSus pedidos y su ficha en Facturas no se borran. Si vuelve a entrar al catálogo tendrá que registrarse de nuevo.`)) return;
+  if (!e) return;
+  const nombre = _nombreCli(e);
+  const fichasSb = [e.sb, ...(e.otros || [])].filter(Boolean);
+  const donde = [e.cat ? 'su cuenta del catálogo' : '', fichasSb.length ? 'su ficha de cliente en Facturas' : ''].filter(Boolean).join(' y ');
+  if (!confirm(`¿Eliminar a ${nombre}?\n\nSe borrará ${donde}. Sus facturas y pedidos NO se borran (siguen con su nombre).\n\nEsto no se puede deshacer.`)) return;
   try {
-    await _db.collection('clientes_catalogo').doc(e.cat._docId).delete();
-    showToast('🗑 Registro eliminado');
-    loadClientesCat();
+    if (e.cat) await _db.collection('clientes_catalogo').doc(e.cat._docId).delete();
+    for (const sb of fichasSb) await pmSB('clientes?id=eq.' + encodeURIComponent(sb.id), { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+    showToast('🗑 ' + nombre + ' eliminada');
+    _clientesCat = _clientesCat.filter(x => x !== e);
+    renderClientesCat();
   } catch (err) { showToast('No se pudo eliminar: ' + err.message); }
 }
 
@@ -5743,6 +5794,11 @@ document.addEventListener('keydown', e => {
     Cancelar
   </button>
 </div>
+
+<!-- Botón flotante: abre WhatsApp (solo existe en el admin) -->
+<a id="adminWhatsApp" href="https://web.whatsapp.com/" target="_blank" rel="noopener" title="Abrir WhatsApp" aria-label="Abrir WhatsApp" onclick="return abrirWhatsAppAdmin(event)">
+  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+</a>
 
 <nav id="mobileNav">
   <button class="mob-nav-btn active" id="mob-nav-productos" onclick="mobGoTo('productos')">
