@@ -1490,6 +1490,7 @@ location.replace(location.pathname+'?v='+m[1]);})
   .hist-item-price{ font-family:'Cormorant Garamond',serif; font-size:13px; color:var(--gold-mid); white-space:nowrap; }
   .hist-quien { font-size: 11px; opacity: .75; margin: 0 0 12px; }
   .hist-quien b { color: #e8c56e; font-weight: 600; }
+  .hist-quien a { color: #e8c56e; text-decoration: underline; text-underline-offset: 2px; }
   .hist-consulta { display: flex; flex-direction: column; align-items: center; gap: 12px; margin: 18px 0; padding: 18px 14px; text-align: center; border: 1px solid rgba(201,151,58,0.25); background: rgba(201,151,58,0.04); }
   .hist-consulta p { margin: 0; font-size: 12px; line-height: 1.5; color: #e8c56e; }
   .hist-consulta button { background: linear-gradient(135deg, #b48226, #e3c063); border: none; color: #171106; font-weight: 600; font-size: 12px; padding: 9px 22px; cursor: pointer; }
@@ -2307,6 +2308,9 @@ location.replace(location.pathname+'?v='+m[1]);})
   .cart-total-box .cart-total-amount .cur { font-size: 18px; vertical-align: 0.7em; color: var(--gold-mid); }
 
   /* Barra inferior Catálogo / Historial */
+  .hist-badge-num { min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #b48226, #f0d880); color: #1a1206; font-size: 9px; font-weight: 700; letter-spacing: 0; margin-left: 2px; }
+  .hist-badge-num[hidden] { display: none; }
   .cart-nav { gap: 8px; padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px)); background: rgba(0,0,0,0.25); }
   .cart-nav .cat-panel-footer-back { font-size: 9px; padding: 9px 12px; border: 1px solid transparent; border-radius: 999px; color: var(--text-cream); opacity: .8; }
   .cart-nav .cat-panel-footer-back svg { color: var(--gold-mid); }
@@ -4004,6 +4008,7 @@ location.replace(location.pathname+'?v='+m[1]);})
     <button class="cat-panel-footer-back" onclick="showCartView('history')">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       <span data-i18n="historyBtn">Historial</span>
+      <span class="hist-badge-num" id="histBadge" hidden></span>
     </button>
     <button class="cart-clear-btn" id="cartClearBtn" onclick="clearCart()" style="margin-left:auto;" data-i18n="clearBtn">Limpiar</button>
   </div>
@@ -7674,7 +7679,23 @@ const _histDB = (() => {
     });
   }
 
+  // Copia de respaldo en localStorage: si IndexedDB falla o se borra, los pedidos
+  // del dispositivo se recuperan de aquí al abrir la app.
+  const COPIA = 'pm_historial_copia';
+  function _copiaLeer() {
+    try { const l = JSON.parse(localStorage.getItem(COPIA) || '[]'); return Array.isArray(l) ? l : []; } catch(e) { return []; }
+  }
+  function _copiaGuardar(pedido) {
+    try {
+      const l = _copiaLeer().filter(p => p.numero !== pedido.numero);
+      l.push(pedido);
+      l.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+      localStorage.setItem(COPIA, JSON.stringify(l.slice(0, 100)));
+    } catch(e) {}
+  }
+
   async function guardar(pedido) {
+    if (pedido && pedido.numero) _copiaGuardar(pedido);
     const db = await _open();
     return new Promise((res, rej) => {
       const tx = db.transaction(STORE, 'readwrite');
@@ -7683,14 +7704,25 @@ const _histDB = (() => {
     });
   }
 
-  async function obtenerTodos() {
+  async function _leerIDB() {
     const db = await _open();
     return new Promise((res, rej) => {
-      const tx  = db.transaction(STORE, 'readonly');
-      const req = tx.objectStore(STORE).getAll();
-      req.onsuccess = () => res((req.result || []).sort((a, b) => new Date(b.fecha) - new Date(a.fecha)));
+      const req = db.transaction(STORE, 'readonly').objectStore(STORE).getAll();
+      req.onsuccess = () => res(req.result || []);
       req.onerror   = rej;
     });
+  }
+
+  // Todos los pedidos de este dispositivo (IndexedDB + copia de respaldo)
+  async function obtenerTodos() {
+    let idb = [];
+    try { idb = await _leerIDB(); } catch(e) {}
+    const porNumero = new Map(_copiaLeer().map(p => [p.numero, p]));
+    idb.forEach(p => porNumero.set(p.numero, { ...(porNumero.get(p.numero) || {}), ...p }));
+    // Lo que solo estaba en la copia vuelve a IndexedDB
+    const enIdb = new Set(idb.map(p => p.numero));
+    porNumero.forEach((p, n) => { if (!enIdb.has(n)) guardar(p).catch(() => {}); });
+    return [...porNumero.values()].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
   }
 
   // Migrar pedidos antiguos desde localStorage
@@ -7730,9 +7762,22 @@ function guardarPedidoLocal(numero) {
       const p = products.find(x => String(x.id) === String(item.id));
       return p ? { name: p.name, qty: item.qty, price: p.price, photo: p.photo || null } : null;
     }).filter(Boolean);
-    _histDB.guardar({ numero, fecha: new Date().toISOString(), items, total, descuento: disc ? ds.pct : 0 });
+    _histDB.guardar({ numero, fecha: new Date().toISOString(), items, total, descuento: disc ? ds.pct : 0 })
+      .catch(() => {}).finally(revisarPedidosDispositivo);
   } catch(e) {}
 }
+
+// Al abrir la app: ¿hay pedidos guardados en este dispositivo? Si los hay, el
+// botón «Historial» muestra cuántos y el historial los lista (con o sin registro).
+async function revisarPedidosDispositivo() {
+  try {
+    const n = (await _histDB.obtenerTodos()).length;
+    const b = document.getElementById('histBadge');
+    if (b) { b.textContent = n; b.hidden = !n; }
+    return n;
+  } catch(e) { return 0; }
+}
+revisarPedidosDispositivo();
 
 function showCartView(view) {
   const cartBody = document.getElementById('cartScrollBody');
