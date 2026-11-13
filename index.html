@@ -1495,18 +1495,8 @@ location.replace(location.pathname+'?v='+m[1]);})
   .hist-consulta p { margin: 0; font-size: 12px; line-height: 1.5; color: #e8c56e; }
   .hist-consulta button { background: linear-gradient(135deg, #b48226, #e3c063); border: none; color: #171106; font-weight: 600; font-size: 12px; padding: 9px 22px; cursor: pointer; }
   .hist-estado { margin: 8px 0 10px; padding: 9px 10px; border: 1px solid rgba(201,151,58,0.2); background: rgba(201,151,58,0.05); }
-  .hist-estado-cargando { font-size: 10.5px; opacity: .55; }
   .hist-estado-txt { font-size: 12px; font-weight: 600; color: #e8c56e; margin-bottom: 7px; }
   .hist-estado-txt.cancelado { color: #ff9a9a; margin-bottom: 0; }
-  .hist-pasos { display: flex; align-items: center; }
-  .hist-pasos i { flex: 1; height: 2px; background: rgba(201,151,58,0.2); }
-  .hist-paso { width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid rgba(201,151,58,0.45); flex-shrink: 0; }
-  .hist-paso.hecho { background: #c9973a; border-color: #c9973a; }
-  .hist-paso.hecho + i { background: #c9973a; }
-  .hist-paso.actual { box-shadow: 0 0 0 3px rgba(232,197,110,0.25), 0 0 10px rgba(232,197,110,0.6); background: #f0d880; }
-  .hist-paso.actual + i { background: rgba(201,151,58,0.2); }
-  .hist-rastreo { font-size: 11px; margin-top: 7px; opacity: .85; }
-  .hist-rastreo b { color: #e8c56e; letter-spacing: .5px; }
   .reg-pedidos { display: block; width: 100%; margin-top: 10px; padding: 10px; background: none; border: 1px solid rgba(201,151,58,0.45);
     color: #e8c56e; font-family: 'Montserrat', sans-serif; font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; cursor: pointer; }
   .reg-pedidos:hover { background: rgba(201,151,58,0.1); }
@@ -4070,7 +4060,7 @@ location.replace(location.pathname+'?v='+m[1]);})
 
     <p class="reg-msg" id="regMsg" role="status"></p>
     <button class="reg-btn" id="regGuardar" onclick="guardarRegistro()" data-i18n="regGuardar">Registrarme</button>
-    <button class="reg-pedidos" id="regPedidos" onclick="cerrarRegistro(); abrirHistorial();">📦 <span data-i18n="regPedidos">Mis pedidos y su estado</span></button>
+    <button class="reg-pedidos" id="regPedidos" onclick="cerrarRegistro(); abrirHistorial();">📦 <span data-i18n="regPedidos">Mis pedidos</span></button>
     <button class="reg-link" id="regSinCuenta" onclick="continuarSinRegistro()" data-i18n="regSinCuenta">Continuar sin registrarme</button>
     <button class="reg-link" id="regSalir" onclick="salirRegistro()" data-i18n="regSalir">Cerrar sesión en este dispositivo</button>
     <p class="reg-privacidad">🔒 <span data-i18n="regPrivacidad">Tus datos solo se usan para tus pedidos y envíos.</span></p>
@@ -4207,7 +4197,7 @@ const _t = {
     cartPlaceholder:'Ej: talla del anillo, color preferido, si es regalo...',
     envioTitulo:'Datos de envío', envNombre:'Nombre completo', envTel:'Teléfono / WhatsApp', envEmail:'Correo electrónico',
     regBoton:'Registrarse', regTitulo:'Crea tu cuenta', regSub:'Regístrate una sola vez y tus pedidos llegarán con tus datos de envío.',
-    regGuardar:'Registrarme', regSinCuenta:'Continuar sin registrarme', regSalir:'Cerrar sesión en este dispositivo', regFoto:'Agregar foto', regPedidos:'Mis pedidos y su estado',
+    regGuardar:'Registrarme', regSinCuenta:'Continuar sin registrarme', regSalir:'Cerrar sesión en este dispositivo', regFoto:'Agregar foto', regPedidos:'Mis pedidos',
     regDatos:'Tus datos', regEnvio:'Dirección de envío', regPrivacidad:'Tus datos solo se usan para tus pedidos y envíos.',
     envPais:'País', envDir:'Dirección (calle y número)', envCiudad:'Ciudad', envEstado:'Estado', envZip:'Código postal',
     sendOrder:'Enviar pedido por WhatsApp', shareCatalog:'Compartir catálogo',
@@ -4233,7 +4223,7 @@ const _t = {
     cartPlaceholder:'E.g.: ring size, color preference, gift wrap...',
     envioTitulo:'Shipping details', envNombre:'Full name', envTel:'Phone / WhatsApp', envEmail:'Email',
     regBoton:'Sign up', regTitulo:'Create your account', regSub:'Sign up once and your orders will arrive with your shipping details.',
-    regGuardar:'Sign me up', regSinCuenta:'Continue without signing up', regSalir:'Sign out on this device', regFoto:'Add photo', regPedidos:'My orders and status',
+    regGuardar:'Sign me up', regSinCuenta:'Continue without signing up', regSalir:'Sign out on this device', regFoto:'Add photo', regPedidos:'My orders',
     regDatos:'Your details', regEnvio:'Shipping address', regPrivacidad:'Your details are only used for your orders and shipping.',
     envPais:'Country', envDir:'Address (street and number)', envCiudad:'City', envEstado:'State', envZip:'ZIP code',
     sendOrder:'Send order via WhatsApp', shareCatalog:'Share catalog',
@@ -7750,7 +7740,7 @@ const _histDB = (() => {
     } catch(e) {}
   })();
 
-  // Une el pedido local con su documento en Firebase (para consultar su estado)
+  // Une el pedido local con su documento en Firebase
   async function vincular(numero, docId) {
     const db = await _open();
     for (let intento = 0; intento < 10; intento++) {
@@ -7817,7 +7807,7 @@ async function _renderHistorialEnCarrito() {
   const body = document.getElementById('cartHistoryBody');
   if (!body) return;
   // El registro es opcional: sin registro se muestran los pedidos hechos en este
-  // dispositivo (con su estado); registrada se suman los de Firebase y Facturas.
+  // dispositivo; registrada se suman los de Firebase y Facturas.
   const quien = consultaHistorial();
   body.innerHTML = `<p class="hist-empty">${_t[_lang].historyLoading || 'Cargando...'}</p>`;
   try {
@@ -7855,7 +7845,6 @@ async function _renderHistorialEnCarrito() {
           <span class="hist-num">${p.numero}</span>
           <span class="hist-fecha">${fecha}</span>
         </div>
-        ${p.docId ? `<div class="hist-estado" data-doc="${p.docId}"><span class="hist-estado-cargando">${_lang === 'en' ? 'Checking status…' : 'Consultando estado…'}</span></div>` : ''}
         ${items}
         <div class="hist-total-row">
           <span class="hist-total-lbl">${_t[_lang].historyTotal || 'Total'} ${badge}</span>
@@ -7863,7 +7852,6 @@ async function _renderHistorialEnCarrito() {
         </div>
       </div>`;
     }).join('');
-    pintarEstadosHistorial(body);
   } catch(e) {
     body.innerHTML = `<p class="hist-empty">${_t[_lang].historyError || 'Error al cargar el historial.'}</p>`;
   }
@@ -8107,37 +8095,6 @@ function consultaHistorialHtml(q) {
   const aviso = numeroVerificacion() && !(yo && yo.verificado)
     ? `<p class="hist-quien">🔒 ${en ? 'Verify your number to also see your previous invoices.' : 'Verifica tu número para ver también tus facturas anteriores.'} <a href="#" onclick="event.preventDefault(); abrirRegistro();">${en ? 'Verify' : 'Verificar'}</a></p>` : '';
   return `<p class="hist-quien">${en ? 'Orders for' : 'Pedidos de'} <b>${esc(q.nombre)}</b> · ${esc(formatoTel(q.telefono))}${yo && yo.verificado ? ' ✔' : ''}</p>` + aviso;
-}
-
-// ─── ESTADO DEL PEDIDO ───
-// Lo cambia el admin (Pedidos → Estado del pedido). Mismos ids que ESTADOS_PEDIDO en admin.html.
-const PASOS_PEDIDO = [
-  { id: 'recibido',   es: 'Recibido',   en: 'Received',  icono: '📥' },
-  { id: 'confirmado', es: 'Confirmado', en: 'Confirmed', icono: '✅' },
-  { id: 'preparando', es: 'Preparando', en: 'Preparing', icono: '🎁' },
-  { id: 'enviado',    es: 'Enviado',    en: 'Shipped',   icono: '🚚' },
-  { id: 'entregado',  es: 'Entregado',  en: 'Delivered', icono: '📦' },
-];
-function estadoPedidoHtml(d) {
-  const en = _lang === 'en';
-  const esc = t => String(t || '').replace(/[&<>"]/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[ch]));
-  if (d.estado === 'cancelado') return `<div class="hist-estado-txt cancelado">✕ ${en ? 'Order cancelled' : 'Pedido cancelado'}</div>`;
-  const idx = Math.max(0, PASOS_PEDIDO.findIndex(x => x.id === (d.estado || 'recibido')));
-  const actual = PASOS_PEDIDO[idx];
-  return `<div class="hist-estado-txt">${actual.icono} ${en ? actual.en : actual.es}</div>
-    <div class="hist-pasos">${PASOS_PEDIDO.map((x, i) =>
-      `<span class="hist-paso${i <= idx ? ' hecho' : ''}${i === idx ? ' actual' : ''}" title="${en ? x.en : x.es}"></span>`).join('<i></i>')}</div>
-    ${d.rastreo ? `<div class="hist-rastreo">${en ? 'Tracking' : 'Rastreo'}: <b>${esc(d.rastreo)}</b></div>` : ''}`;
-}
-async function pintarEstadosHistorial(body) {
-  if (!_db) return;
-  const cajas = [...body.querySelectorAll('.hist-estado[data-doc]')].slice(0, 20);
-  await Promise.all(cajas.map(async caja => {
-    try {
-      const doc = await _db.collection('pedidos').doc(caja.dataset.doc).get();
-      caja.innerHTML = doc.exists ? estadoPedidoHtml(doc.data()) : '';
-    } catch(e) { caja.innerHTML = ''; }
-  }));
 }
 
 function abrirHistorial() {
