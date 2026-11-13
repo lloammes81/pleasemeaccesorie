@@ -4827,11 +4827,18 @@ function cartTotal() {
   }, 0);
 }
 
+// Lentes: se agregan de uno en uno, sin opción de cantidades
+function sinCantidades(id) {
+  const p = products.find(x => String(x.id) === String(id));
+  return !!p && p.category === 'lentes';
+}
+
 function addToCart(id, customMedida, qty) {
   const medida = customMedida || '';
-  const n = qty || 1;
+  const unico = sinCantidades(id);
+  const n = unico ? 1 : (qty || 1);
   const existing = cart.find(i => String(i.id) === String(id) && (i.customMedida || '') === medida);
-  if (existing) existing.qty += n;
+  if (existing) existing.qty = unico ? 1 : existing.qty + n;
   else cart.push({ uid: `${id}_${Date.now()}`, id, qty: n, customMedida: medida });
   saveCart();
   updateCartUI();
@@ -4851,6 +4858,7 @@ function removeFromCart(uid) {
 function changeQty(uid, delta) {
   const item = cart.find(i => i.uid === uid);
   if (!item) return;
+  if (delta > 0 && sinCantidades(item.id)) return;
   item.qty += delta;
   if (item.qty <= 0) removeFromCart(uid);
   else { saveCart(); updateCartUI(); }
@@ -4957,11 +4965,11 @@ function renderCartItems() {
             <p class="cart-item-price">$${p.price}</p>
           </div>
         </div>
-        <div class="cart-item-controls">
+        ${p.category === 'lentes' ? '' : `<div class="cart-item-controls">
           <button class="qty-btn" onclick="changeQty('${uid}', -1)">−</button>
           <span class="qty-num">${item.qty}</span>
           <button class="qty-btn" onclick="changeQty('${uid}', 1)">+</button>
-        </div>
+        </div>`}
         <button class="cart-remove" onclick="removeFromCart('${uid}')" title="Quitar">×</button>
       </div>`;
   }).join('');
@@ -5101,11 +5109,11 @@ function catProductHTML(p) {
           <div class="cat-product-price"><span>$</span>${p.price}</div>
           ${p.sold_out ? '' : `<div style="display:flex;gap:8px;align-items:center;">
             <button class="cat-detail-btn" onclick="openModal('${p.id}')">${_t[_lang].viewDetail}</button>
-            <div class="cat-qty-control" onclick="event.stopPropagation()">
+            ${p.category === 'lentes' ? '' : `<div class="cat-qty-control" onclick="event.stopPropagation()">
               <button class="cat-qty-btn" onclick="changeCatLocalQty('${p.id}',-1)">−</button>
               <span class="cat-qty-num" id="catQtyNum-${p.id}">${localQty}</span>
               <button class="cat-qty-btn" onclick="changeCatLocalQty('${p.id}',1)">+</button>
-            </div>
+            </div>`}
           </div>`}
         </div>
         ${p.sold_out
@@ -7150,7 +7158,14 @@ function updateModalBtn(id) {
   const qtyNum  = document.getElementById('modalQtyNum');
   if (!btn) return;
   const item = cart.find(c => String(c.id) === String(id));
-  if (item) {
+  if (btn.dataset.txt === undefined) btn.dataset.txt = btn.textContent;
+  btn.disabled = false; btn.textContent = btn.dataset.txt;
+  if (item && sinCantidades(id)) {   // lentes: sin selector de cantidad
+    btn.style.display = '';
+    btn.disabled = true;
+    btn.textContent = _lang === 'en' ? '✓ In your selection' : '✓ En tu selección';
+    qtyCtrl.style.display = 'none';
+  } else if (item) {
     btn.style.display = 'none';
     qtyCtrl.style.display = 'flex';
     qtyNum.textContent = item.qty;
