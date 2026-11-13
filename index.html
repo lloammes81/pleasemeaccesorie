@@ -2286,6 +2286,14 @@ location.replace(location.pathname+'?v='+m[1]);})
   .env-cta-flecha { color: var(--gold-mid); font-size: 20px; line-height: 1; transition: transform .2s; }
   .cart-envio.env-cta:hover .env-cta-flecha { transform: translateX(3px); color: var(--gold-light); }
   @media (prefers-reduced-motion: reduce) { .cart-envio.env-cta::after, .cart-envio.parpadeo { animation: none; } }
+  /* Plegada: solo se ve el círculo del usuario; al tocarlo se muestra la tarjeta */
+  .cart-envio.solo-circulo { width: 40px; height: 40px; padding: 0; gap: 0; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: none; }
+  .cart-envio.solo-circulo::after { display: none; }
+  .cart-envio.solo-circulo > :not(.env-cab):not(.env-cta-ico),
+  .cart-envio.solo-circulo .env-cab > :not(.env-avatar) { display: none; }
+  .cart-envio.solo-circulo .env-cab { width: 100%; height: 100%; }
+  .cart-envio.solo-circulo .env-avatar, .cart-envio.solo-circulo .env-cta-ico { width: 100%; height: 100%; box-shadow: none; }
+  .cart-envio.solo-circulo .env-cta-ico svg { width: 18px; height: 18px; }
 
   /* Total */
   .cart-total-box { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; padding: 14px 16px; border-radius: 10px; border: 1px solid rgba(201,151,58,0.18);
@@ -5336,6 +5344,7 @@ function resetDiscountQtyNotif() {
 
 // ─── CART PANEL ──────────────────────────────────────────────────────
 function openCart() {
+  if (_envAbierta) { _envAbierta = false; try { pintarRegistro(); } catch(e) {} }
   document.getElementById('cartPanel').classList.add('open');
   document.getElementById('cartBackdrop').classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -6282,6 +6291,8 @@ function pintarRegistro() {
   box.classList.toggle('env-cta', !c);
   box.classList.toggle('registrada', !!c);
   box.classList.remove('menu-abierto');
+  box.classList.toggle('solo-circulo', !_envAbierta);   // plegada: solo el círculo
+  box.title = _envAbierta ? '' : (c ? (es ? 'Mi cuenta' : 'My account') : (es ? 'Regístrate' : 'Sign up'));
   if (c) {
     const lugar = [c.ciudad, [c.estado, c.zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
     const est = estrellasDe(c.total_comprado);
@@ -6308,9 +6319,12 @@ function pintarRegistro() {
       <span class="env-cta-flecha" aria-hidden="true">›</span>`;
   }
 }
-// Sin registro abre el registro; registrada despliega su menú
+// Plegada: el círculo muestra la tarjeta. Ya abierta: sin registro abre el
+// registro; registrada despliega su menú
+var _envAbierta = false;
 function cartEnvioClick() {
   const box = document.getElementById('cartEnvio');
+  if (!_envAbierta) { _envAbierta = true; return pintarRegistro(); }
   if (!clienteRegistrado()) return abrirRegistro();
   box.classList.toggle('menu-abierto');
 }
