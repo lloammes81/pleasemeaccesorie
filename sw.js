@@ -36,3 +36,66 @@ self.addEventListener('notificationclick', e => {
     return self.clients.openWindow(url);
   }));
 });
+
+// ─── NÚMERO EN EL ICONO DE LA APP ─────────────────────────────────────────────
+// La página le pasa los productos que este dispositivo ya conoce (sin contar los que
+// faltan por ver). Con la app cerrada:
+//  - al llegar un aviso (push), el número sube en 1;
+//  - con «periodicsync» (Chrome en Android, app instalada) revisa el catálogo cada pocas
+//    horas y muestra cuántas piezas activas no conoce todavía.
+// Al abrir la app, la página vuelve a calcular el número exacto.
+const BADGE_CACHE = 'pm-badge', BADGE_KEY = './__badge-estado';
+const FIRESTORE = 'https://firestore.googleapis.com/v1/projects/pleasemecatalogo/databases/(default)/documents/catalogo_productos';
+const API_KEY = 'AIzaSyCqer7Y1lA9ciISWJ7FogszjGgZ8CCpTDg';
+
+async function leerBadge() {
+  try { const r = await (await caches.open(BADGE_CACHE)).match(BADGE_KEY); return r ? await r.json() : null; } catch (e) { return null; }
+}
+async function guardarBadge(estado) {
+  try { await (await caches.open(BADGE_CACHE)).put(BADGE_KEY, new Response(JSON.stringify(estado), { headers: { 'Content-Type': 'application/json' } })); } catch (e) {}
+}
+async function ponerBadge(n) {
+  try {
+    if (!('setAppBadge' in self.navigator)) return;
+    if (n > 0) await self.navigator.setAppBadge(n); else await self.navigator.clearAppBadge();
+  } catch (e) {}
+}
+
+// Cuenta las piezas activas del catálogo que este dispositivo aún no conoce
+async function revisarNovedades() {
+  const est = await leerBadge();
+  if (!est || !Array.isArray(est.conocidos)) return;
+  const conocidos = new Set(est.conocidos);
+  let nuevos = 0, token = '';
+  do {
+    const url = `${FIRESTORE}?pageSize=300&mask.fieldPaths=active&key=${API_KEY}` + (token ? '&pageToken=' + encodeURIComponent(token) : '');
+    const r = await fetch(url);
+    if (!r.ok) return;
+    const d = await r.json();
+    (d.documents || []).forEach(doc => {
+      const id = doc.name.split('/').pop();
+      const inactivo = doc.fields && doc.fields.active && doc.fields.active.booleanValue === false;
+      if (!inactivo && !conocidos.has(id)) nuevos++;
+    });
+    token = d.nextPageToken || '';
+  } while (token);
+  await guardarBadge({ ...est, pendientes: nuevos });
+  await ponerBadge(nuevos);
+}
+
+self.addEventListener('message', e => {
+  if (e.data && e.data.tipo === 'badge-estado') {
+    e.waitUntil(guardarBadge({ conocidos: e.data.conocidos || [], pendientes: Number(e.data.pendientes) || 0 }));
+  }
+});
+
+self.addEventListener('periodicsync', e => {
+  if (e.tag === 'pm-novedades') e.waitUntil(revisarNovedades().catch(() => {}));
+});
+
+self.addEventListener('push', e => {
+  e.waitUntil(leerBadge().then(est => {
+    const n = ((est && est.pendientes) || 0) + 1;
+    return guardarBadge({ conocidos: (est && est.conocidos) || [], pendientes: n }).then(() => ponerBadge(n));
+  }));
+});
