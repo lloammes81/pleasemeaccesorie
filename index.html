@@ -7097,6 +7097,7 @@ function marcarEsferaVista(key) {
   if (!v || !nuevos.length) return;
   nuevos.forEach(p => v.add(key + '|' + p.id));
   _guardarVistasEsferas(v);
+  actualizarBadgeApp();
   const card = document.querySelector(`.cat-card[data-cat="${key}"]`);
   if (card) {
     card.classList.remove('cat-card--novedad');
@@ -7104,6 +7105,41 @@ function marcarEsferaVista(key) {
     if (sello) sello.remove();
   }
 }
+
+// ─── NÚMERO EN EL ICONO DE LA APP (teléfono) ──────────────────────────
+// En la app instalada, el icono muestra cuántas piezas nuevas faltan por ver (las mismas
+// que anuncian las esferas con «N nuevas»). Baja al abrir cada esfera y desaparece en 0.
+// El service worker (sw.js) lo mantiene al día con la app cerrada: lo sube al llegar un
+// aviso y, donde el teléfono lo permite (Chrome en Android), revisa el catálogo cada
+// pocas horas para sumar las piezas que el admin agregue mientras tanto.
+var _badgeTimer = null;   // «var»: renderGrid puede llamarse antes de llegar aquí
+function actualizarBadgeApp() {
+  clearTimeout(_badgeTimer);
+  _badgeTimer = setTimeout(async () => {
+    if (!products.length || !_vistasEsferas()) return;
+    const ids = new Set();
+    categories.forEach(c => _nuevosEnEsfera(c.key).forEach(p => ids.add(String(p.id))));
+    const n = ids.size;
+    try {
+      if ('setAppBadge' in navigator) { if (n) await navigator.setAppBadge(n); else await navigator.clearAppBadge(); }
+    } catch(e) {}
+    try {
+      if (!('serviceWorker' in navigator)) return;
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (!reg) return;
+      // Lo que ya conoce este dispositivo: con eso el service worker cuenta lo nuevo
+      (reg.active || reg.waiting || reg.installing)?.postMessage({
+        tipo: 'badge-estado', pendientes: n,
+        conocidos: products.map(p => String(p.id)).filter(id => !ids.has(id))
+      });
+      if ('periodicSync' in reg) {
+        const st = await navigator.permissions.query({ name: 'periodic-background-sync' }).catch(() => null);
+        if (st && st.state === 'granted') await reg.periodicSync.register('pm-novedades', { minInterval: 4 * 60 * 60 * 1000 }).catch(() => {});
+      }
+    } catch(e) {}
+  }, 400);
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') actualizarBadgeApp(); });
 
 // ─── CATEGORY CARD HTML ───────────────────────────────────────────────
 function categoryCardHTML(cat, i) {
@@ -7178,6 +7214,7 @@ function renderGrid() {
   }
   empty.classList.remove('visible');
   grid.innerHTML = html;
+  actualizarBadgeApp();
 }
 
 // ─── MODAL ───────────────────────────────────────────────────────────
