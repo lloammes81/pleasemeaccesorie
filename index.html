@@ -6495,7 +6495,7 @@ async function sendWhatsApp() {
   guardarPedidoLocal(numero);
 
   // Guardar URL de WhatsApp para abrir manualmente desde el modal
-  _pendingWaUrl = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+  _pendingWaUrl = { phone, msg };
 
   let enviado = false;
   if (auto) {
@@ -6511,19 +6511,44 @@ async function sendWhatsApp() {
 
   // Un solo toque: si no salió solo, WhatsApp se abre directamente con el pedido escrito
   if (!enviado) {
-    const url = _pendingWaUrl;
+    const wa = _pendingWaUrl;
     _pendingWaUrl = null;
-    if (url) setTimeout(() => { window.location.href = url; }, 700);
+    if (wa) setTimeout(() => abrirWhatsAppDirecto(wa.phone, wa.msg), 700);
   }
 }
 
 let _pendingWaUrl = null;
 
+// Abre la app de WhatsApp directamente con el mensaje escrito, sin pasar por la página
+// de wa.me. En el teléfono se usa el enlace de la app (whatsapp://); solo si WhatsApp no
+// está instalado (la app no se abrió en 2 s) se usa la página web como respaldo.
+function _esTelefono() {
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);   // iPad con iPadOS
+}
+function abrirWhatsAppDirecto(phone, msg) {
+  const texto = encodeURIComponent(msg);
+  const web = `https://wa.me/${phone}?text=${texto}`;
+  if (!_esTelefono()) { window.open(web, '_blank') || (window.location.href = web); return; }
+  let salio = false;
+  const marcar = () => { salio = true; };
+  document.addEventListener('visibilitychange', marcar, { once: true });
+  window.addEventListener('pagehide', marcar, { once: true });
+  window.addEventListener('blur', marcar, { once: true });
+  window.location.href = `whatsapp://send?phone=${phone}&text=${texto}`;
+  setTimeout(() => {
+    document.removeEventListener('visibilitychange', marcar);
+    window.removeEventListener('pagehide', marcar);
+    window.removeEventListener('blur', marcar);
+    if (!salio && document.visibilityState === 'visible') window.location.href = web;
+  }, 2000);
+}
+
 function abrirWhatsAppPedido() {
-  const url = _pendingWaUrl;
+  const wa = _pendingWaUrl;
   _pendingWaUrl = null;
   closeTyModal();
-  if (url) window.location.href = url;
+  if (wa) abrirWhatsAppDirecto(wa.phone, wa.msg);
 }
 
 function closeTyModal() {
