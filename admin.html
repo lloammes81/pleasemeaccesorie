@@ -2018,6 +2018,12 @@ body.is-mobile #facturasFrame { height: calc(100dvh - 58px - 68px); }
 .pedido-items-table { width:100%; border-collapse:collapse; font-size:12px; margin-bottom:10px; }
 .pedido-items-table th { text-align:left; padding:4px 8px; color:var(--text-muted); border-bottom:1px solid var(--border); font-weight:500; }
 .pedido-items-table td { padding:5px 8px; border-bottom:1px solid var(--border); }
+.pedido-items-table tr.ped-item-row { cursor:pointer; transition:background .15s; }
+.pedido-items-table tr.ped-item-row:hover { background:rgba(201,151,58,0.10); }
+.pedido-items-table tr.ped-item-row td:first-child { text-decoration:underline dotted rgba(201,151,58,.5); text-underline-offset:3px; }
+#pedidoLightboxCap { position:absolute; bottom:22px; left:50%; transform:translateX(-50%); max-width:90vw; text-align:center;
+  color:var(--gold-light, #e8c27a); font-size:14px; background:rgba(0,0,0,.6); padding:8px 16px; border-radius:20px; pointer-events:none; }
+#pedidoLightboxCap:empty { display:none; }
 .pedido-items-table tr:last-child td { border-bottom:none; }
 .pedido-total-row { font-size:14px; font-weight:600; color:var(--gold); margin-top:8px; }
 .pedido-nota { font-size:11px; color:var(--text-muted); margin-top:6px; }
@@ -2937,6 +2943,25 @@ body.is-mobile #facturasFrame { height: calc(100dvh - 58px - 68px); }
           </div>
         </div>
 
+        <!-- ── Aviso de pedidos nuevos por WhatsApp ── -->
+        <div class="section-card" style="margin-top:24px;">
+          <div class="section-title">Pedidos nuevos a mi WhatsApp</div>
+          <div class="contact-form" style="max-width:480px">
+            <div class="field">
+              <label>Tu número de WhatsApp personal (con código de país)</label>
+              <input type="text" id="c_wa_aviso" inputmode="tel" placeholder="ej: 18095551234">
+              <div style="font-size:9.5px;color:var(--text-muted);margin-top:4px;line-height:1.6;">
+                Cada pedido nuevo del catálogo te llega a este número desde el WhatsApp de la tienda, con el resumen,
+                la imagen del pedido y la foto de cada producto. Tiene que ser distinto del número de la tienda.
+                Instrucciones en <b>functions/LEEME.md</b>. Déjalo vacío para apagarlo.
+              </div>
+            </div>
+            <div class="save-row">
+              <button class="btn btn-primary" onclick="guardarAvisoPedidosWA()">Guardar</button>
+            </div>
+          </div>
+        </div>
+
         <!-- ── Bandeja de WhatsApp ── -->
         <div class="section-card" style="margin-top:24px;">
           <div class="section-title">Bandeja de chats de WhatsApp</div>
@@ -3526,6 +3551,18 @@ async function llenarVerificacionWA() {
   try { const d = await _db.collection('config').doc('pm_whatsapp_verif').get(); el.value = d.exists && d.data().value ? (d.data().value.numero || '') : ''; } catch(e) {}
 }
 
+async function guardarAvisoPedidosWA() {
+  const numero = (document.getElementById('c_wa_aviso').value || '').replace(/\D/g, '');
+  if (numero && numero.length < 11) return showToast('Escribe el número con código de país, por ejemplo 18095551234');
+  const err = await _saveConfig('pm_whatsapp_aviso_pedidos', { numero });
+  showToast(err ? 'No se pudo guardar: ' + err.message : (numero ? '✅ Los pedidos nuevos te llegarán por WhatsApp' : 'Aviso de pedidos por WhatsApp apagado'));
+}
+async function llenarAvisoPedidosWA() {
+  const el = document.getElementById('c_wa_aviso');
+  if (!el || !_db) return;
+  try { const d = await _db.collection('config').doc('pm_whatsapp_aviso_pedidos').get(); el.value = d.exists && d.data().value ? (d.data().value.numero || '') : ''; } catch(e) {}
+}
+
 function fillCloudinaryForm() {
   const cfg = _cfgCache['pm_cloudinary'] || {};
   const elCN = document.getElementById('c_cloud_name');
@@ -3804,7 +3841,7 @@ function goTo(page) {
   if (page === 'banner') { loadBanner(); loadDiscount(); }
   if (page === 'visitas') loadVisitas();
   if (page === 'info') { loadCatalogInfo(); renderInfoTable(); loadWatermarkConfig(); }
-  if (page === 'config') { fillCloudinaryForm(); llenarVerificacionWA(); llenarBandejaWA(); }
+  if (page === 'config') { fillCloudinaryForm(); llenarVerificacionWA(); llenarAvisoPedidosWA(); llenarBandejaWA(); }
   if (page === 'pedidos') loadPedidos();
   if (page === 'clientes') loadClientesCat();
   if (page === 'ofertas') loadOfertas();
@@ -3852,8 +3889,8 @@ function renderPedidos(lista) {
     const fecha = p.fecha ? new Date(p.fecha.seconds * 1000).toLocaleString('es-CO', { dateStyle:'short', timeStyle:'short' }) : '—';
     const totalFinal = Number(p.total_final || p.total || 0).toLocaleString('es-CO');
     const nuevo = !p.leido;
-    const itemsRows = (p.items || []).map(it =>
-      `<tr>
+    const itemsRows = (p.items || []).map((it, i) =>
+      `<tr class="ped-item-row" onclick="verFotoItemPedido('${p._docId}', ${i})" title="Ver foto del producto">
         <td>${it.name || '—'}</td>
         <td>${it.category || ''}</td>
         <td style="text-align:center">${it.qty}</td>
@@ -6256,13 +6293,35 @@ function mobGoTo(page) {
     Volver
   </button>
   <img id="pedidoLightboxImg" src="" alt="Imagen del pedido" onclick="event.stopPropagation()">
+  <div id="pedidoLightboxCap"></div>
 </div>
 
 <script>
-function abrirLightbox(src) {
+function abrirLightbox(src, texto) {
   document.getElementById('pedidoLightboxImg').src = src;
+  document.getElementById('pedidoLightboxCap').textContent = texto || '';
   document.getElementById('pedidoLightbox').classList.add('open');
   document.body.style.overflow = 'hidden';
+}
+// Foto de un producto de la lista del pedido: la guardada en el pedido o, si no tiene,
+// la del producto en el catálogo (buscado por nombre)
+async function verFotoItemPedido(docId, i) {
+  const ped = _pedidos.find(x => x._docId === docId);
+  const it = ped && (ped.items || [])[i];
+  if (!it) return;
+  let foto = it.photo || null;
+  if (!foto) {
+    const prod = products.find(x => x.name === it.name);
+    foto = prod && prod.photo;
+  }
+  if (!foto && _db && it.name) {
+    try {
+      const snap = await _db.collection('catalogo_productos').where('name', '==', it.name).limit(1).get();
+      if (!snap.empty) foto = snap.docs[0].data().photo_data || null;
+    } catch(e) {}
+  }
+  if (!foto) return showToast('Este producto no tiene foto');
+  abrirLightbox(foto, `${it.name}${it.variante ? ' (' + it.variante + ')' : ''} · ${it.qty} × $${it.price}`);
 }
 function cerrarLightbox() {
   document.getElementById('pedidoLightbox').classList.remove('open');
