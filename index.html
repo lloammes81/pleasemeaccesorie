@@ -5438,9 +5438,14 @@ function mostrarModalGracias(canvas, numero, enviado) {
 
   // Envío automático: el pedido ya salió por WhatsApp, no hace falta el botón
   const waBtn = document.getElementById('tyWaBtn');
-  if (waBtn) waBtn.style.display = enviado ? 'none' : '';
+  if (waBtn) waBtn.style.display = 'none';
   const ok = document.getElementById('tyWaEnviado');
-  if (ok) ok.hidden = !enviado;
+  if (ok) {
+    ok.hidden = false;
+    ok.textContent = enviado
+      ? '✅ Tu pedido ya fue enviado por WhatsApp. Te escribiremos por ahí para confirmarlo.'
+      : '📲 Abriendo WhatsApp con tu pedido… solo toca «Enviar».';
+  }
 
   document.getElementById('tyOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -6503,6 +6508,13 @@ async function sendWhatsApp() {
   if (btn) { btn.disabled = false; btn.innerHTML = waIconHtml; }
 
   mostrarModalGracias(canvas, numero, enviado);
+
+  // Un solo toque: si no salió solo, WhatsApp se abre directamente con el pedido escrito
+  if (!enviado) {
+    const url = _pendingWaUrl;
+    _pendingWaUrl = null;
+    if (url) setTimeout(() => { window.location.href = url; }, 700);
+  }
 }
 
 let _pendingWaUrl = null;
