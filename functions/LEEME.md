@@ -140,3 +140,20 @@ esta condición a las escrituras para que solo la función pueda cambiar esos ca
 !request.resource.data.diff(resource == null ? {} : resource.data).affectedKeys()
   .hasAny(['verificado', 'verificado_at', 'verificado_whatsapp', 'bloqueado', 'bloqueado_at'])
 ```
+
+## Pedido enviado solo desde el carrito (pedidoWhatsApp)
+
+Si la clienta **ya hizo pedidos antes en su dispositivo** y está **registrada** (con su
+teléfono), al tocar «Enviar por WhatsApp» el pedido se guarda y la función **pedidoWhatsApp**
+se lo envía desde el número de la tienda a su WhatsApp, **sin abrirle WhatsApp**. El mensaje
+queda también en la bandeja de chats del admin. Si algo falla, el catálogo vuelve a mostrar el
+botón de siempre para abrir WhatsApp.
+
+WhatsApp solo deja mandar texto libre si la clienta escribió al número en las últimas 24 h.
+Para las demás, crea en Meta (WhatsApp → Plantillas de mensajes) una plantilla de categoría
+**Utilidad**, idioma **Español (es)**, llamada `pedido_recibido`, con este cuerpo:
+
+> Hola {{1}}, recibimos tu pedido {{2}} por un total de {{3}} en Pleaseme Accessories. Te escribiremos por aquí para confirmarlo. ¡Gracias!
+
+Usa los mismos secretos que las otras funciones; se publica con el mismo
+`firebase deploy --only functions`.

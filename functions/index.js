@@ -183,3 +183,92 @@ exports.whatsappAdmin = onRequest(
     }
   }
 );
+
+// Pedido enviado desde el carrito sin abrir WhatsApp (clientas que ya tienen pedidos en su
+// dispositivo). POST { pedido: '<id del documento en pedidos>' }. El texto se arma aquí con
+// los datos guardados en Firestore, así nadie puede usar la función para mandar otra cosa:
+// solo sirve para un pedido recién hecho (10 min), una sola vez, al teléfono de su registro.
+// Llega al WhatsApp de la clienta desde el número de la tienda y queda en la bandeja del admin.
+const PLANTILLA_PEDIDO = 'pedido_recibido';   // plantilla aprobada en Meta para cuando pasaron más de 24 h
+const dinero = n => '$' + Math.round(Number(n) || 0).toLocaleString('en-US');
+function textoPedido(p) {
+  const env = p.envio || {};
+  const nombre = String(env.nombre || '').split(' ')[0];
+  let t = `📋 *Pedido ${p.numero}*\n\n¡Hola${nombre ? ' ' + nombre : ''}! Recibimos tu pedido en Pleaseme Accessories 💛\n`;
+  (p.items || []).forEach(it => {
+    t += `\n• ${it.qty} × ${it.name}` + (it.variante ? ` (${it.variante})` : '') + (it.medida ? ` — ${it.medida}` : '') + ` — ${dinero(it.price * it.qty)}`;
+  });
+  if (p.descuento) t += `\n\nSubtotal: ${dinero(p.subtotal)}\nDescuento: ${p.descuento}%`;
+  t += `\n\n*Total: ${dinero(p.total_final)}*`;
+  if (p.nota) t += `\n\n📝 ${p.nota}`;
+  if (env.direccion) t += `\n\n🏠 ${env.direccion}`;
+  t += '\n\nTe escribiremos por aquí para confirmar. ¡Gracias por elegirnos!';
+  return t.slice(0, 4096);
+}
+async function enviarPlantillaPedido(para, p) {
+  const nombre = String((p.envio || {}).nombre || '').split(' ')[0] || 'cliente';
+  const r = await fetch(`${GRAPH}/${WHATSAPP_PHONE_ID.value()}/messages`, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + WHATSAPP_TOKEN.value(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messaging_product: 'whatsapp', to: para, type: 'template', template: {
+      name: PLANTILLA_PEDIDO, language: { code: 'es' },
+      components: [{ type: 'body', parameters: [nombre, p.numero, dinero(p.total_final)].map(text => ({ type: 'text', text })) }],
+    } }),
+  });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) return { ok: false, error: (d.error && d.error.message) || 'Error ' + r.status };
+  const texto = `📋 Pedido ${p.numero} recibido — Total ${dinero(p.total_final)} (plantilla)`;
+  const chat = db.collection('wa_chats').doc(para);
+  const id = d.messages && d.messages[0] && d.messages[0].id;
+  await (id ? chat.collection('mensajes').doc(id) : chat.collection('mensajes').doc()).set({ de: 'tienda', texto, at: FV.serverTimestamp(), estado: 'enviado' });
+  await chat.set({ telefono: para, ultimo_texto: texto, ultimo_de: 'tienda', ultimo_at: FV.serverTimestamp() }, { merge: true });
+  return { ok: true, id };
+}
+exports.pedidoWhatsApp = onRequest(
+  { secrets: [WHATSAPP_TOKEN, WHATSAPP_PHONE_ID], region: 'us-central1' },
+  async (req, res) => {
+    const origen = req.get('origin') || '';
+    if (ORIGENES.includes(origen) || /^https:\/\/[a-z0-9-]+\.github\.io$/.test(origen)) res.set('Access-Control-Allow-Origin', origen);
+    res.set('Vary', 'Origin');
+    res.set('Access-Control-Allow-Headers', 'content-type');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    if (req.method === 'OPTIONS') return res.sendStatus(204);
+    if (req.method !== 'POST') return res.sendStatus(405);
+
+    const id = String((req.body || {}).pedido || '');
+    if (!/^[A-Za-z0-9]{10,40}$/.test(id)) return res.status(400).json({ ok: false, error: 'datos' });
+    const ref = db.collection('pedidos').doc(id);
+    try {
+      // Se marca dentro de una transacción para que el mismo pedido no se envíe dos veces
+      const p = await db.runTransaction(async tx => {
+        const s = await tx.get(ref);
+        if (!s.exists) return null;
+        const x = s.data();
+        const hace = x.fecha && x.fecha.toMillis ? Date.now() - x.fecha.toMillis() : Infinity;
+        if (x.wa_auto || hace > 10 * 60 * 1000) return null;
+        tx.update(ref, { wa_auto: 'enviando' });
+        return x;
+      });
+      if (!p) return res.status(409).json({ ok: false, error: 'pedido' });
+      const tel = tel10(p.envio && p.envio.telefono);
+      if (tel.length !== 10) { await ref.update({ wa_auto: FV.delete() }); return res.status(400).json({ ok: false, error: 'telefono' }); }
+      const para = '1' + tel;   // EE. UU. y República Dominicana usan el código +1
+
+      let r = await enviarTexto(para, textoPedido(p));
+      if (!r.ok && r.error === 'fuera_de_24h') r = await enviarPlantillaPedido(para, p);
+      if (r.ok && p.img_url) {
+        await fetch(`${GRAPH}/${WHATSAPP_PHONE_ID.value()}/messages`, {
+          method: 'POST',
+          headers: { Authorization: 'Bearer ' + WHATSAPP_TOKEN.value(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messaging_product: 'whatsapp', to: para, type: 'image', image: { link: p.img_url, caption: 'Pedido ' + p.numero } }),
+        }).catch(() => {});
+      }
+      await ref.update(r.ok ? { wa_auto: 'enviado', wa_auto_at: FV.serverTimestamp() } : { wa_auto: FV.delete() });
+      return res.json({ ok: r.ok, error: r.error });
+    } catch (e) {
+      console.error('pedidoWhatsApp:', e);
+      await ref.update({ wa_auto: FV.delete() }).catch(() => {});
+      return res.status(500).json({ ok: false, error: e.message });
+    }
+  }
+);
