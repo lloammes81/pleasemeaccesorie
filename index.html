@@ -1480,6 +1480,9 @@ location.replace(location.pathname+'?v='+m[1]);})
     background:rgba(201,151,58,0.03);
   }
   .hist-pedido-hdr { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .hist-pedido.tocable { cursor:pointer; transition:border-color .2s, background .2s; }
+  .hist-pedido.tocable:hover, .hist-pedido.tocable:active { border-color:rgba(201,151,58,0.45); background:rgba(201,151,58,0.07); }
+  .hist-ver { display:block; margin-top:10px; text-align:center; font-size:10px; letter-spacing:1.5px; color:var(--gold-mid); text-transform:uppercase; }
   .hist-num { font-family:'Cinzel',serif; font-size:9px; letter-spacing:2px; color:var(--gold-light); }
   .hist-fecha { font-size:10px; color:var(--text-muted); }
   .hist-item { display:flex; gap:8px; align-items:center; padding:6px 0; border-bottom:1px solid rgba(201,151,58,0.07); }
@@ -7864,7 +7867,8 @@ async function _renderHistorialEnCarrito() {
       body.innerHTML = cabecera + `<p class="hist-empty">${_t[_lang].historyEmpty}<br><br>${_t[_lang].historyEmptySub}</p>`;
       return;
     }
-    body.innerHTML = cabecera + pedidos.map(p => {
+    window._histPedidos = pedidos;
+    body.innerHTML = cabecera + pedidos.map((p, idx) => {
       if (p.detalle) return facturaDetalleHtml(p);
       const loc   = _lang === 'en' ? 'en-US' : 'es-CO';
       const fecha = new Date(p.fecha).toLocaleDateString(loc, { day:'2-digit', month:'long', year:'numeric' });
@@ -7876,7 +7880,7 @@ async function _renderHistorialEnCarrito() {
           <span class="hist-item-price">$${(Math.round(parseFloat(it.price)) * it.qty).toLocaleString(loc)}</span>
         </div>`).join('');
       const badge = p.descuento ? `<span class="hist-badge">${p.descuento}% OFF</span>` : '';
-      return `<div class="hist-pedido">
+      return `<div class="hist-pedido tocable" onclick="verPedidoHistorial(${idx})">
         <div class="hist-pedido-hdr">
           <span class="hist-num">${p.numero}</span>
           <span class="hist-fecha">${fecha}</span>
@@ -7886,6 +7890,7 @@ async function _renderHistorialEnCarrito() {
           <span class="hist-total-lbl">${_t[_lang].historyTotal || 'Total'} ${badge}</span>
           <span class="hist-total-val">$${(p.total || 0).toLocaleString(loc)}</span>
         </div>
+        <span class="hist-ver">🔍 ${_lang === 'en' ? 'Tap to view and zoom' : 'Toca para ver y ampliar'}</span>
       </div>`;
     }).join('');
   } catch(e) {
@@ -7901,6 +7906,99 @@ function consultaHistorial() {
   const c = clienteRegistrado();
   return c ? { nombre: c.nombre, telefono: c.telefono, registrada: true } : null;
 }
+// Al tocar un pedido del historial: se dibuja su resumen (fotos, cantidades, precios y total)
+// y se abre en el visor de imágenes, que permite ampliar con los dedos o con doble toque.
+async function verPedidoHistorial(idx) {
+  const p = (window._histPedidos || [])[idx];
+  if (!p) return;
+  try {
+    const cv = await canvasPedidoHistorial(p);
+    openImgViewer(cv.toDataURL('image/jpeg', 0.92));
+  } catch(e) { console.warn('No se pudo mostrar el pedido:', e.message); }
+}
+
+async function canvasPedidoHistorial(p) {
+  const items = p.items || [];
+  const en = _lang === 'en';
+  const W = 480, ITEM_H = 120, HDR_H = 104, FTR_H = p.descuento ? 96 : 70;
+  const H = HDR_H + items.length * ITEM_H + FTR_H;
+  const DPR = 3;   // alta resolución para que se vea nítido al ampliar
+  const cv = document.createElement('canvas');
+  cv.width = W * DPR; cv.height = H * DPR;
+  const cx = cv.getContext('2d');
+  cx.scale(DPR, DPR);
+  const money = n => '$' + (Math.round(Number(n)) || 0).toLocaleString('en-US');
+  const corta = (t, w) => { t = String(t || ''); const o = t; while (t.length > 1 && cx.measureText(t).width > w) t = t.slice(0, -1); return t !== o ? t.slice(0, -1) + '…' : t; };
+
+  cx.fillStyle = '#0f0e0b'; cx.fillRect(0, 0, W, H);
+  const grd = cx.createLinearGradient(0, 0, W, 0);
+  grd.addColorStop(0, '#7a5a10'); grd.addColorStop(0.4, '#C9973A'); grd.addColorStop(0.65, '#FFF0B3'); grd.addColorStop(1, '#C9973A');
+  cx.fillStyle = grd; cx.fillRect(0, 0, W, 4);
+
+  cx.fillStyle = '#C9973A'; cx.font = 'bold 15px Arial';
+  cx.fillText('PLEASEME ACCESSORIES', 18, 34);
+  cx.fillStyle = '#FFF0B3'; cx.font = 'bold 14px Arial'; cx.textAlign = 'right';
+  cx.fillText(p.numero || '', W - 18, 34); cx.textAlign = 'left';
+  cx.fillStyle = 'rgba(201,151,58,0.55)'; cx.font = '10px Arial';
+  cx.fillText(en ? 'Order summary · 14k Gold Filled Jewelry' : 'Resumen de pedido · Joyas en Oro Laminado 14k', 18, 54);
+  cx.fillStyle = 'rgba(154,140,118,0.75)'; cx.font = '10px Arial';
+  const f = new Date(p.fecha);
+  if (!isNaN(f)) cx.fillText(f.toLocaleDateString(en ? 'en-US' : 'es-CO', { day: '2-digit', month: 'long', year: 'numeric' }), 18, 74);
+  cx.strokeStyle = 'rgba(201,151,58,0.2)'; cx.lineWidth = 1;
+  cx.beginPath(); cx.moveTo(16, HDR_H - 1); cx.lineTo(W - 16, HDR_H - 1); cx.stroke();
+
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    const y = HDR_H + i * ITEM_H, IMG = 88, PAD = 14;
+    if (i % 2 === 0) { cx.fillStyle = 'rgba(201,151,58,0.035)'; cx.fillRect(0, y, W, ITEM_H); }
+    // Foto: la guardada en el pedido o la del producto actual del catálogo
+    const prod = products.find(x => x.name === it.name);
+    const img = await loadCanvasImage(it.photo || (prod && prod.photo));
+    cx.save(); cx.beginPath(); cx.rect(PAD, y + PAD, IMG, IMG); cx.clip();
+    if (img) {
+      const sc = Math.min(IMG / img.naturalWidth, IMG / img.naturalHeight);
+      const dw = img.naturalWidth * sc, dh = img.naturalHeight * sc;
+      cx.drawImage(img, PAD + (IMG - dw) / 2, y + PAD + (IMG - dh) / 2, dw, dh);
+    } else {
+      cx.fillStyle = 'rgba(201,151,58,0.12)'; cx.fillRect(PAD, y + PAD, IMG, IMG);
+      cx.fillStyle = 'rgba(201,151,58,0.5)'; cx.font = 'bold 26px Arial'; cx.textAlign = 'center';
+      cx.fillText('✦', PAD + IMG / 2, y + PAD + IMG / 2 + 9); cx.textAlign = 'left';
+    }
+    cx.restore();
+    cx.strokeStyle = 'rgba(201,151,58,0.28)'; cx.lineWidth = 1; cx.strokeRect(PAD, y + PAD, IMG, IMG);
+
+    const TX = PAD + IMG + 14, TW = W - TX - PAD;
+    cx.fillStyle = 'rgba(201,151,58,0.6)'; cx.font = '8px Arial';
+    cx.fillText(String(it.category || (prod && prod.categoryLabel) || '').toUpperCase(), TX, y + PAD + 13);
+    cx.fillStyle = '#f5ede0'; cx.font = 'bold 14px Arial';
+    cx.fillText(corta(it.name, TW), TX, y + PAD + 32);
+    const extra = [it.variante, it.medida].filter(Boolean).join(' · ');
+    if (extra) { cx.fillStyle = 'rgba(245,237,224,0.5)'; cx.font = 'italic 10px Arial'; cx.fillText(corta(extra, TW), TX, y + PAD + 50); }
+    const precio = Math.round(parseFloat(String(it.price).replace(/[^0-9.]/g, ''))) || 0;
+    cx.fillStyle = '#C9973A'; cx.font = 'bold 13px Arial';
+    cx.fillText(money(precio) + '  ×  ' + it.qty, TX, y + PAD + 72);
+    cx.fillStyle = '#FFF0B3'; cx.font = 'bold 11px Arial'; cx.textAlign = 'right';
+    cx.fillText(money(precio * it.qty), W - PAD, y + PAD + 72); cx.textAlign = 'left';
+    cx.strokeStyle = 'rgba(201,151,58,0.1)';
+    cx.beginPath(); cx.moveTo(PAD, y + ITEM_H - 1); cx.lineTo(W - PAD, y + ITEM_H - 1); cx.stroke();
+  }
+
+  const FY = HDR_H + items.length * ITEM_H;
+  cx.fillStyle = 'rgba(201,151,58,0.07)'; cx.fillRect(0, FY, W, FTR_H);
+  cx.strokeStyle = 'rgba(201,151,58,0.35)';
+  cx.beginPath(); cx.moveTo(16, FY + 1); cx.lineTo(W - 16, FY + 1); cx.stroke();
+  let ty = FY + 30;
+  if (p.descuento) {
+    cx.fillStyle = '#7dbf7d'; cx.font = '11px Arial';
+    cx.fillText((en ? 'Wholesale discount ' : 'Desc. mayorista ') + p.descuento + '%', 18, ty);
+    ty += 26;
+  }
+  cx.fillStyle = '#C9973A'; cx.font = 'bold 20px Arial';
+  cx.fillText('TOTAL: ' + money(p.total), 18, ty + 6);
+  cx.fillStyle = grd; cx.fillRect(0, H - 4, W, 4);
+  return cv;
+}
+
 async function pedidosPorNombreTelefono(q) {
   if (!q || !_db) return null;
   const tel = String(q.telefono || '').replace(/\D/g, '');
