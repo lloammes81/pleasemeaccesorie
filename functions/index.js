@@ -272,3 +272,83 @@ exports.pedidoWhatsApp = onRequest(
     }
   }
 );
+
+// ─── Aviso de cada pedido nuevo al WhatsApp personal de la administradora ───
+// Se activa sola cuando se crea un documento en «pedidos». Le llega desde el número de la
+// tienda: el resumen del pedido, la imagen del pedido y la foto de cada producto. El número
+// se guarda en el admin (Configuración → «Pedidos nuevos a mi WhatsApp»).
+// WhatsApp solo deja mandar texto y fotos libres si ella escribió al número de la tienda en
+// las últimas 24 h; si no, se envía la plantilla «aviso_pedido» (con la imagen del pedido)
+// y, en cuanto ella responda cualquier cosa, los siguientes pedidos llegan completos.
+const { onDocumentCreated } = require('firebase-functions/v2/firestore');
+const PLANTILLA_AVISO = 'aviso_pedido';
+const LOGO_URL = 'https://pleasemecatalogo.com/logo.png';
+
+async function llamarMeta(para, cuerpo) {
+  const r = await fetch(`${GRAPH}/${WHATSAPP_PHONE_ID.value()}/messages`, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + WHATSAPP_TOKEN.value(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messaging_product: 'whatsapp', to: para, ...cuerpo }),
+  });
+  const d = await r.json().catch(() => ({}));
+  if (r.ok) return { ok: true };
+  const e = d.error || {};
+  return { ok: false, error: e.code === 131047 ? 'fuera_de_24h' : (e.message || 'Error ' + r.status) };
+}
+
+function textoAviso(p) {
+  const env = p.envio || {};
+  let t = `🛍️ *Nuevo pedido ${p.numero}*\n`;
+  if (env.nombre) t += `\n👤 ${env.nombre}`;
+  if (env.telefono) t += `\n📱 ${env.telefono}`;
+  if (env.direccion) t += `\n🏠 ${env.direccion}`;
+  const ciudad = [env.ciudad, env.estado, env.zip].filter(Boolean).join(', ');
+  if (ciudad) t += `\n📍 ${ciudad}`;
+  if (env.pais) t += `\n🌎 ${env.pais === 'RD' ? 'República Dominicana' : 'USA'}`;
+  if (!env.nombre) t += '\n👤 Cliente sin registro';
+  t += '\n';
+  (p.items || []).forEach(it => {
+    t += `\n• ${it.qty} × ${it.name}` + (it.variante ? ` (${it.variante})` : '') + (it.medida ? ` — ${it.medida}` : '') + ` — ${dinero(it.price * it.qty)}`;
+  });
+  if (p.descuento) t += `\n\nSubtotal: ${dinero(p.subtotal)}\nDescuento: ${p.descuento}%`;
+  t += `\n\n*Total: ${dinero(p.total_final)}*`;
+  if (p.nota) t += `\n\n📝 ${p.nota}`;
+  return t.slice(0, 4096);
+}
+
+exports.avisoPedidoWhatsApp = onDocumentCreated(
+  { document: 'pedidos/{id}', secrets: [WHATSAPP_TOKEN, WHATSAPP_PHONE_ID], region: 'us-central1' },
+  async event => {
+    const p = event.data && event.data.data();
+    if (!p) return;
+    const cfg = await db.collection('config').doc('pm_whatsapp_aviso_pedidos').get();
+    const para = String((cfg.exists && cfg.data().value && cfg.data().value.numero) || '').replace(/\D/g, '');
+    if (para.length < 11) return;   // aviso apagado
+    const esUrl = u => typeof u === 'string' && /^https:\/\//.test(u);
+
+    let r = await llamarMeta(para, { type: 'text', text: { body: textoAviso(p) } });
+    if (!r.ok && r.error === 'fuera_de_24h') {
+      const env = p.envio || {};
+      r = await llamarMeta(para, { type: 'template', template: {
+        name: PLANTILLA_AVISO, language: { code: 'es' },
+        components: [
+          { type: 'header', parameters: [{ type: 'image', image: { link: esUrl(p.img_url) ? p.img_url : LOGO_URL } }] },
+          { type: 'body', parameters: [p.numero, env.nombre || 'Cliente sin registro', dinero(p.total_final)].map(text => ({ type: 'text', text: String(text) })) },
+        ],
+      } });
+      if (!r.ok) console.error('avisoPedidoWhatsApp (plantilla):', r.error);
+      await event.data.ref.update({ wa_aviso: r.ok ? 'plantilla' : 'error' }).catch(() => {});
+      return;   // fuera de las 24 h no se pueden mandar las fotos sueltas
+    }
+    if (!r.ok) { console.error('avisoPedidoWhatsApp:', r.error); await event.data.ref.update({ wa_aviso: 'error' }).catch(() => {}); return; }
+
+    // Imagen del pedido y foto de cada producto, en orden
+    if (esUrl(p.img_url)) await llamarMeta(para, { type: 'image', image: { link: p.img_url, caption: 'Pedido ' + p.numero } });
+    for (const it of (p.items || []).slice(0, 30)) {
+      if (!esUrl(it.photo)) continue;
+      const caption = `${it.qty} × ${it.name}` + (it.variante ? ` (${it.variante})` : '') + (it.medida ? ` — ${it.medida}` : '') + ` — ${dinero(it.price * it.qty)}`;
+      await llamarMeta(para, { type: 'image', image: { link: it.photo, caption: caption.slice(0, 1024) } });
+    }
+    await event.data.ref.update({ wa_aviso: 'enviado' }).catch(() => {});
+  }
+);

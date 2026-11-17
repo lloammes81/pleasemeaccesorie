@@ -157,3 +157,22 @@ Para las demás, crea en Meta (WhatsApp → Plantillas de mensajes) una plantill
 
 Usa los mismos secretos que las otras funciones; se publica con el mismo
 `firebase deploy --only functions`.
+
+## Pedidos nuevos a tu WhatsApp personal (avisoPedidoWhatsApp)
+
+Cada pedido que entra al catálogo te llega a tu WhatsApp personal desde el número de la tienda:
+el resumen (clienta, teléfono, dirección, productos, total y nota), la imagen del pedido y la
+foto de cada producto con su cantidad y precio.
+
+1. En el admin → Configuración → **Pedidos nuevos a mi WhatsApp**, escribe tu número personal
+   con código de país (tiene que ser distinto del número de la tienda) y toca Guardar.
+2. Crea en Meta (WhatsApp → Plantillas de mensajes) una plantilla de categoría **Utilidad**,
+   idioma **Español (es)**, llamada `aviso_pedido`, con encabezado de tipo **Imagen** y este cuerpo:
+
+   > Nuevo pedido {{1}} de {{2}} por {{3}}. Responde a este mensaje para recibir el detalle y las fotos de los siguientes pedidos.
+
+3. `firebase deploy --only functions`
+
+WhatsApp solo deja mandar texto y fotos libres si escribiste al número de la tienda en las
+últimas 24 h. Si no, te llega la plantilla (con la imagen del pedido); respóndele cualquier
+cosa y los pedidos de las siguientes 24 h te llegan completos, con todas las fotos.

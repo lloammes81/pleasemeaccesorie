@@ -2937,6 +2937,25 @@ body.is-mobile #facturasFrame { height: calc(100dvh - 58px - 68px); }
           </div>
         </div>
 
+        <!-- ── Aviso de pedidos nuevos por WhatsApp ── -->
+        <div class="section-card" style="margin-top:24px;">
+          <div class="section-title">Pedidos nuevos a mi WhatsApp</div>
+          <div class="contact-form" style="max-width:480px">
+            <div class="field">
+              <label>Tu número de WhatsApp personal (con código de país)</label>
+              <input type="text" id="c_wa_aviso" inputmode="tel" placeholder="ej: 18095551234">
+              <div style="font-size:9.5px;color:var(--text-muted);margin-top:4px;line-height:1.6;">
+                Cada pedido nuevo del catálogo te llega a este número desde el WhatsApp de la tienda, con el resumen,
+                la imagen del pedido y la foto de cada producto. Tiene que ser distinto del número de la tienda.
+                Instrucciones en <b>functions/LEEME.md</b>. Déjalo vacío para apagarlo.
+              </div>
+            </div>
+            <div class="save-row">
+              <button class="btn btn-primary" onclick="guardarAvisoPedidosWA()">Guardar</button>
+            </div>
+          </div>
+        </div>
+
         <!-- ── Bandeja de WhatsApp ── -->
         <div class="section-card" style="margin-top:24px;">
           <div class="section-title">Bandeja de chats de WhatsApp</div>
@@ -3526,6 +3545,18 @@ async function llenarVerificacionWA() {
   try { const d = await _db.collection('config').doc('pm_whatsapp_verif').get(); el.value = d.exists && d.data().value ? (d.data().value.numero || '') : ''; } catch(e) {}
 }
 
+async function guardarAvisoPedidosWA() {
+  const numero = (document.getElementById('c_wa_aviso').value || '').replace(/\D/g, '');
+  if (numero && numero.length < 11) return showToast('Escribe el número con código de país, por ejemplo 18095551234');
+  const err = await _saveConfig('pm_whatsapp_aviso_pedidos', { numero });
+  showToast(err ? 'No se pudo guardar: ' + err.message : (numero ? '✅ Los pedidos nuevos te llegarán por WhatsApp' : 'Aviso de pedidos por WhatsApp apagado'));
+}
+async function llenarAvisoPedidosWA() {
+  const el = document.getElementById('c_wa_aviso');
+  if (!el || !_db) return;
+  try { const d = await _db.collection('config').doc('pm_whatsapp_aviso_pedidos').get(); el.value = d.exists && d.data().value ? (d.data().value.numero || '') : ''; } catch(e) {}
+}
+
 function fillCloudinaryForm() {
   const cfg = _cfgCache['pm_cloudinary'] || {};
   const elCN = document.getElementById('c_cloud_name');
@@ -3804,7 +3835,7 @@ function goTo(page) {
   if (page === 'banner') { loadBanner(); loadDiscount(); }
   if (page === 'visitas') loadVisitas();
   if (page === 'info') { loadCatalogInfo(); renderInfoTable(); loadWatermarkConfig(); }
-  if (page === 'config') { fillCloudinaryForm(); llenarVerificacionWA(); llenarBandejaWA(); }
+  if (page === 'config') { fillCloudinaryForm(); llenarVerificacionWA(); llenarAvisoPedidosWA(); llenarBandejaWA(); }
   if (page === 'pedidos') loadPedidos();
   if (page === 'clientes') loadClientesCat();
   if (page === 'ofertas') loadOfertas();
