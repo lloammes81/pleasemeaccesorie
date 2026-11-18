@@ -3709,8 +3709,10 @@ function openPrintWindow(o){
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#1a1408;padding:20px}
-    @page{margin:15mm 12mm;size:letter}
-    @media print{body{padding:0}.no-print{display:none!important}}
+    /* Márgenes de página en 0: así el navegador no imprime encabezado/pie con la URL, título y fecha */
+    @page{margin:0;size:letter}
+    html,body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    @media print{body{padding:15mm 12mm}.no-print{display:none!important}}
     .header-bar{background:#12100a;color:#f0d880;padding:18px 20px;border-radius:8px 8px 0 0;display:flex;align-items:center;justify-content:space-between;margin-bottom:0}
     .gold-line{height:3px;background:linear-gradient(90deg,#b48226,#e8c56e,#b48226);margin-bottom:18px}
     .logo-circle{width:48px;height:48px;border-radius:50%;background:#d4af37;display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:20px;font-weight:900;color:#12100a;flex-shrink:0}
@@ -3800,12 +3802,38 @@ function openPrintWindow(o){
   </div>
   ${o.notes?`<div style="margin-top:14px;background:#f9f6f0;border:1px solid #e0d8c8;border-radius:6px;padding:10px"><span style="font-size:10px;font-weight:700;color:#b48226;text-transform:uppercase">Notas: </span><span style="font-size:12px;color:#555">${o.notes}</span></div>`:''}
   <div class="footer-note">Gracias por su preferencia — ${co.name||'Pleaseme'}<br><span style="font-size:10px">Generado el ${new Date().toLocaleDateString('es')} · ${invNum}</span></div>
-  <script>window.onload=()=>{ setTimeout(()=>window.print(),300); }<\/script>
   </body></html>`;
 
-  const win = window.open('','_blank','width=820,height=1000,scrollbars=yes');
-  if(win){ win.document.write(html); win.document.close(); }
-  else toast('Permite ventanas emergentes para imprimir','warn');
+  imprimirLocal(html);
+}
+
+// Imprime el HTML desde un iframe oculto dentro de la misma página: sin abrir otra
+// ventana/pestaña del sitio web — va directo al diálogo de impresión del equipo.
+function imprimirLocal(html){
+  const prev = document.getElementById('pmPrintFrame');
+  if(prev) prev.remove();
+  const fr = document.createElement('iframe');
+  fr.id = 'pmPrintFrame';
+  fr.setAttribute('aria-hidden','true');
+  fr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;pointer-events:none';
+  document.body.appendChild(fr);
+  const w = fr.contentWindow, d = w.document;
+  d.open(); d.write(html); d.close();
+  let hecho = false;
+  const imprimir = ()=>{
+    if(hecho) return; hecho = true;
+    try{ w.focus(); w.print(); }
+    catch(e){ console.error('[Imprimir]', e); toast('No se pudo abrir la impresión','err'); }
+    w.addEventListener('afterprint', ()=>setTimeout(()=>fr.remove(), 500));
+  };
+  // Esperar a que carguen las imágenes (logo) antes de imprimir
+  const imgs = Array.from(d.images).filter(i=>!i.complete);
+  if(!imgs.length) setTimeout(imprimir, 150);
+  else {
+    let faltan = imgs.length;
+    imgs.forEach(i=>{ const ok=()=>{ if(--faltan<=0) imprimir(); }; i.onload = ok; i.onerror = ok; });
+    setTimeout(imprimir, 3000);
+  }
 }
 async function quickPDF(id){
   const o = DB.orders.find(x=>x.id===id);
