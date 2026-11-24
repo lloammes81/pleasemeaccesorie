@@ -42,8 +42,9 @@ self.addEventListener('notificationclick', e => {
 // faltan por ver). Con la app cerrada:
 //  - al llegar un aviso (push), el número sube en 1;
 //  - con «periodicsync» (Chrome en Android, app instalada) revisa el catálogo cada pocas
-//    horas y muestra cuántas piezas activas no conoce todavía.
+//    horas y muestra cuántas piezas activas, agregadas hace menos de 3 días, no conoce todavía.
 // Al abrir la app, la página vuelve a calcular el número exacto.
+const NOVEDAD_MS = 3 * 24 * 60 * 60 * 1000;
 const BADGE_CACHE = 'pm-badge', BADGE_KEY = './__badge-estado';
 const FIRESTORE = 'https://firestore.googleapis.com/v1/projects/pleasemecatalogo/databases/(default)/documents/catalogo_productos';
 const API_KEY = 'AIzaSyCqer7Y1lA9ciISWJ7FogszjGgZ8CCpTDg';
@@ -68,14 +69,17 @@ async function revisarNovedades() {
   const conocidos = new Set(est.conocidos);
   let nuevos = 0, token = '';
   do {
-    const url = `${FIRESTORE}?pageSize=300&mask.fieldPaths=active&key=${API_KEY}` + (token ? '&pageToken=' + encodeURIComponent(token) : '');
+    const url = `${FIRESTORE}?pageSize=300&mask.fieldPaths=active&mask.fieldPaths=createdAt&key=${API_KEY}` + (token ? '&pageToken=' + encodeURIComponent(token) : '');
     const r = await fetch(url);
     if (!r.ok) return;
     const d = await r.json();
     (d.documents || []).forEach(doc => {
       const id = doc.name.split('/').pop();
       const inactivo = doc.fields && doc.fields.active && doc.fields.active.booleanValue === false;
-      if (!inactivo && !conocidos.has(id)) nuevos++;
+      // Solo cuentan las piezas agregadas en los últimos 3 días (igual que en la página)
+      const creado = Date.parse((doc.fields && doc.fields.createdAt && doc.fields.createdAt.timestampValue) || '') || 0;
+      const reciente = creado && Date.now() - creado < NOVEDAD_MS;
+      if (!inactivo && reciente && !conocidos.has(id)) nuevos++;
     });
     token = d.nextPageToken || '';
   } while (token);

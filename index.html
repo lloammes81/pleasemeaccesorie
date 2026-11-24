@@ -4318,10 +4318,19 @@ function _esProductoDeOferta(p) {
   return _ofertaIdsSet().has(String(p && p.id));
 }
 
-// Una pieza se anuncia como novedad durante una semana desde que entró a
+// Una pieza se anuncia como novedad durante 3 días desde que entró a
 // Temporada. El sello lo pone el panel admin al moverla; editarla después no
 // reinicia la cuenta.
-const TEMPORADA_NUEVO_MS = 7 * 24 * 60 * 60 * 1000;
+const TEMPORADA_NUEVO_MS = 3 * 24 * 60 * 60 * 1000;
+// Las piezas recién agregadas al catálogo se anuncian en su esfera («N nuevas»,
+// sello «Nuevo», número del icono) solo durante 3 días desde que el admin las creó.
+const NOVEDAD_MS = 3 * 24 * 60 * 60 * 1000;
+function _esRecienAgregado(p, key) {
+  const desde = Math.max(Number(p && p.creado) || 0, key === 'temporada' ? (Number(p && p.temporadaDesde) || 0) : 0);
+  if (!desde) return false;
+  const edad = Date.now() - desde;
+  return edad >= 0 && edad < NOVEDAD_MS;
+}
 
 function _esProductoNuevoEnOferta(p) {
   if (!p || p.category !== 'temporada') return false;
@@ -4682,6 +4691,7 @@ async function fetchProductsFromFirebase() {
       photo:         p.photo_data     || null,
       sold_out:      p.sold_out === true,
       temporadaDesde: Number(p.temporada_desde) || 0,
+      creado:        (p.createdAt && typeof p.createdAt.toMillis === 'function') ? p.createdAt.toMillis() : 0,
       active:        p.active !== false,
     };
   });
@@ -7124,7 +7134,8 @@ function getCategoryIllustration(key) {
 // ─── NOVEDADES EN LAS ESFERAS ─────────────────────────────────────────
 // Cada dispositivo recuerda qué piezas ya vio en cada esfera. Las que el admin
 // agregue después se anuncian en su esfera («N nuevas» y brillo) hasta que la
-// clienta abre esa categoría; entonces se marcan como vistas y no vuelve a salir.
+// clienta abre esa categoría (entonces se marcan como vistas y no vuelve a salir)
+// o hasta que pasan 3 días desde que se agregaron (NOVEDAD_MS).
 // La primera visita solo toma nota de lo que hay, sin anunciar nada.
 const ESFERAS_VISTAS_KEY = 'pm_esferas_vistas';
 function _productosDeCategoria(key) {
@@ -7151,7 +7162,7 @@ function _inicializarVistasEsferas() {
 function _nuevosEnEsfera(key) {
   const v = _vistasEsferas();
   if (!v) return [];
-  return _productosDeCategoria(key).filter(p => !v.has(key + '|' + p.id));
+  return _productosDeCategoria(key).filter(p => !v.has(key + '|' + p.id) && _esRecienAgregado(p, key));
 }
 function marcarEsferaVista(key) {
   const v = _vistasEsferas();
@@ -8689,7 +8700,7 @@ let _ofertaNuevoToastTimer = null;
 
 // Nota: _esProductoNuevoEnOferta() se declara en el bloque de variables globales,
 // arriba, porque catProductHTML lo consulta. El brillo depende del sello de entrada
-// a Temporada (una semana), no de este registro; lo de aquí abajo solo sirve para
+// a Temporada (3 días), no de este registro; lo de aquí abajo solo sirve para
 // no repetirle el aviso de inicio a quien ya lo vio.
 
 function _getOfertaSeenIds() {
@@ -8702,7 +8713,7 @@ function _setOfertaSeenIds(idsSet) {
 }
 
 // Avisa una sola vez por dispositivo de cada pieza que entró a Temporada en la
-// última semana. Pasada esa semana deja de anunciarse aunque nadie la haya visto.
+// últimos 3 días. Pasado ese plazo deja de anunciarse aunque nadie la haya visto.
 let _yaAvisadoEstaCarga = false;
 
 function checkNuevosEnTemporada() {
@@ -8770,8 +8781,8 @@ function mostrarToastOfertaNuevo(cantidad) {
   const t = document.getElementById('toastOfertaNuevo');
   if (!t) return;
   t.textContent = cantidad === 1
-    ? '✨ ¡1 pieza nueva esta semana en Ofertas de temporada!'
-    : `✨ ¡${cantidad} piezas nuevas esta semana en Ofertas de temporada!`;
+    ? '✨ ¡1 pieza nueva en Ofertas de temporada!'
+    : `✨ ¡${cantidad} piezas nuevas en Ofertas de temporada!`;
 
   // Pequeño retraso para no competir con la entrada del modal de oferta
   clearTimeout(_ofertaNuevoToastTimer);
