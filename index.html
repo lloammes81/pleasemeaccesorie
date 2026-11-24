@@ -3575,9 +3575,17 @@ location.replace(location.pathname+'?v='+m[1]);})
     border-radius: 2px;
     box-shadow: 0 1px 6px rgba(201,151,58,0.4);
     pointer-events: none;
+    animation: nuevoParpadeo 1.6s ease-in-out infinite;
   }
+  /* Parpadeo suave del sello «Nuevo» (en la pieza y en la esfera) */
+  @keyframes nuevoParpadeo {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.45; }
+  }
+  .cat-card-nuevo { animation: nuevoParpadeo 1.6s ease-in-out infinite; }
   @media (prefers-reduced-motion: reduce) {
     .cat-product-nuevo { animation: none; box-shadow: 0 0 12px rgba(201,151,58,0.3); }
+    .cat-nuevo-tag, .cat-card-nuevo { animation: none; }
   }
 
   .cat-product-img {
@@ -5032,10 +5040,13 @@ let _currentPanelProducts = [];
 // Piezas que eran novedad en la esfera al abrirla: se muestran primero y con
 // el sello «Nuevo» mientras el panel siga abierto (aunque ya queden como vistas).
 var _nuevosPanel = new Set();
+// Las piezas con sello «Nuevo» (novedad de la esfera o recién entrada a Temporada) van primero.
+function _esNuevoEnPanel(p) {
+  return _nuevosPanel.has(String(p.id)) || _esProductoNuevoEnOferta(p);
+}
 function _primeroNuevos(lista) {
-  if (!_nuevosPanel.size) return lista;
-  const n = lista.filter(p => _nuevosPanel.has(String(p.id)));
-  return n.length ? [...n, ...lista.filter(p => !_nuevosPanel.has(String(p.id)))] : lista;
+  const n = lista.filter(_esNuevoEnPanel);
+  return n.length ? [...n, ...lista.filter(p => !_esNuevoEnPanel(p))] : lista;
 }
 let _currentSort          = null; // 'asc' | 'desc' | null
 const _catLocalQty        = {};   // qty local por producto (antes de agregar al carrito)
@@ -5096,7 +5107,7 @@ function catProductHTML(p) {
     : `<div class="cat-variant-wrap" onclick="event.stopPropagation()" style="display:flex;margin-top:8px;">
          <button class="cat-cart-btn" onclick="event.stopPropagation();addToCatCartWithQty('${p.id}')" title="Agregar al carrito">${cartIcon}</button>
        </div>`;
-  const esNuevoEnOferta = _esProductoNuevoEnOferta(p) || _nuevosPanel.has(String(p.id));
+  const esNuevoEnOferta = _esNuevoEnPanel(p);
   return `
     <div class="cat-product${esNuevoEnOferta ? ' cat-product-nuevo' : ''}" data-pid="${p.id}">
       ${esNuevoEnOferta ? '<span class="cat-nuevo-tag">Nuevo</span>' : ''}
@@ -5276,7 +5287,7 @@ function closeCategoryPanel() {
 async function openOffersPanel() {
   if (document.getElementById('catPanel').classList.contains('open')) return;
   if (!_seasonalOffer || !_seasonalOffer.active) return;
-  const ofertaProducts = products.filter(p => _esProductoDeOferta(p));
+  let ofertaProducts = products.filter(p => _esProductoDeOferta(p));
   const titulo         = _seasonalOffer.titulo || 'Ofertas de temporada';
   _nuevosPanel = new Set();
 
@@ -5284,6 +5295,7 @@ async function openOffersPanel() {
   _currentSort = 'asc';
   ofertaProducts.sort((a, b) => (parseFloat(String(a.price)) || 0) - (parseFloat(String(b.price)) || 0));
   _currentPanelProducts = ofertaProducts;
+  ofertaProducts = _primeroNuevos(ofertaProducts);
   const sel = document.getElementById('sortSelect');
   if (sel) sel.value = 'asc';
 
